@@ -60,10 +60,25 @@ export function buildRaceControlView(notes: FeedLapNotes | undefined, lapFlags: 
     // it, so no entry: the notes still cover it.
     if (flag !== prev && FLAG_TEXT[flag] && prev !== 'none') {
       const restart = flag === 'green' && (prev === 'yellow' || prev === 'red');
-      entries.push({ id: `f${lap}`, lap, lapLabel: label(lap), kind: 'flag', flag, text: restart ? 'Green flag: restart' : FLAG_TEXT[flag]! });
+      const lifted = flag === 'yellow' && prev === 'red';
+      const text = restart ? 'Green flag: restart' : lifted ? 'Red flag lifted: caution' : FLAG_TEXT[flag]!;
+      entries.push({ id: `f${lap}`, lap, lapLabel: label(lap), kind: 'flag', flag, text });
     }
     prev = flag;
   });
+
+  // A red flag can come and go within a lap, and older recordings may have missed it; NASCAR's
+  // notes mark it (FlagState 3), so add the red flag entry from the first note of each red
+  // stretch unless the lap flags already have one nearby.
+  const redLaps = new Set(entries.filter((e) => e.kind === 'flag' && e.flag === 'red').map((e) => e.lap));
+  let lastRedNote = -Infinity;
+  for (const e of [...entries].filter((x) => x.kind === 'note' && x.flag === 'red').sort((a, b) => a.lap - b.lap)) {
+    const nearFlag = [e.lap - 1, e.lap, e.lap + 1].some((l) => redLaps.has(l));
+    if (!nearFlag && e.lap - lastRedNote > 1) {
+      entries.push({ id: `r${e.lap}`, lap: e.lap, lapLabel: e.lapLabel, kind: 'flag', flag: 'red', text: FLAG_TEXT.red! });
+    }
+    lastRedNote = e.lap;
+  }
 
   // Newest first; within a lap the flag change is the oldest entry (shown at the start of the
   // lap), so it sorts below that lap's notes.

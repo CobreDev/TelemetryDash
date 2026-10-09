@@ -93,9 +93,11 @@ export function applySnapshot(prev: LiveState | null, snap: FeedLiveSnapshot, no
   state.flag = snap.flag_state;
   state.lapsInRace = snap.laps_in_race;
   // The lap being run now is lap_number + 1; keep the first flag seen for a lap unless it
-  // goes from green to caution (a caution during the lap marks the whole lap).
+  // goes from green to caution (a caution during the lap marks the whole lap). A red flag
+  // sticks: the caution that resumes after it on the same lap must not erase it.
   const current = snap.lap_number + 1;
-  if (state.flags[current] === undefined || snap.flag_state !== 1) state.flags[current] = snap.flag_state;
+  const RED = 3;
+  if (state.flags[current] === undefined || (snap.flag_state !== 1 && state.flags[current] !== RED)) state.flags[current] = snap.flag_state;
 
   for (const v of snap.vehicles) {
     const prevCar = state.cars[v.vehicle_number];

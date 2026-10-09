@@ -29,6 +29,13 @@ describe('live collector', () => {
     expect(needsBackfill(filled)).toBe(false);
   });
 
+  it('keeps a red flag on its lap when the caution resumes', () => {
+    let s = applySnapshot(null, snap(10, 2, [['1', 10, 400, 60]]), 1);
+    s = applySnapshot(s, snap(10, 3, [['1', 10, 400, 60]]), 2); // red during lap 11
+    s = applySnapshot(s, snap(10, 2, [['1', 10, 400, 60]]), 3); // lifted, still lap 11
+    expect(s.flags[11]).toBe(3);
+  });
+
   it('marks flags unknown across a recording gap when the flag changed during it', () => {
     let s = applySnapshot(null, snap(0, 2, [['1', 0, 0, 0]]), 1); // lap 1 seen yellow
     s = applySnapshot(s, snap(5, 1, [['1', 5, 160, 31]]), 2); // back at lap 6, green: laps 2-5 unseen

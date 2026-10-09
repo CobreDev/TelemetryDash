@@ -27,6 +27,27 @@ describe('buildRaceControlView', () => {
     ]);
   });
 
+  it('adds the red flag from NASCAR\'s notes when the lap flags missed it', () => {
+    const red = buildRaceControlView(
+      { laps: { '120': [{ FlagState: 3, Note: 'Red flag displayed for cleanup', NoteID: 9 }] } },
+      flags([[100, 'green'], [22, 'yellow']]),
+    );
+    expect(red.entries.slice(0, 3).map((e) => [e.lapLabel, e.kind, e.flag, e.text])).toEqual([
+      ['Lap 120', 'note', 'red', 'Red flag displayed for cleanup'],
+      ['Lap 120', 'flag', 'red', 'Red flag'],
+      ['Lap 101', 'flag', 'yellow', 'Caution'],
+    ]);
+  });
+
+  it('calls the caution after a red flag "lifted", and never doubles the red entry', () => {
+    const view = buildRaceControlView(
+      { laps: { '120': [{ FlagState: 3, Note: 'Red flag displayed', NoteID: 9 }] } },
+      flags([[118, 'yellow'], [2, 'red'], [2, 'yellow']]),
+    );
+    const flagsOnly = view.entries.filter((e) => e.kind === 'flag').map((e) => e.text);
+    expect(flagsOnly).toEqual(['Red flag lifted: caution', 'Red flag', 'Caution']);
+  });
+
   it('skips flag changes that follow a recording gap', () => {
     const gap = buildRaceControlView(undefined, flags([[5, 'green'], [3, 'none'], [2, 'yellow']]));
     expect(gap.entries.map((e) => e.text)).toEqual(['Green flag']);
