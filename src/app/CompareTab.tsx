@@ -1,11 +1,11 @@
-import { useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { LapsView } from '../cards/tabs.model';
 import { lapTime } from '../format/format';
 import { lineSeries, MAX_LINES } from '../tokens/tokens';
 import { api } from './api';
 import { CarNumber } from './CarNumber';
 import { DataError } from './NoLive';
-import { SourceContext, useSeriesApi } from './useApi';
+import { useSeriesApi } from './useApi';
 
 const WINDOWS = [
   { id: 20, label: 'Last 20' },
@@ -171,7 +171,6 @@ function LapChart({ data, picked, window }: { data: LapsView; picked: Picked[]; 
 
 export function CompareTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.laps, seriesId);
-  const { useSample } = useContext(SourceContext);
   const [picked, setPicked] = useState<Picked[] | null>(null);
   const [window, setWindow] = useState<number>(20);
 
@@ -179,7 +178,7 @@ export function CompareTab({ seriesId }: { seriesId: string }) {
     () => picked ?? data?.cars.slice(0, 3).map((c, i) => ({ carNumber: c.carNumber, slot: i })) ?? [],
     [picked, data],
   );
-  if (error) return <DataError error={error} onUseSample={useSample} />;
+  if (error) return <DataError error={error} />;
   if (!data) return null;
 
   const add = (carNumber: string) => {

@@ -15,7 +15,11 @@ export function replayPaceDataset(
   pits: FeedPitStop[],
   upToLap: number,
   track?: FeedTrack,
-  { source = 'replay', session }: { source?: 'replay' | 'live'; session?: string } = {},
+  {
+    source = 'replay',
+    session,
+    currentFlag,
+  }: { source?: 'replay' | 'live'; session?: string; /** Live: the flag right now. */ currentFlag?: number } = {},
 ): PaceDataset {
   const { results, falloffPerLap } = computePace(lapTimes, pits, upToLap);
   return {
@@ -34,7 +38,7 @@ export function replayPaceDataset(
     lapFrom: 1,
     lapTo: upToLap,
     live: true,
-    flag: flagFromFeed(lapTimes.flags.find((f) => f.LapsCompleted === upToLap)?.FlagState),
+    flag: flagFromFeed(currentFlag ?? lapTimes.flags.find((f) => f.LapsCompleted === upToLap)?.FlagState),
     lapFlags: Array.from({ length: upToLap }, (_, i) =>
       flagFromFeed(lapTimes.flags.find((f) => f.LapsCompleted === i + 1)?.FlagState),
     ),

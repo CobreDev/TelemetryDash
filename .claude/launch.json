@@ -1,7 +1,32 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "api", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:api"], "port": 8787 },
-    { "name": "web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:web"], "port": 5173 }
+    {
+      "name": "api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:api"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:web"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "npm run build && PORT=8099 node dist/server/index.mjs"
+      ],
+      "port": 8099
+    }
   ]
 }

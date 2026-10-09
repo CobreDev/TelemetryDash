@@ -1,13 +1,11 @@
-import { useContext } from 'react';
 import { api } from './api';
 import { CarCell, NameCell, rowClass } from './DriverCell';
 import { DataError } from './NoLive';
-import { SourceContext, useSeriesApi } from './useApi';
+import { useSeriesApi } from './useApi';
 
 export function FuelTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.fuel, seriesId);
-  const { useSample } = useContext(SourceContext);
-  if (error) return <DataError error={error} onUseSample={useSample} />;
+  if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
     <div className="overview-view">

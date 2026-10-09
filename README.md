@@ -15,18 +15,26 @@ npm test
 
 ## Run in Docker (Unraid)
 
+Build the image for an Intel/AMD server (works from an Apple Silicon Mac too; only the
+small runtime stage is cross-built) and export it:
+
 ```bash
-docker compose up -d --build
+docker buildx build --platform linux/amd64 -t telemetrydash:latest --load .
+docker save telemetrydash:latest | gzip > telemetrydash-amd64.tar.gz
 ```
 
-Then open `http://<server>:8080`. On Unraid, add a container with:
+On Unraid:
 
-| Setting | Value |
-| --- | --- |
-| Port | container `8080` → any host port |
-| Path | `/data` → `/mnt/user/appdata/telemetrydash` |
-| Variable | `ATTRIBUTION_HANDLE` = your handle (card footer) |
-| Extra parameters | `--user 99:100` so files in appdata are owned by nobody:users |
+1. Copy `telemetrydash-amd64.tar.gz` to the server (e.g. `/mnt/user/appdata/`) and load it:
+   `docker load -i /mnt/user/appdata/telemetrydash-amd64.tar.gz`
+2. Copy `unraid/telemetrydash.xml` to
+   `/boot/config/plugins/dockerMan/templates-user/my-telemetrydash.xml`.
+3. Docker tab > **Add Container** > Template: **telemetrydash** > Apply.
+4. Open `http://<server>:8099`.
+
+The template maps `/data` to `/mnt/user/appdata/telemetrydash`, runs as `99:100`
+(nobody:users), and sets `ATTRIBUTION_HANDLE`. To update, load a new tar and click
+**Force Update** on the container. Or with compose: `docker compose up -d --build`.
 
 ## Data sources
 

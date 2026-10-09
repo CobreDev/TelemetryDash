@@ -1,24 +1,22 @@
-import { useContext } from 'react';
 import { api } from './api';
 import { CarNumber } from './CarNumber';
 import { ChaseCard } from './ChaseCard';
 import { DataError } from './NoLive';
-import { SourceContext, useSeriesApi } from './useApi';
+import { useSeriesApi } from './useApi';
 import { useUniformNameWrap } from './useUniformNameWrap';
 
 export function OverviewTab({ seriesId }: { seriesId: string }) {
   const { data: view, error } = useSeriesApi(api.overview, seriesId);
-  const { useSample } = useContext(SourceContext);
   const practice = view?.mode === 'practice';
   const { tableRef, wrapped } = useUniformNameWrap([view]);
 
   return (
-    <div className="overview-view">
+    <div className="overview-view is-overview">
       <section className="panel">
         <div className="panel-head">
           <h2>{view?.mode === 'practice' ? 'Practice timing' : 'Running order'}</h2>
         </div>
-        {error != null && <DataError error={error} onUseSample={useSample} />}
+        {error != null && <DataError error={error} />}
         {view && (
           <>
             <div className="table-scroll">

@@ -20,6 +20,8 @@ let pits: FeedPitStop[] = [];
 let points: FeedLivePoints[] | undefined;
 let extrasAt = 0;
 let lastFeedChange = 0;
+/** Last time NASCAR answered (a fresh copy, or 304 = unchanged). */
+let lastPolledOk = 0;
 let started = false;
 
 const stateFile = () => join(config.dataDir, 'live', 'current.json');
@@ -66,6 +68,7 @@ async function poll(): Promise<number> {
   const headers: Record<string, string> = { ...UA };
   if (lastModified) headers['If-Modified-Since'] = lastModified;
   const res = await fetch(FEED_URL, { headers });
+  if (res.status === 200 || res.status === 304) lastPolledOk = Date.now();
   if (res.status === 200) {
     lastModified = res.headers.get('last-modified');
     const snap = (await res.json()) as FeedLiveSnapshot;
@@ -110,8 +113,10 @@ export interface LiveStatus {
   lap: number;
   lapsInRace: number;
   flag: number;
-  /** ms epoch of the last change seen in the feed. */
+  /** ms epoch of the last change seen in the feed (a lap completed, flag change). */
   updatedAt: number;
+  /** ms epoch of the server's last successful check of the feed. */
+  polledAt: number;
   /** True while the feed is still changing (not idle). */
   active: boolean;
 }
@@ -129,12 +134,15 @@ export function liveStatus(): LiveStatus | null {
     lapsInRace: state.lapsInRace,
     flag: state.flag,
     updatedAt: state.updatedAt,
+    polledAt: lastPolledOk,
     active: Date.now() - lastFeedChange < IDLE_AFTER_MS,
   };
 }
 
 export interface LiveBundle extends ReplayBundle {
   live: true;
+  /** Feed flag code right now (the lap in progress), not the last completed lap's. */
+  currentFlag: number;
   runName: string;
   isRace: boolean;
   updatedAt: number;
@@ -149,6 +157,7 @@ export async function liveBundle(seriesId: string): Promise<LiveBundle | null> {
   const isRace = s.runType === 3;
   return {
     live: true,
+    currentFlag: s.flag,
     runName: s.runName,
     isRace,
     updatedAt: s.updatedAt,

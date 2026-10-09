@@ -12,7 +12,8 @@ import { isTemplateEnabled, profiles, seriesList } from '../src/series/profiles'
 import type { SeriesProfile } from '../src/series/types';
 import { config } from './config';
 import { liveBundle, liveStatus, type LiveBundle } from './sources/nascarLive';
-import { carBadge, FEED_SERIES, nextRace, replayBundle, replayPace, type ReplayBundle } from './sources/nascarReplay';
+import { carBadge, FEED_SERIES, nextRace, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
+import { trackLocation } from '../src/data/nascar/tracks';
 
 // Versioned so a future mobile app can rely on /api/v1 while the web UI moves on.
 export const api = new Hono();
@@ -100,6 +101,7 @@ api.get('/series/:id/cards/pace-rankings', async (c) => {
     const data = replayPaceDataset(p.id, b.race, b.lapTimes, b.pits, b.atLap, b.track, {
       source: 'live',
       session: isLive(b) && !b.isRace ? b.runName : undefined,
+      currentFlag: isLive(b) ? b.currentFlag : undefined,
     });
     return cc.json({ ...buildPaceRankings(data, p, config.attributionHandle, opts), updatedAt: isLive(b) ? b.updatedAt : null });
   })(c);
@@ -150,6 +152,30 @@ for (const [path, build] of Object.entries(TAB_VIEWS)) {
     }),
   );
 }
+
+/** The series' next race, for the header when nothing is live. */
+api.get('/series/:id/upcoming', async (c) => {
+  const profile = getProfile(c.req.param('id'));
+  const feedSeries = profile && FEED_SERIES[profile.id];
+  if (!profile || !feedSeries) return c.json({ error: 'unknown series' }, 404);
+  const race = await nextRace(feedSeries).catch(() => undefined);
+  if (!race) return c.json({ error: 'no upcoming race on the schedule' }, 404);
+  const track = await trackInfo(race.track_id);
+  const stageLaps = [race.stage_1_laps, race.stage_2_laps, race.stage_3_laps, race.stage_4_laps].filter((n): n is number => !!n && n > 0);
+  return c.json({
+    raceName: race.race_name,
+    venue: race.track_name,
+    location: track ? trackLocation(track) : undefined,
+    logoUrl: track?.track_logo ?? undefined,
+    startsET: race.race_date,
+    laps: race.scheduled_laps,
+    miles: race.scheduled_distance ?? null,
+    // Only meaningful when they add up to the race length.
+    stageLaps: stageLaps.reduce((a, n) => a + n, 0) === race.scheduled_laps ? stageLaps : [],
+    tv: race.television_broadcaster ?? null,
+    radio: race.radio_broadcaster ?? null,
+  });
+});
 
 api.get('/series/:id/car-badges/:file', async (c) => {
   const number = c.req.param('file').replace(/\.png$/, '');

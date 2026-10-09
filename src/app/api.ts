@@ -22,7 +22,23 @@ export interface LiveStatus {
   lapsInRace: number;
   flag: number;
   updatedAt: number;
+  /** Server's last successful check of NASCAR's feed. */
+  polledAt: number;
   active: boolean;
+}
+
+export interface UpcomingRace {
+  raceName: string;
+  venue: string;
+  location?: string;
+  logoUrl?: string;
+  /** US Eastern wall-clock, e.g. "2026-10-11T15:00:00". */
+  startsET: string;
+  laps: number;
+  miles: number | null;
+  stageLaps: number[];
+  tv: string | null;
+  radio: string | null;
 }
 
 export class ApiError extends Error {
@@ -50,6 +66,7 @@ const seriesGet =
 export const api = {
   series: () => get<SeriesProfile[]>('/series'),
   live: () => get<{ live: LiveStatus | null; now: number }>('/live'),
+  upcoming: (seriesId: string) => get<UpcomingRace>(`/series/${seriesId}/upcoming`),
   paceRankings: seriesGet<PaceRankingsCard & { updatedAt: number | null }>('/cards/pace-rankings'),
   overview: seriesGet<OverviewView>('/overview'),
   chase: seriesGet<ChaseView>('/chase'),

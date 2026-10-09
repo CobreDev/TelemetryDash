@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
-FROM node:22-alpine AS build
+# Build natively on the build machine: the output is plain JavaScript and runs on any CPU,
+# so only the runtime stage needs the target platform (e.g. linux/amd64 for Intel Unraid).
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -8,6 +10,9 @@ RUN npm test && npm run build
 
 # Runtime: the server is bundled into one file, so no node_modules are shipped.
 FROM node:22-alpine
+LABEL org.opencontainers.image.title="TelemetryDash" \
+      org.opencontainers.image.description="Live NASCAR race-stats dashboard and JSON API" \
+      net.unraid.docker.webui="http://[IP]:[PORT:8080]/"
 ENV NODE_ENV=production \
     PORT=8080 \
     STATIC_DIR=/app/client \

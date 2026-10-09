@@ -34,6 +34,8 @@ button { font: inherit; color: inherit; }
 .series-switch button.active { color: var(--bar-fg, var(--text)); border-bottom-color: var(--bar-highlight, var(--accent)); }
 .series-switch { flex: 1 1 auto; min-width: 0; }
 /* Sanctioning-body switcher, pinned to the top-right of the bar. */
+/* Top-right column: sanctioning body, with the Live/Sample toggle under it. */
+.topbar-right { margin-left: auto; flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .body-switch { margin-left: auto; }
 .body-switch select {
   appearance: none; cursor: pointer;
@@ -99,6 +101,8 @@ main { padding: 16px; }
 /* Pace rankings and Top speed side by side when there's room. */
 @media (min-width: 1100px) { .pace-view { max-width: 1080px; grid-template-columns: minmax(0, 640px) minmax(0, 420px); } }
 .overview-view { display: grid; gap: 16px; max-width: 980px; align-items: start; }
+/* Overview: the running order and Chase cards sit centered on the screen. */
+.overview-view.is-overview { margin-inline: auto; }
 /* Running order and Chase side by side when there's room. */
 @media (min-width: 1360px) { .overview-view { max-width: 1440px; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); } }
 .chase-table .dash-last { font-size: 16px; }
@@ -230,3 +234,7 @@ main { padding: 16px; }
 .no-live p { margin: 6px 0; color: var(--text-muted); }
 .no-live p strong { color: var(--text); }
 .no-live .btn { margin-top: 10px; }
+
+/* Upcoming race: times and names, not tabular numbers, so the value column uses the body face. */
+.race-status-value.upcoming-value { font-family: var(--font-sans); font-variant-numeric: normal; }
+.upcoming-chip { border-style: solid; }

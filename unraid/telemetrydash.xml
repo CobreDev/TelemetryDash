@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  Unraid container template for TelemetryDash.
+  Copy to /boot/config/plugins/dockerMan/templates-user/my-telemetrydash.xml, then
+  Docker tab > Add Container > Template: telemetrydash.
+-->
+<Container version="2">
+  <Name>telemetrydash</Name>
+  <Repository>telemetrydash:latest</Repository>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Overview>Live NASCAR race-stats dashboard (Cup, O'Reilly, Trucks) with a JSON API at /api/v1. Polls NASCAR's public live feed during sessions and keeps the current session in appdata.</Overview>
+  <Category>Tools: Other:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <!-- Run as nobody:users so files in appdata get Unraid's usual owner. -->
+  <ExtraParams>--user 99:100 --restart unless-stopped</ExtraParams>
+  <Config Name="Web UI port" Target="8080" Default="8099" Mode="tcp" Description="Port for the dashboard and API" Type="Port" Display="always" Required="true" Mask="false">8099</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/telemetrydash" Mode="rw" Description="Cached NASCAR files and the live session (survives restarts)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/telemetrydash</Config>
+  <Config Name="Attribution handle" Target="ATTRIBUTION_HANDLE" Default="@yourhandle" Mode="" Description="Shown in card footers" Type="Variable" Display="always" Required="false" Mask="false">@yourhandle</Config>
+  <Config Name="Time zone" Target="TZ" Default="America/New_York" Mode="" Description="Container time zone (logs only; race times are handled in ET regardless)" Type="Variable" Display="advanced" Required="false" Mask="false">America/New_York</Config>
+</Container>

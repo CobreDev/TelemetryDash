@@ -1,9 +1,8 @@
-import { useContext } from 'react';
 import type { PitRoadView } from '../cards/tabs.model';
 import { api } from './api';
 import { CarCell, NameCell, rowClass } from './DriverCell';
 import { DataError } from './NoLive';
-import { SourceContext, useSeriesApi } from './useApi';
+import { useSeriesApi } from './useApi';
 
 function AverageTable({ title, rows }: { title: string; rows: PitRoadView['fourTire'] }) {
   return (
@@ -45,8 +44,7 @@ function AverageTable({ title, rows }: { title: string; rows: PitRoadView['fourT
 
 export function PitRoadTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.pitRoad, seriesId);
-  const { useSample } = useContext(SourceContext);
-  if (error) return <DataError error={error} onUseSample={useSample} />;
+  if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
     <div className="tab-grid">

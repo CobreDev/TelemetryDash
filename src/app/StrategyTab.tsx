@@ -1,10 +1,9 @@
-import { useContext } from 'react';
 import type { Stint } from '../data/nascar/stops';
 import { strategy } from '../tokens/tokens';
 import { api } from './api';
 import { CarCell, NameCell, rowClass } from './DriverCell';
 import { DataError } from './NoLive';
-import { SourceContext, useSeriesApi } from './useApi';
+import { useSeriesApi } from './useApi';
 
 const STINT_COLOR: Record<Stint['start'], string> = {
   start: strategy.start,
@@ -35,8 +34,7 @@ function StintBar({ stints, totalLaps, stageEnds }: { stints: Stint[]; totalLaps
 
 export function StrategyTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.strategy, seriesId);
-  const { useSample } = useContext(SourceContext);
-  if (error) return <DataError error={error} onUseSample={useSample} />;
+  if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
     <div className="overview-view">

@@ -2,11 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { Source } from './api';
 
 /** Which data source the dashboard shows, and how often live views refresh (0 = never). */
-export const SourceContext = createContext<{ source: Source; refreshMs: number; useSample: () => void }>({
-  source: 'live',
-  refreshMs: 0,
-  useSample: () => {},
-});
+export const SourceContext = createContext<{ source: Source; refreshMs: number }>({ source: 'live', refreshMs: 0 });
 
 /**
  * Loads a series view from the current source, refreshing on an interval in live mode.

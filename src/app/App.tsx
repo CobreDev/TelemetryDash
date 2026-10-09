@@ -3,7 +3,8 @@ import { SeriesStripes } from './SeriesStripes';
 import type { SeriesProfile } from '../series/types';
 import { neutrals, themeVars } from '../tokens/tokens';
 import { BODIES, type BodyId } from '../series/bodies';
-import { api, type LiveStatus, type Source } from './api';
+import { api, isNoLive, type LiveStatus, type Source } from './api';
+import { UpcomingHeader } from './UpcomingHeader';
 import { DataError } from './NoLive';
 import { SourceContext, useSeriesApi } from './useApi';
 import { CompareTab } from './CompareTab';
@@ -20,7 +21,7 @@ const SERIES_KEY = 'td.series';
 const TAB_KEY = 'td.tab';
 const SOURCE_KEY = 'td.source';
 const LIVE_REFRESH_MS = 5_000;
-/** DESIGN.md: data age turns amber after 30 s without an update. */
+/** The badge turns amber when the server hasn't reached NASCAR's feed for this long. */
 const STALE_MS = 30_000;
 
 const TABS = [
@@ -65,21 +66,20 @@ export function App() {
     remember(SOURCE_KEY, s);
   };
   return (
-    <SourceContext.Provider value={{ source, refreshMs: source === 'live' ? LIVE_REFRESH_MS : 0, useSample: () => choose('sample') }}>
+    <SourceContext.Provider value={{ source, refreshMs: source === 'live' ? LIVE_REFRESH_MS : 0 }}>
       <Dashboard onSource={choose} />
     </SourceContext.Provider>
   );
 }
 
-/** "3s", "2m 05s" */
-const age = (ms: number) => {
-  const s = Math.max(0, Math.round(ms / 1000));
-  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
-};
-
-function SourceStatus({ onSource, seriesId }: { onSource: (s: Source) => void; seriesId: string }) {
-  const { source } = useContext(SourceContext);
+/**
+ * Polls what's live (any series). `stale` means the server hasn't reached NASCAR's feed for
+ * STALE_MS: about the connection, not laps (qualifying or a red flag can go a long time
+ * without a lap completing while the data is current).
+ */
+function useLiveStatus(source: Source) {
   const [live, setLive] = useState<LiveStatus | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [skew, setSkew] = useState(0); // server clock minus ours
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -89,8 +89,12 @@ function SourceStatus({ onSource, seriesId }: { onSource: (s: Source) => void; s
         (r) => {
           setLive(r.live);
           setSkew(r.now - Date.now());
+          setLoaded(true);
         },
-        () => setLive(null),
+        () => {
+          setLive(null);
+          setLoaded(true);
+        },
       );
     void load();
     const poll = setInterval(load, LIVE_REFRESH_MS);
@@ -100,23 +104,33 @@ function SourceStatus({ onSource, seriesId }: { onSource: (s: Source) => void; s
       clearInterval(tick);
     };
   }, [source]);
-  const since = live ? now + skew - live.updatedAt : 0;
+  return { live, loaded, stale: live ? now + skew - live.polledAt > STALE_MS : false };
+}
+
+function SourceToggle({ onSource }: { onSource: (s: Source) => void }) {
+  const { source } = useContext(SourceContext);
   return (
-    <div className="source-status">
-      <div className="seg seg-bar" role="group" aria-label="Data source">
-        {(['live', 'sample'] as const).map((s) => (
-          <button key={s} className={source === s ? 'active' : undefined} aria-pressed={source === s} onClick={() => onSource(s)}>
-            {s === 'live' ? 'Live' : 'Sample'}
-          </button>
-        ))}
-      </div>
-      {source === 'live' && live?.active && live.seriesId === seriesId && (
-        <span className={`chip live-chip${since > STALE_MS ? ' is-stale' : ''}`} title="Time since the live feed last changed">
-          <i aria-hidden /> Live · {age(since)}
-        </span>
-      )}
-      {source === 'sample' && <span className="chip">Replay</span>}
+    <div className="seg seg-bar" role="group" aria-label="Data source">
+      {(['live', 'sample'] as const).map((s) => (
+        <button key={s} className={source === s ? 'active' : undefined} aria-pressed={source === s} onClick={() => onSource(s)}>
+          {s === 'live' ? 'Live' : 'Sample'}
+        </button>
+      ))}
     </div>
+  );
+}
+
+function LiveBadge({ live, stale, seriesId }: { live: LiveStatus | null; stale: boolean; seriesId: string }) {
+  const { source } = useContext(SourceContext);
+  if (source === 'sample') return <span className="chip">Replay</span>;
+  if (!live?.active || live.seriesId !== seriesId) return null;
+  return (
+    <span
+      className={`chip live-chip${stale ? ' is-stale' : ''}`}
+      title={stale ? "Can't reach NASCAR's live feed; data may be out of date" : 'Live feed connected'}
+    >
+      <i aria-hidden /> Live
+    </span>
   );
 }
 
@@ -129,9 +143,18 @@ function savedSeries() {
 }
 
 function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
-  const { useSample } = useContext(SourceContext);
   const [series, setSeries] = useState<SeriesProfile[]>([]);
   const [seriesId, setSeriesId] = useState<string>(savedSeries() ?? 'cup');
+  const { source } = useContext(SourceContext);
+  const { live, loaded: liveLoaded, stale } = useLiveStatus(source);
+  // On page load in live mode, open to whichever series is live right now (once only, so it
+  // never overrides a series the viewer picks afterwards).
+  const [openedLive, setOpenedLive] = useState(false);
+  useEffect(() => {
+    if (openedLive || source !== 'live' || !liveLoaded) return;
+    setOpenedLive(true);
+    if (live?.active) setSeriesId(live.seriesId);
+  }, [openedLive, source, liveLoaded, live]);
   const [body, setBody] = useState<BodyId>('nascar');
   const [tab, setTab] = useState<TabId>(savedTab);
   const chooseTab = (t: TabId) => {
@@ -183,6 +206,7 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
               </button>
             ))}
           </nav>
+          <div className="topbar-right">
           <label className="body-switch">
             <span className="visually-hidden">Sanctioning body</span>
             <select value={body} onChange={(e) => setBody(e.target.value as BodyId)}>
@@ -193,6 +217,8 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
               ))}
             </select>
           </label>
+          <SourceToggle onSource={onSource} />
+          </div>
         </div>
         {card && (
           <div className="race-meta">
@@ -211,13 +237,12 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
                 </div>
               </div>
             </div>
-            <SourceStatus onSource={onSource} seriesId={seriesId} />
+            <LiveBadge live={live} stale={stale} seriesId={seriesId} />
           </div>
         )}
         {!card && cardError != null && (
           <div className="race-meta">
-            <span className="race-location">No live session for this series</span>
-            <SourceStatus onSource={onSource} seriesId={seriesId} />
+            {isNoLive(cardError) ? <UpcomingHeader seriesId={seriesId} /> : <span className="race-location">Timing data unavailable</span>}
           </div>
         )}
         <nav className="tabs" aria-label="Views">
@@ -239,7 +264,7 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
         {error && <p className="error">{error}</p>}
         {tab === 'overview' && <OverviewTab seriesId={seriesId} />}
         {tab === 'pace' && card && <PaceView card={card} />}
-        {tab === 'pace' && !card && cardError != null && <DataError error={cardError} onUseSample={useSample} />}
+        {tab === 'pace' && !card && cardError != null && <DataError error={cardError} />}
         {tab === 'pit' && <PitRoadTab seriesId={seriesId} />}
         {tab === 'strategy' && <StrategyTab seriesId={seriesId} />}
         {tab === 'fuel' && <FuelTab seriesId={seriesId} />}

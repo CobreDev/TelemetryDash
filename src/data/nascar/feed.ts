@@ -59,6 +59,9 @@ export interface FeedRace {
   race_season: number;
   scheduled_laps: number;
   actual_laps: number | null;
+  scheduled_distance?: number | null;
+  television_broadcaster?: string | null;
+  radio_broadcaster?: string | null;
   /** Stage LENGTHS, not end laps; stage_4 is null when unused. */
   stage_1_laps?: number | null;
   stage_2_laps?: number | null;
