@@ -18,11 +18,11 @@ describe('buildRaceControlView', () => {
   it('mixes notes and flag changes, newest first', () => {
     expect(view.entries.map((e) => [e.lapLabel, e.kind, e.text])).toEqual([
       ['Lap 38', 'note', 'Restart: #11 leads'],
-      ['Lap 38', 'flag', 'Green flag: restart'],
+      ['Lap 37', 'flag', 'Green flag: restart'],
       ['Lap 31', 'info', '12th stage win for #34'],
-      ['Lap 31', 'flag', 'Caution'],
       ['Lap 30', 'note', '#34 wins stage 1'],
-      ['Lap 1', 'flag', 'Green flag'],
+      ['Lap 30', 'flag', 'Caution'],
+      ['Start', 'flag', 'Green flag'],
       ['Pre-race', 'note', 'To the rear: #17'],
     ]);
   });
@@ -34,10 +34,10 @@ describe('buildRaceControlView', () => {
     );
     // Caution, red flag, back to caution (then green, once it comes), each kept in the history.
     expect(red.entries.slice(0, 4).map((e) => [e.lapLabel, e.kind, e.flag, e.text])).toEqual([
-      ['Lap 121', 'flag', 'yellow', 'Red flag lifted: caution'],
       ['Lap 120', 'note', 'red', 'Red flag displayed for cleanup'],
+      ['Lap 120', 'flag', 'yellow', 'Red flag lifted: caution'],
       ['Lap 120', 'flag', 'red', 'Red flag'],
-      ['Lap 101', 'flag', 'yellow', 'Caution'],
+      ['Lap 100', 'flag', 'yellow', 'Caution'],
     ]);
   });
 
@@ -50,9 +50,9 @@ describe('buildRaceControlView', () => {
     expect(flagsOnly).toEqual(['Red flag lifted: caution', 'Red flag', 'Caution']);
   });
 
-  it('ends with the checkered flag on the last lap, above the white', () => {
+  it('labels flags by laps completed, like the header: white at 133, checkered at 134', () => {
     const done = buildRaceControlView(undefined, flags([[133, 'green'], [1, 'white']]), Infinity, 134);
-    expect(done.entries.slice(0, 2).map((e) => [e.lapLabel, e.text])).toEqual([['Lap 134', 'Checkered flag'], ['Lap 134', 'White flag']]);
+    expect(done.entries.slice(0, 2).map((e) => [e.lapLabel, e.text])).toEqual([['Lap 134', 'Checkered flag'], ['Lap 133', 'White flag']]);
   });
 
   it('skips flag changes that follow a recording gap', () => {
@@ -62,6 +62,6 @@ describe('buildRaceControlView', () => {
 
   it('leaves out notes after the replay lap', () => {
     const replay = buildRaceControlView(notes, flags([[30, 'green']]), 30);
-    expect(replay.entries.map((e) => e.lapLabel)).toEqual(['Lap 30', 'Lap 1', 'Pre-race']);
+    expect(replay.entries.map((e) => e.lapLabel)).toEqual(['Lap 30', 'Start', 'Pre-race']);
   });
 });

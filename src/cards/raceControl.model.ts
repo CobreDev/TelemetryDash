@@ -61,14 +61,16 @@ export function buildRaceControlView(
   // laps ('none') come from recording gaps.
   let prev: TrackFlag | undefined;
   lapFlags.forEach((flag, i) => {
-    const lap = i + 1;
+    // Labelled like the header's lap counter: the laps completed when the flag came out (the
+    // white flag for a 134-lap race shows at 133). The opening green is the start.
+    const lap = i;
     // After an unknown stretch (a recording gap) the change could have happened anywhere in
     // it, so no entry: the notes still cover it.
     if (flag !== prev && FLAG_TEXT[flag] && prev !== 'none') {
       const restart = flag === 'green' && (prev === 'yellow' || prev === 'red');
       const lifted = flag === 'yellow' && prev === 'red';
       const text = restart ? 'Green flag: restart' : lifted ? 'Red flag lifted: caution' : FLAG_TEXT[flag]!;
-      entries.push({ id: `f${lap}`, lap, lapLabel: label(lap), kind: 'flag', flag, text });
+      entries.push({ id: `f${lap}`, lap, lapLabel: lap === 0 ? 'Start' : label(lap), kind: 'flag', flag, text });
     }
     prev = flag;
   });
@@ -83,14 +85,16 @@ export function buildRaceControlView(
   let lastRedNote = -Infinity;
   const redNoteLaps = new Set(entries.filter((x) => x.kind === 'note' && x.flag === 'red').map((x) => x.lap));
   for (const e of [...entries].filter((x) => x.kind === 'note' && x.flag === 'red').sort((a, b) => a.lap - b.lap)) {
-    const nearFlag = [e.lap - 1, e.lap, e.lap + 1].some((l) => redLaps.has(l));
+    // Flag entries sit at laps completed, so a recorded red can be up to two laps before the note.
+    const nearFlag = [e.lap - 2, e.lap - 1, e.lap, e.lap + 1].some((l) => redLaps.has(l));
     if (!nearFlag && e.lap - lastRedNote > 1) {
       entries.push({ id: `r${e.lap}`, lap: e.lap, lapLabel: e.lapLabel, kind: 'flag', flag: 'red', text: FLAG_TEXT.red! });
       // Then back to yellow: the next lap after the red stretch still under caution.
       let after = e.lap + 1;
       while (redNoteLaps.has(after)) after++;
       if (lapFlags[after - 1] === 'yellow') {
-        entries.push({ id: `l${after}`, lap: after, lapLabel: label(after), kind: 'flag', flag: 'yellow', text: 'Red flag lifted: caution' });
+        // Laps completed when it was lifted, like the other flags; sorts above the red.
+        entries.push({ id: `s${after - 1}`, lap: after - 1, lapLabel: label(after - 1), kind: 'flag', flag: 'yellow', text: 'Red flag lifted: caution' });
       }
     }
     lastRedNote = e.lap;
@@ -98,7 +102,8 @@ export function buildRaceControlView(
 
   // Newest first; within a lap the flag change is the oldest entry (shown at the start of the
   // lap), so it sorts below that lap's notes.
-  const order = (e: RaceControlEntry) => (e.kind === 'flag' ? 1 : 0);
+  // The start (lap 0) is the exception: the green flag comes after the pre-race notes.
+  const order = (e: RaceControlEntry) => (e.kind === 'flag' ? (e.lap === 0 ? -1 : 1) : 0);
   entries.sort((a, b) => b.lap - a.lap || order(a) - order(b) || b.id.localeCompare(a.id, undefined, { numeric: true }));
   return { title: 'Race control', entries };
 }
