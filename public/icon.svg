@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- TelemetryDash icon: original drawing. Dark tile, speedometer arc in the Cup stripe colors, needle. -->
+  <rect width="512" height="512" rx="112" fill="#0F1115"/>
+  <path d="M126.1 361.0A150 150 0 0 1 151.8 178.1" stroke="#0072CE" stroke-width="44" fill="none" stroke-linecap="butt"/><path d="M163.7 167.8A150 150 0 0 1 348.3 167.8" stroke="#FFD100" stroke-width="44" fill="none" stroke-linecap="butt"/><path d="M360.2 178.1A150 150 0 0 1 385.9 361.0" stroke="#E4002B" stroke-width="44" fill="none" stroke-linecap="butt"/>
+  <line x1="169.4" y1="336.0" x2="153.8" y2="345.0" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/><line x1="156.0" y1="286.0" x2="138.0" y2="286.0" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/><line x1="169.4" y1="236.0" x2="153.8" y2="227.0" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/><line x1="206.0" y1="199.4" x2="197.0" y2="183.8" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/><line x1="256.0" y1="186.0" x2="256.0" y2="168.0" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/><line x1="306.0" y1="199.4" x2="315.0" y2="183.8" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/><line x1="342.6" y1="236.0" x2="358.2" y2="227.0" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/><line x1="356.0" y1="286.0" x2="374.0" y2="286.0" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/><line x1="342.6" y1="336.0" x2="358.2" y2="345.0" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="8" stroke-linecap="round"/>
+  <path d="M356.9 207.2L265.9 298.6L235.5 302.0L246.1 273.4Z" fill="#FFFFFF"/>
+  <circle cx="256" cy="286" r="26" fill="#FFFFFF"/>
+  <circle cx="256" cy="286" r="10" fill="#0F1115"/>
+</svg>

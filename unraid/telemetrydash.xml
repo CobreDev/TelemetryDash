@@ -16,6 +16,9 @@
   <Overview>Live NASCAR race-stats dashboard (Cup, O'Reilly, Trucks) with a JSON API at /api/v1. Polls NASCAR's public live feed during sessions and keeps the current session in appdata.</Overview>
   <Category>Tools: Other:</Category>
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <!-- Served by the container itself (the repo and image are private, so no public URL).
+       Unraid fetches it from the host; change 8099 if you map a different port. -->
+  <Icon>http://127.0.0.1:8099/icon.png</Icon>
   <!-- Run as nobody:users so files in appdata get Unraid's usual owner. -->
   <ExtraParams>--user 99:100 --restart unless-stopped</ExtraParams>
   <Config Name="Web UI port" Target="8080" Default="8099" Mode="tcp" Description="Port for the dashboard and API" Type="Port" Display="always" Required="true" Mask="false">8099</Config>

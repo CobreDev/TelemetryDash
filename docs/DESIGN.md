@@ -268,6 +268,7 @@ Image export was removed; these rules apply when cards return.
 - No series, sponsor or manufacturer logos in the UI chrome; series identity comes from bar color and stripes.
 - Data: unofficial use of NASCAR's public feeds. Keep request rates low, check terms of use, and credit "Timing data from public NASCAR feeds; unofficial" wherever it's published.
 - Fonts: only licensed or open-licensed fonts (see Typography). Keep the repo private while it contains Stainless.
+- **App icon** (`public/icon.svg`, plus `icon.png` 512 px and `apple-touch-icon.png` 180 px): an original drawing, a dark rounded tile with a speedometer arc in the Cup stripe colors (blue, yellow, red), ticks and a white needle. Used as the favicon, the phone home-screen icon and the Unraid Docker icon (served by the container at `/icon.png`, since the repo is private). Don't use SF Symbols or look-alikes for icons or logos: Apple's license forbids it (a draft built from `gauge.with.dots.needle.50percent` was rejected for this).
 - Borrow structure from other creators and broadcasters, not their exact look. (An AmberConsole terminal-style variant was tried and rejected.)
 
 ## Accessibility
