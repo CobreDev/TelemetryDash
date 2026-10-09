@@ -38,9 +38,9 @@ function ChasePanel({ view }: { view: ChaseView }) {
           <tr>
             <th className="shrink">{view.columns.rank}</th>
             <th className="shrink" title={view.hints.change}>{view.columns.change}</th>
-            <th className="shrink" title={view.hints.running}>{view.columns.running}</th>
             <th className="shrink">{view.columns.car}</th>
             <th className="left">{view.columns.name}</th>
+            <th className="shrink" title={view.hints.running}>{view.columns.running}</th>
             <th className="shrink" title={view.hints.points}>{view.columns.points}</th>
             <th className="shrink" title={view.hints.gain}>{view.columns.gain}</th>
           </tr>
@@ -52,13 +52,13 @@ function ChasePanel({ view }: { view: ChaseView }) {
               <td className={`num change-${r.changeDir}`} title={view.mode === 'live' ? `P${r.liveRank} if the race ended now` : undefined}>
                 {r.change}
               </td>
-              <td className="num muted">{r.running}</td>
               <td className="car">
                 <CarNumber number={r.carNumber} badge={r.carBadge} />
               </td>
               <td className="left">
                 <span className="dash-last">{r.lastName}</span>
               </td>
+              <td className="num muted">{r.running}</td>
               <td className="num" title={view.mode === 'live' ? `${r.livePoints} if the race ended now` : undefined}>
                 {r.points}
               </td>
