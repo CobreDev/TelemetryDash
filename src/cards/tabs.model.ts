@@ -65,7 +65,6 @@ export function buildPitRoadView({ profile, lapTimes, pits, atLap }: Inputs): Pi
   return {
     latest: [...stops]
       .sort((a, b) => b.raceTime - a.raceTime)
-      .slice(0, 12)
       .map((s) => ({
         ...who(profile, s.carNumber, s.driverName),
         lap: String(s.leaderLap),

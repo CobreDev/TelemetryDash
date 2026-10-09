@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, type UpcomingRace } from './api';
 import { etParts } from './NoLive';
 import { TrackLogo } from './TrackLogo';
+import { TvLogo } from './TvLogo';
 
 /**
  * Header for a series with nothing live: its next race, laid out like the live header
@@ -21,7 +22,7 @@ export function UpcomingHeader({ seriesId }: { seriesId: string }) {
   const { day, time } = etParts(race.startsET);
   const lines: [string, string][] = [
     [day, time],
-    [`${race.laps} laps${race.miles ? ` · ${race.miles} mi` : ''}`, race.tv ? `TV ${race.tv}` : ''],
+    [`${race.laps} laps`, race.miles ? `${race.miles} mi` : ''],
   ];
   if (race.stageLaps.length) lines.push(['Stages', race.stageLaps.join(' | ')]);
   return (
@@ -33,7 +34,7 @@ export function UpcomingHeader({ seriesId }: { seriesId: string }) {
             <span className="race-name">{race.raceName}</span>
             {race.location && <span className="race-location">{race.location}</span>}
           </div>
-          <div className="race-status" role="group" aria-label="Upcoming race">
+          <div className="race-status is-upcoming" role="group" aria-label="Upcoming race">
             <div className="race-status-lines">
               {lines.map(([label, value], i) => (
                 <div key={i} className={`race-status-line${i === 0 ? ' is-primary' : ''}`}>
@@ -45,9 +46,12 @@ export function UpcomingHeader({ seriesId }: { seriesId: string }) {
           </div>
         </div>
       </div>
-      <span className="chip upcoming-chip" title="Not running yet">
-        Upcoming
-      </span>
+      <div className="race-badges">
+        {race.tv && <TvLogo network={race.tv} />}
+        <span className="chip upcoming-chip" title="Not running yet">
+          Upcoming
+        </span>
+      </div>
     </>
   );
 }

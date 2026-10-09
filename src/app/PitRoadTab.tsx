@@ -3,6 +3,7 @@ import { api } from './api';
 import { CarCell, NameCell, rowClass } from './DriverCell';
 import { DataError } from './NoLive';
 import { useSeriesApi } from './useApi';
+import { useUniformNameWrap } from './useUniformNameWrap';
 
 function AverageTable({ title, rows }: { title: string; rows: PitRoadView['fourTire'] }) {
   return (
@@ -44,6 +45,8 @@ function AverageTable({ title, rows }: { title: string; rows: PitRoadView['fourT
 
 export function PitRoadTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.pitRoad, seriesId);
+  // Full names; the whole table switches to two-line names together when they don't fit.
+  const { tableRef, wrapped } = useUniformNameWrap([data]);
   if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
@@ -52,8 +55,9 @@ export function PitRoadTab({ seriesId }: { seriesId: string }) {
         <div className="panel-head">
           <h2>Latest stops</h2>
         </div>
-        <div className="table-scroll">
-          <table className="dash-table">
+        {/* Every stop so far, newest first; the panel stays the same height and scrolls. */}
+        <div className="table-scroll stops-scroll">
+          <table ref={tableRef} className={`dash-table${wrapped ? ' names-wrapped' : ''}`}>
             <thead>
               <tr>
                 <th className="shrink">Lap</th>
@@ -73,7 +77,7 @@ export function PitRoadTab({ seriesId }: { seriesId: string }) {
                     {r.lap}
                   </td>
                   <CarCell who={r} />
-                  <NameCell who={r} short />
+                  <NameCell who={r} />
                   <td className="nowrap">{r.kind}</td>
                   <td className="num">{r.box}</td>
                   <td className="num">{r.lane}</td>

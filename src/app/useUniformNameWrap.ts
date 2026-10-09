@@ -5,7 +5,8 @@ const NAME_GAP = 6; // matches .dash-first margin-right
 /**
  * Decides once for the whole table whether names fit on one line, so rows never mix
  * one-line and two-line names. Compares the widest one-line name against the width the
- * driver column can get after every other column takes its share.
+ * driver column can get after every other column takes its share. A column that gives up
+ * width (data-min-width, e.g. Strategy's stint bars) counts only at its minimum.
  */
 export function useUniformNameWrap(deps: unknown[]) {
   const tableRef = useRef<HTMLTableElement>(null);
@@ -21,7 +22,8 @@ export function useUniformNameWrap(deps: unknown[]) {
       const driverIdx = headCells.findIndex((th) => th.classList.contains('left'));
       const driverTh = headCells[driverIdx];
       if (!driverTh) return;
-      const others = headCells.reduce((sum, th, i) => (i === driverIdx ? sum : sum + th.getBoundingClientRect().width), 0);
+      const widthOf = (th: HTMLTableCellElement) => (th.dataset.minWidth ? Number(th.dataset.minWidth) : th.getBoundingClientRect().width);
+      const others = headCells.reduce((sum, th, i) => (i === driverIdx ? sum : sum + widthOf(th)), 0);
       const pad = parseFloat(getComputedStyle(driverTh).paddingLeft) + parseFloat(getComputedStyle(driverTh).paddingRight);
       const box = getComputedStyle(container);
       const inner = container.clientWidth - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight);

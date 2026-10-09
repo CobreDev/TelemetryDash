@@ -8,7 +8,8 @@ const pointsIneligible: DriverMarker = {
   meaning: 'Ineligible for points in this series',
 };
 const rookie: DriverMarker = { feedToken: '#', label: '(R)', meaning: 'Rookie' };
-// Confirmed against live_points.json: exactly the drivers with is_in_chase carry "(C)".
+// The feed's "(C)" name text over-marks, so the server rewrites it from is_in_chase
+// (see withChaseMarkers) before anything reads it.
 // Shown as a light yellow row tint rather than a suffix.
 const chase: DriverMarker = { feedToken: '(C)', label: '(C)', meaning: 'Drivers in the Chase', display: 'highlight' };
 

@@ -67,7 +67,8 @@ function LapChart({ data, picked, window }: { data: LapsView; picked: Picked[]; 
   const yMin = lo - span * 0.08;
   const yMax = hi + span * 0.08;
   const x = (lap: number) => pad.l + ((lap - from) / Math.max(1, to - from)) * (w - pad.l - pad.r);
-  const y = (t: number) => pad.t + ((t - yMin) / (yMax - yMin)) * (H - pad.t - pad.b);
+  // Lap time reads like a stopwatch: faster (smaller) times sit lower.
+  const y = (t: number) => H - pad.b - ((t - yMin) / (yMax - yMin)) * (H - pad.t - pad.b);
 
   const path = (laps: (number | null)[]) => {
     let d = '';
@@ -164,7 +165,7 @@ function LapChart({ data, picked, window }: { data: LapsView; picked: Picked[]; 
           ))}
         </div>
       )}
-      <div className="chart-axis-label">Lap time in seconds (faster is higher) · lap number</div>
+      <div className="chart-axis-label">Lap time in seconds (faster is lower) · lap number</div>
     </div>
   );
 }

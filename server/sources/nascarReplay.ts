@@ -1,6 +1,7 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { easternToEpoch, type FeedLapTimes, type FeedPitStop, type FeedRace } from '../../src/data/nascar/feed';
+import { easternToEpoch, type FeedLapNotes, type FeedLapTimes, type FeedPitStop, type FeedRace, type FeedWeekendRace } from '../../src/data/nascar/feed';
+import { withChaseMarkers } from '../../src/data/nascar/names';
 import { halfwayLap, replayPaceDataset } from '../../src/data/nascar/replay';
 import type { FeedTrack } from '../../src/data/nascar/tracks';
 import type { FeedLivePoints, FeedResult } from '../../src/data/nascar/points';
@@ -95,6 +96,8 @@ export interface ReplayBundle {
   /** Final points file and results, for rebuilding points as they ran (optional). */
   livePoints?: FeedLivePoints[];
   results?: FeedResult[];
+  /** Race notes by lap (optional); replays show only notes up to `atLap`. */
+  lapNotes?: FeedLapNotes;
   /** The lap the replay is "live" at: halfway. */
   atLap: number;
 }
@@ -128,12 +131,37 @@ export async function replayBundle(seriesId: string, now = new Date()): Promise<
       )
         .then((w) => w.weekend_race[0]?.results)
         .catch(() => undefined);
-      return { race, lapTimes, pits, track, livePoints, results, atLap: halfwayLap(race) };
+      const lapNotes = await cachedJson<FeedLapNotes>(`${dir}/lap-notes.json`, `${BASE}/${dir}/lap-notes.json`).catch(() => undefined);
+      const chaseCars = livePoints && new Set(livePoints.filter((d) => d.is_in_chase).map((d) => d.car_number));
+      return { race, lapTimes: withChaseMarkers(lapTimes, chaseCars), pits, track, livePoints, results, lapNotes, atLap: halfwayLap(race) };
     })();
     hit.catch(() => bundles.delete(key)); // retry on the next request after a failure
     bundles.set(key, hit);
   }
   return hit;
+}
+
+/**
+ * Final results of the series' most recent completed race, with its points file when
+ * NASCAR has one (for rookie / ineligible / Chase markers). Independent of the lap files.
+ */
+export async function lastRaceResults(
+  seriesId: string,
+  now = new Date(),
+): Promise<{ race: FeedWeekendRace; livePoints?: FeedLivePoints[] }> {
+  const feedSeries = FEED_SERIES[seriesId];
+  if (!feedSeries) throw new Error(`no NASCAR feed for ${seriesId}`);
+  const race = await latestCompletedRace(feedSeries, now);
+  if (!race) throw new Error(`no completed ${seriesId} race found`);
+  const dir = `${race.race_season}/${feedSeries}/${race.race_id}`;
+  const weekend = await cachedJson<{ weekend_race: FeedWeekendRace[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`);
+  const result = weekend.weekend_race.find((r) => r.race_id === race.race_id) ?? weekend.weekend_race[0];
+  if (!result?.results?.length) throw new Error('no results published yet');
+  const livePoints = await cachedJson<FeedLivePoints[]>(
+    `${dir}/live_points.json`,
+    `https://cf.nascar.com/live/feeds/series_${feedSeries}/${race.race_id}/live_points.json`,
+  ).catch(() => undefined);
+  return { race: result, livePoints };
 }
 
 /** Pace at the halfway lap of the series' most recent completed race. */

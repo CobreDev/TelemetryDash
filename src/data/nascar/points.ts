@@ -11,6 +11,7 @@ export interface FeedLivePoints {
   last_name: string;
   is_in_chase: boolean;
   is_points_eligible: boolean;
+  is_rookie?: boolean;
   is_fastest_lap_point: boolean;
   points: number;
   points_position: number;

@@ -1,4 +1,6 @@
+import { easternToEpoch } from '../data/nascar/feed';
 import { isNoLive, type NoLiveSession } from './api';
+import { clockET } from './time';
 
 const SERIES_NAME: Record<string, string> = { cup: 'Cup Series', oreilly: "O'Reilly Auto Parts Series", craftsman: 'Craftsman Truck Series' };
 
@@ -10,12 +12,9 @@ export function etParts(s: string): { day: string; time: string } {
 
 /** "2026-10-11T15:00:00" (schedule times are US Eastern) -> "Sun, Oct 11 · 3:00 PM ET". */
 export function formatET(s: string): string {
-  const [date, time = '00:00'] = s.split('T');
-  const [y, m, d] = date!.split('-').map(Number);
-  const [hh, mm] = time.split(':').map(Number);
+  const [y, m, d] = s.split('T')[0]!.split('-').map(Number);
   const day = new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
-  const h12 = ((hh! + 11) % 12) + 1;
-  return `${day} · ${h12}:${String(mm).padStart(2, '0')} ${hh! < 12 ? 'AM' : 'PM'} ET`;
+  return `${day} · ${clockET(easternToEpoch(s))}`;
 }
 
 /** Explains an error from a live view: nothing live for this series, or data unavailable. */

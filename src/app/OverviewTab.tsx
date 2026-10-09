@@ -1,14 +1,27 @@
-import { api } from './api';
+import { api, isNoLive } from './api';
 import { CarNumber } from './CarNumber';
-import { ChaseCard } from './ChaseCard';
+import { ChaseCard, ChaseStandingsCard } from './ChaseCard';
+import { RaceControlCard } from './RaceControlCard';
 import { DataError } from './NoLive';
 import { useSeriesApi } from './useApi';
 import { useUniformNameWrap } from './useUniformNameWrap';
+import { ResultsCard, ScheduleCard } from './WeekendCards';
 
 export function OverviewTab({ seriesId }: { seriesId: string }) {
   const { data: view, error } = useSeriesApi(api.overview, seriesId);
   const practice = view?.mode === 'practice';
   const { tableRef, wrapped } = useUniformNameWrap([view]);
+
+  // Nothing live for this series: the coming weekend's schedule and last race's results.
+  if (isNoLive(error)) {
+    return (
+      <div className="overview-view is-overview is-offweek">
+        <ScheduleCard seriesId={seriesId} />
+        <ResultsCard seriesId={seriesId} />
+        <ChaseStandingsCard seriesId={seriesId} />
+      </div>
+    );
+  }
 
   return (
     <div className="overview-view is-overview">
@@ -70,7 +83,11 @@ export function OverviewTab({ seriesId }: { seriesId: string }) {
           </>
         )}
       </section>
-      <ChaseCard seriesId={seriesId} />
+      {/* Right column, the same 420px as off-week: race control above the Chase standings. */}
+      <div className="overview-side">
+        {!practice && <RaceControlCard seriesId={seriesId} />}
+        <ChaseCard seriesId={seriesId} />
+      </div>
     </div>
   );
 }

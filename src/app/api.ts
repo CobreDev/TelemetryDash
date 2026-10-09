@@ -1,8 +1,11 @@
 import type { ChaseView } from '../cards/chase.model';
 import type { OverviewView } from '../cards/overview.model';
 import type { PaceRankingsCard } from '../cards/paceRankings.model';
+import type { ResultsView, ScheduleView } from '../cards/weekend.model';
+import type { RaceControlView } from '../cards/raceControl.model';
 import type { FuelView, LapsView, PitRoadView, StrategyView, TopSpeedView } from '../cards/tabs.model';
 import type { SeriesProfile } from '../series/types';
+import type { TvNetwork } from '../data/nascar/networks';
 
 export type Source = 'live' | 'sample';
 
@@ -37,7 +40,7 @@ export interface UpcomingRace {
   laps: number;
   miles: number | null;
   stageLaps: number[];
-  tv: string | null;
+  tv: TvNetwork | null;
   radio: string | null;
 }
 
@@ -67,9 +70,13 @@ export const api = {
   series: () => get<SeriesProfile[]>('/series'),
   live: () => get<{ live: LiveStatus | null; now: number }>('/live'),
   upcoming: (seriesId: string) => get<UpcomingRace>(`/series/${seriesId}/upcoming`),
+  schedule: (seriesId: string) => get<ScheduleView>(`/series/${seriesId}/schedule`),
+  results: (seriesId: string) => get<ResultsView>(`/series/${seriesId}/results`),
+  chaseStandings: (seriesId: string) => get<ChaseView>(`/series/${seriesId}/chase/standings`),
   paceRankings: seriesGet<PaceRankingsCard & { updatedAt: number | null }>('/cards/pace-rankings'),
   overview: seriesGet<OverviewView>('/overview'),
   chase: seriesGet<ChaseView>('/chase'),
+  raceControl: seriesGet<RaceControlView>('/race-control'),
   pitRoad: seriesGet<PitRoadView>('/pit-road'),
   strategy: seriesGet<StrategyView>('/strategy'),
   fuel: seriesGet<FuelView>('/fuel'),

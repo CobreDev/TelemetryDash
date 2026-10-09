@@ -67,6 +67,57 @@ export interface FeedRace {
   stage_2_laps?: number | null;
   stage_3_laps?: number | null;
   stage_4_laps?: number | null;
+  /** The weekend's events; on-track sessions have run_type 1 practice, 2 qualifying, 3 race. */
+  schedule?: FeedScheduleEvent[];
+}
+
+export interface FeedScheduleEvent {
+  event_name: string;
+  notes?: string;
+  /** UTC, despite having no offset (unlike race_date, which is US Eastern). */
+  start_time_utc: string;
+  run_type: number;
+}
+
+/**
+ * cacher/{yyyy}/{n}/{raceId}/lap-notes.json: NASCAR's lap-by-lap race notes (passes, cautions,
+ * pit cycles, stage results), updated live. Keyed by lap; "0" holds pre-race notes.
+ * FlagState uses the feed's flag codes, plus 1000 for stat/info notes.
+ */
+export interface FeedLapNotes {
+  laps: Record<string, { FlagState: number; Note: string; NoteID: number; DriverIDs?: number[] }[]>;
+}
+export const NOTE_INFO = 1000;
+
+/** One finisher in weekend-feed.json. */
+export interface FeedRaceResult {
+  driver_id: number;
+  finishing_position: number;
+  starting_position: number;
+  car_number: string;
+  driver_fullname: string;
+  laps_led: number;
+  laps_completed: number;
+  /** "Running", "Accident", "Engine", "DVP", ... */
+  finishing_status: string;
+  /** Laps behind the winner. */
+  diff_laps: number;
+  points_earned: number;
+}
+
+/** weekend-feed.json's race entry: the fields used for the results card. */
+export interface FeedWeekendRace {
+  race_id: number;
+  race_name: string;
+  track_name: string;
+  race_date: string;
+  actual_laps: number | null;
+  number_of_cautions: number;
+  number_of_caution_laps: number;
+  number_of_lead_changes: number;
+  number_of_leaders: number;
+  margin_of_victory?: string;
+  results: FeedRaceResult[];
 }
 
 export const FLAG_GREEN = 1;

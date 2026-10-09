@@ -29,6 +29,7 @@ export function replayPaceDataset(
       venue: race.track_name,
       location: track ? trackLocation(track) : undefined,
       logoUrl: track?.track_logo ?? undefined,
+      tv: race.television_broadcaster || undefined,
       year: race.race_season,
       totalLaps: race.actual_laps ?? race.scheduled_laps,
       stageLaps: [race.stage_1_laps, race.stage_2_laps, race.stage_3_laps, race.stage_4_laps].filter(

@@ -9,6 +9,7 @@ import {
   type StatusLine,
 } from '../format/format';
 import { flagSegments, type FlagSegment } from '../data/flags';
+import { tvNetwork, type TvNetwork } from '../data/nascar/networks';
 import { compareCarNumbers, rankBy } from '../data/rank';
 import type { DataSource, PaceDataset, PaceEntry, TrackFlag } from '../data/types';
 import { markerHighlight, markerNotes, markerSuffixes } from '../series/markers';
@@ -24,6 +25,8 @@ export interface CardHeader {
   location?: string;
   /** Track logo URL when known (no event-specific race logos are published). */
   logoUrl?: string;
+  /** TV network, shown above the Live badge. */
+  tv?: TvNetwork;
   venue: string;
   raceLine: string;
   definition: string;
@@ -68,12 +71,26 @@ export interface PaceRankingsCard {
   progress: RaceProgress | null;
   /** TV-style status block lines (see raceStatusLines); empty for a finished race. */
   statusLines: StatusLine[];
-  flag: TrackFlag;
+  flag: StatusFlag;
   /** Completed laps as flag runs, for the lap progress bar. */
   flagSegments: FlagSegment[];
   /** Laps where each stage but the last ends (bar notches). */
   stageEnds: number[];
   source: DataSource;
+}
+
+/**
+ * The status block's flag: track status, except on the lap a stage ends, which shows the
+ * stage-end flag NASCAR waves: green/white checkered, or yellow/white checkered when the
+ * stage ended under caution (judged by the flag on the stage's last lap, since the
+ * stage-break caution comes out right after).
+ */
+export type StatusFlag = TrackFlag | 'stage-green' | 'stage-yellow';
+
+export function statusFlag(progress: RaceProgress | null, flag: TrackFlag | undefined, lapFlags: TrackFlag[] | undefined): StatusFlag {
+  const stageEnded = progress && progress.stage !== null && progress.stageLapsRemaining === 0 && progress.lap < progress.totalLaps;
+  if (!stageEnded) return flag ?? 'none';
+  return lapFlags?.[progress.lap - 1] === 'yellow' ? 'stage-yellow' : 'stage-green';
 }
 
 /** "Garrity excluded: damage" for one driver; "Excluded (reason): A, B" when a reason repeats. */
@@ -156,6 +173,7 @@ export function buildPaceRankings(
       raceName: data.race.raceName,
       location: data.race.location,
       logoUrl: data.race.logoUrl,
+      tv: tvNetwork(data.race.tv),
       venue: data.race.venue,
       raceLine: `${data.race.raceName} · ${profile.displayName} · ${data.race.year}`,
       definition: 'Fastest drivers, adjusted for tire age',
@@ -179,7 +197,7 @@ export function buildPaceRankings(
     },
     progress,
     statusLines: progress ? raceStatusLines(progress, profile.segmentName) : sessionLines,
-    flag: data.flag ?? 'none',
+    flag: statusFlag(progress, data.flag, data.lapFlags),
     flagSegments: flagSegments(data.lapFlags ?? []),
     stageEnds: data.race.stageLaps.slice(0, -1).map((_, i, a) => a.slice(0, i + 1).reduce((x, y) => x + y, 0)),
     source: data.source,

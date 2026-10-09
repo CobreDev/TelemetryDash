@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { samplePace } from '../data/sample/pace';
 import { cup } from '../series/profiles';
-import { buildPaceRankings } from './paceRankings.model';
+import { raceProgress } from '../format/format';
+import { buildPaceRankings, statusFlag } from './paceRankings.model';
 
 describe('buildPaceRankings', () => {
   const card = buildPaceRankings(samplePace.cup!, cup, '@handle');
@@ -44,5 +45,25 @@ describe('buildPaceRankings', () => {
   it('computes gap percent against the leader', () => {
     // (30.448 - 30.412) / 30.412 = 0.118%
     expect(card.rows[1]?.gapPercent).toBe('0.12%');
+  });
+});
+
+describe('statusFlag', () => {
+  const stages = [30, 30, 74];
+  const flags = (n: number, last: 'green' | 'yellow') => [...Array<'green'>(n - 1).fill('green'), last];
+
+  it('shows the green/white checkered on the lap a stage ends under green', () => {
+    // The stage-break caution is already out, but the stage ended green.
+    expect(statusFlag(raceProgress(30, 134, stages), 'yellow', flags(30, 'green'))).toBe('stage-green');
+  });
+
+  it('shows the yellow/white checkered when the stage ends under caution', () => {
+    expect(statusFlag(raceProgress(60, 134, stages), 'yellow', flags(60, 'yellow'))).toBe('stage-yellow');
+  });
+
+  it('shows track status otherwise, and the plain checkered at the finish', () => {
+    expect(statusFlag(raceProgress(31, 134, stages), 'yellow', flags(31, 'yellow'))).toBe('yellow');
+    expect(statusFlag(raceProgress(134, 134, stages), 'checkered', flags(134, 'green'))).toBe('checkered');
+    expect(statusFlag(null, undefined, undefined)).toBe('none');
   });
 });

@@ -3,6 +3,7 @@ import { SeriesStripes } from './SeriesStripes';
 import type { SeriesProfile } from '../series/types';
 import { neutrals, themeVars } from '../tokens/tokens';
 import { BODIES, type BodyId } from '../series/bodies';
+import { seriesList } from '../series/profiles';
 import { api, isNoLive, type LiveStatus, type Source } from './api';
 import { UpcomingHeader } from './UpcomingHeader';
 import { DataError } from './NoLive';
@@ -16,6 +17,7 @@ import { PaceView } from './PaceView';
 import { LapBar } from './LapBar';
 import { RaceStatus } from './RaceStatus';
 import { TrackLogo } from './TrackLogo';
+import { TvLogo } from './TvLogo';
 
 const SERIES_KEY = 'td.series';
 const TAB_KEY = 'td.tab';
@@ -143,7 +145,9 @@ function savedSeries() {
 }
 
 function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
-  const [series, setSeries] = useState<SeriesProfile[]>([]);
+  // Profiles ship in the bundle (same module the API serves), so the bar has its series colors
+  // on the first paint instead of flashing the default and then switching.
+  const series: SeriesProfile[] = seriesList;
   const [seriesId, setSeriesId] = useState<string>(savedSeries() ?? 'cup');
   const { source } = useContext(SourceContext);
   const { live, loaded: liveLoaded, stale } = useLiveStatus(source);
@@ -165,11 +169,6 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
       /* private mode */
     }
   };
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api.series().then(setSeries, (e) => setError(String(e)));
-  }, []);
 
   useEffect(() => {
     try {
@@ -237,9 +236,14 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
                 </div>
               </div>
             </div>
-            <LiveBadge live={live} stale={stale} seriesId={seriesId} />
+            <div className="race-badges">
+              {card.header.tv && <TvLogo network={card.header.tv} />}
+              <LiveBadge live={live} stale={stale} seriesId={seriesId} />
+            </div>
           </div>
         )}
+        {/* Holds the header's space while the first data loads, so the tabs don't jump down. */}
+        {!card && cardError == null && <div className="race-meta is-pending" aria-hidden />}
         {!card && cardError != null && (
           <div className="race-meta">
             {isNoLive(cardError) ? <UpcomingHeader seriesId={seriesId} /> : <span className="race-location">Timing data unavailable</span>}
@@ -261,7 +265,6 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
       </header>
       {profile && <SeriesStripes colors={profile.brand.stripes} className="topbar-stripes" />}
       <main>
-        {error && <p className="error">{error}</p>}
         {tab === 'overview' && <OverviewTab seriesId={seriesId} />}
         {tab === 'pace' && card && <PaceView card={card} />}
         {tab === 'pace' && !card && cardError != null && <DataError error={cardError} />}

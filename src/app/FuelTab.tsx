@@ -2,9 +2,12 @@ import { api } from './api';
 import { CarCell, NameCell, rowClass } from './DriverCell';
 import { DataError } from './NoLive';
 import { useSeriesApi } from './useApi';
+import { useUniformNameWrap } from './useUniformNameWrap';
 
 export function FuelTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.fuel, seriesId);
+  // Full names; the whole table switches to two-line names together when they don't fit.
+  const { tableRef, wrapped } = useUniformNameWrap([data]);
   if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
@@ -14,7 +17,7 @@ export function FuelTab({ seriesId }: { seriesId: string }) {
           <h2>Fuel window</h2>
         </div>
         <div className="table-scroll">
-          <table className="dash-table">
+          <table ref={tableRef} className={`dash-table${wrapped ? ' names-wrapped' : ''}`}>
             <thead>
               <tr>
                 <th className="shrink">Pos</th>
@@ -31,7 +34,7 @@ export function FuelTab({ seriesId }: { seriesId: string }) {
                 <tr key={r.carNumber} className={rowClass(r)}>
                   <td className="num">{r.position}</td>
                   <CarCell who={r} />
-                  <NameCell who={r} short />
+                  <NameCell who={r} />
                   <td className="num">{r.sincePit}</td>
                   <td className="left">
                     <span className="gauge" aria-hidden>

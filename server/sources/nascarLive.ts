@@ -1,7 +1,8 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { FeedPitStop } from '../../src/data/nascar/feed';
-import { applySnapshot, toLapTimes, type FeedLiveSnapshot, type LiveState } from '../../src/data/nascar/live';
+import type { FeedLapNotes, FeedLapTimes, FeedPitStop } from '../../src/data/nascar/feed';
+import { applySnapshot, backfillFromLapTimes, isRace as isRaceState, needsBackfill, toLapTimes, type FeedLiveSnapshot, type LiveState } from '../../src/data/nascar/live';
+import { withChaseMarkers } from '../../src/data/nascar/names';
 import type { FeedLivePoints } from '../../src/data/nascar/points';
 import { config } from '../config';
 import { BASE, FEED_SERIES, raceById, trackInfo, UA, type ReplayBundle } from './nascarReplay';
@@ -12,13 +13,19 @@ const FEED_URL = 'https://cf.nascar.com/live/feeds/live-feed.json';
 const ACTIVE_MS = 5_000; // DESIGN.md: poll every 5-10 s during a session
 const IDLE_MS = 60_000; // feed unchanged for a while: check once a minute
 const IDLE_AFTER_MS = 10 * 60_000;
-const EXTRAS_MS = 15_000; // pit detail + live points
+const EXTRAS_MS = 15_000; // pit detail, live points, lap notes
+const BACKFILL_MS = 60_000; // official lap times, only while laps are estimated or flags unseen
+/** A finished race is kept this long after the feed goes quiet, then deleted from disk. */
+const CLEAR_AFTER_MS = 60 * 60_000;
 
 let state: LiveState | null = null;
 let lastModified: string | null = null;
 let pits: FeedPitStop[] = [];
 let points: FeedLivePoints[] | undefined;
+/** Lap notes and the race they belong to (so a new session never shows the last one's). */
+let notes: { raceId: number; data: FeedLapNotes } | undefined;
 let extrasAt = 0;
+let backfillAt = 0;
 let lastFeedChange = 0;
 /** Last time NASCAR answered (a fresh copy, or 304 = unchanged). */
 let lastPolledOk = 0;
@@ -31,8 +38,20 @@ async function save() {
   const file = stateFile();
   await mkdir(join(config.dataDir, 'live'), { recursive: true });
   // Write-then-rename so a crash mid-write never leaves a corrupt file.
-  await writeFile(`${file}.tmp`, JSON.stringify({ state, pits, points }));
+  await writeFile(`${file}.tmp`, JSON.stringify({ state, pits, points, notes }));
   await rename(`${file}.tmp`, file);
+}
+
+/** Deletes the saved race once it's over and the feed has been quiet for CLEAR_AFTER_MS. */
+async function clearIfFinished() {
+  if (!state || !isRaceState(state) || state.lap < state.lapsInRace) return;
+  if (Date.now() - lastFeedChange < CLEAR_AFTER_MS) return;
+  console.log(`live: race ${state.raceId} finished; clearing the saved session`);
+  state = null;
+  pits = [];
+  points = undefined;
+  notes = undefined;
+  await rm(stateFile(), { force: true });
 }
 
 async function load() {
@@ -41,6 +60,7 @@ async function load() {
     state = saved.state;
     pits = saved.pits ?? [];
     points = saved.points;
+    notes = saved.notes;
     lastFeedChange = state?.updatedAt ?? 0;
   } catch {
     /* first run */
@@ -54,14 +74,22 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 
 async function refreshExtras(s: LiveState) {
   const year = new Date().getFullYear();
-  const [p, lp] = await Promise.all([
+  const [p, lp, ln] = await Promise.all([
     fetchJson<FeedPitStop[]>(`${BASE}/${year}/${s.seriesId}/${s.raceId}/live-pit-data.json`).catch(() => null),
     fetchJson<FeedLivePoints[]>(`https://cf.nascar.com/live/feeds/series_${s.seriesId}/${s.raceId}/live_points.json`).catch(
       () => null,
     ),
+    fetchJson<FeedLapNotes>(`${BASE}/${year}/${s.seriesId}/${s.raceId}/lap-notes.json`).catch(() => null),
   ]);
   if (p) pits = p;
   if (lp) points = lp;
+  if (ln?.laps) notes = { raceId: s.raceId, data: ln };
+  // After a restart (or joining late), swap estimated laps for NASCAR's official ones.
+  if (isRaceState(s) && needsBackfill(s) && Date.now() - backfillAt > BACKFILL_MS) {
+    backfillAt = Date.now();
+    const official = await fetchJson<FeedLapTimes>(`${BASE}/${year}/${s.seriesId}/${s.raceId}/lap-times.json`).catch(() => null);
+    if (official?.laps && state?.key === s.key) state = backfillFromLapTimes(state, official);
+  }
 }
 
 async function poll(): Promise<number> {
@@ -72,6 +100,9 @@ async function poll(): Promise<number> {
   if (res.status === 200) {
     lastModified = res.headers.get('last-modified');
     const snap = (await res.json()) as FeedLiveSnapshot;
+    // Don't start recording a race that has already finished (e.g. the saved copy was cleared,
+    // or the server came up after the checkered): the replay files cover it.
+    if (!state && snap.run_type === 3 && snap.lap_number >= snap.laps_in_race) return IDLE_MS;
     const next = applySnapshot(state, snap, Date.now());
     if (next !== state && next.updatedAt !== state?.updatedAt) lastFeedChange = Date.now();
     state = next;
@@ -83,6 +114,7 @@ async function poll(): Promise<number> {
   } else if (res.status !== 304) {
     throw new Error(`live feed ${res.status}`);
   }
+  await clearIfFinished();
   return Date.now() - lastFeedChange > IDLE_AFTER_MS ? IDLE_MS : ACTIVE_MS;
 }
 
@@ -163,10 +195,19 @@ export async function liveBundle(seriesId: string): Promise<LiveBundle | null> {
     updatedAt: s.updatedAt,
     // Practice/qualifying have no lap count or stages; the race uses the schedule's.
     race: isRace ? { ...race, actual_laps: null } : { ...race, actual_laps: null, scheduled_laps: 0, stage_1_laps: null, stage_2_laps: null, stage_3_laps: null, stage_4_laps: null },
-    lapTimes: toLapTimes(s),
+    // The points file is the Chase authority in a race; practice has only the snapshot's flag.
+    lapTimes: withChaseMarkers(
+      toLapTimes(s),
+      new Set(
+        isRace && points?.length
+          ? points.filter((d) => d.is_in_chase).map((d) => d.car_number)
+          : Object.entries(s.cars).filter(([, c]) => c.inChase).map(([num]) => num),
+      ),
+    ),
     pits: pits.filter((p) => p.lap_count > 0),
     track: await trackInfo(race.track_id),
     livePoints: isRace ? points : undefined,
+    lapNotes: notes?.raceId === s.raceId ? notes.data : undefined,
     results: undefined,
     atLap: s.lap,
   };

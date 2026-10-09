@@ -4,6 +4,7 @@ import { api } from './api';
 import { CarCell, NameCell, rowClass } from './DriverCell';
 import { DataError } from './NoLive';
 import { useSeriesApi } from './useApi';
+import { useUniformNameWrap } from './useUniformNameWrap';
 
 const STINT_COLOR: Record<Stint['start'], string> = {
   start: strategy.start,
@@ -34,6 +35,8 @@ function StintBar({ stints, totalLaps, stageEnds }: { stints: Stint[]; totalLaps
 
 export function StrategyTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.strategy, seriesId);
+  // Full names; the whole table switches to two-line names together when they don't fit.
+  const { tableRef, wrapped } = useUniformNameWrap([data]);
   if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
@@ -51,13 +54,14 @@ export function StrategyTab({ seriesId }: { seriesId: string }) {
           </div>
         </div>
         <div className="table-scroll">
-          <table className="dash-table strategy-table">
+          <table ref={tableRef} className={`dash-table strategy-table${wrapped ? ' names-wrapped' : ''}`}>
             <thead>
               <tr>
                 <th className="shrink">Pos</th>
                 <th className="shrink">Car</th>
-                <th className="left">Driver</th>
-                <th className="left stint-head">
+                <th className="left fit">Driver</th>
+                {/* The bars give up width so names stay on one line; 160 matches .stint-cell. */}
+                <th className="left stint-head" data-min-width="160">
                   Stints · lap {data.atLap} of {data.totalLaps}
                 </th>
                 <th className="shrink">Stops</th>
@@ -69,7 +73,7 @@ export function StrategyTab({ seriesId }: { seriesId: string }) {
                 <tr key={r.carNumber} className={rowClass(r)}>
                   <td className="num">{r.position}</td>
                   <CarCell who={r} />
-                  <NameCell who={r} short />
+                  <NameCell who={r} />
                   <td className="stint-cell">
                     <StintBar stints={r.stints} totalLaps={data.totalLaps} stageEnds={data.stageEnds} />
                   </td>

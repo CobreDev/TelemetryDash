@@ -13,6 +13,8 @@ export interface RaceInfo {
   location?: string;
   /** Track logo image URL (absolute; loaded by the browser). */
   logoUrl?: string;
+  /** TV network, e.g. "FOX" or "Prime". */
+  tv?: string;
   year: number;
   totalLaps: number;
   /** Stage lengths in laps, in order (empty when the series has no stages). */

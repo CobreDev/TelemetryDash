@@ -5,12 +5,15 @@
  * Files (woff2; .otf also tried):
  *   Stainless-Regular, Stainless-Bold, Stainless-Black   - headers (Black) and body text (Regular)
  *   NascarLogo                                           - the logo face, for the body dropdown
+ *
+ * Stainless uses font-display: block (with the preloads in index.html) so text waits a moment
+ * for the real face instead of drawing in a fallback and reflowing when it swaps.
  */
-@font-face { font-family: 'Stainless'; font-weight: 400; font-display: swap;
+@font-face { font-family: 'Stainless'; font-weight: 400; font-display: block;
   src: url('/fonts/Stainless-Regular.woff2') format('woff2'), url('/fonts/Stainless-Regular.otf') format('opentype'); }
-@font-face { font-family: 'Stainless'; font-weight: 700; font-display: swap;
+@font-face { font-family: 'Stainless'; font-weight: 700; font-display: block;
   src: url('/fonts/Stainless-Bold.woff2') format('woff2'), url('/fonts/Stainless-Bold.otf') format('opentype'); }
-@font-face { font-family: 'Stainless'; font-weight: 900; font-display: swap;
+@font-face { font-family: 'Stainless'; font-weight: 900; font-display: block;
   src: url('/fonts/Stainless-Black.woff2') format('woff2'), url('/fonts/Stainless-Black.otf') format('opentype'); }
 @font-face { font-family: 'NASCAR Logo'; font-display: swap;
   src: url('/fonts/NascarLogo.woff2') format('woff2'), url('/fonts/NascarLogo.otf') format('opentype'); }

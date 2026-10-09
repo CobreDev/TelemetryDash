@@ -44,6 +44,6 @@ describe('api v1', () => {
   });
   it('describes the next race for the header when nothing is live', async () => {
     const up = await (await app.request('/api/v1/series/cup/upcoming')).json();
-    expect(up).toMatchObject({ raceName: 'Bank of America 400', location: 'Concord, NC', laps: 267, miles: 400.5, stageLaps: [80, 85, 102], tv: 'USA' });
+    expect(up).toMatchObject({ raceName: 'Bank of America 400', location: 'Concord, NC', laps: 267, miles: 400.5, stageLaps: [80, 85, 102], tv: { name: 'USA' } });
   });
 });

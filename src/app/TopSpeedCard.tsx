@@ -17,7 +17,7 @@ export function TopSpeedCard({ seriesId }: { seriesId: string }) {
             <th className="shrink">Pos</th>
             <th className="shrink">Car</th>
             <th className="left">Driver</th>
-            <th className="shrink" title="Average speed of the car's fastest lap">MPH</th>
+            <th className="shrink" title="Average speed of the car's fastest lap">Avg MPH</th>
             <th className="shrink">Lap</th>
           </tr>
         </thead>

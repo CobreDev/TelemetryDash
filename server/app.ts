@@ -1,8 +1,11 @@
 import { Hono, type Context } from 'hono';
 import { cors } from 'hono/cors';
-import { buildChaseView } from '../src/cards/chase.model';
+import { buildChaseStandingsView, buildChaseView } from '../src/cards/chase.model';
 import { buildOverviewView, buildPracticeView } from '../src/cards/overview.model';
 import { buildPaceRankings } from '../src/cards/paceRankings.model';
+import { buildRaceControlView } from '../src/cards/raceControl.model';
+import { flagFromFeed } from '../src/data/nascar/feed';
+import { buildResultsView, buildScheduleView } from '../src/cards/weekend.model';
 import { buildFuelView, buildLapsView, buildPitRoadView, buildStrategyView, buildTopSpeedView, type Inputs } from '../src/cards/tabs.model';
 import { buildOverview } from '../src/data/nascar/overview';
 import { chaseStandings, finishPointsTable } from '../src/data/nascar/points';
@@ -12,8 +15,9 @@ import { isTemplateEnabled, profiles, seriesList } from '../src/series/profiles'
 import type { SeriesProfile } from '../src/series/types';
 import { config } from './config';
 import { liveBundle, liveStatus, type LiveBundle } from './sources/nascarLive';
-import { carBadge, FEED_SERIES, nextRace, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
+import { carBadge, FEED_SERIES, lastRaceResults, nextRace, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
 import { trackLocation } from '../src/data/nascar/tracks';
+import { tvNetwork } from '../src/data/nascar/networks';
 
 // Versioned so a future mobile app can rely on /api/v1 while the web UI moves on.
 export const api = new Hono();
@@ -153,6 +157,19 @@ for (const [path, build] of Object.entries(TAB_VIEWS)) {
   );
 }
 
+/** Race notes and flag changes, newest first. Races only (practice has no flags or notes). */
+api.get(
+  '/series/:id/race-control',
+  withBundle((c, _profile, b) => {
+    if (isLive(b) && !b.isRace) return c.json({ error: 'not a race' }, 404);
+    const flagAt = (lap: number) => flagFromFeed(b.lapTimes.flags.find((f) => f.LapsCompleted === lap)?.FlagState);
+    const lapFlags = Array.from({ length: b.atLap }, (_, i) => flagAt(i + 1));
+    // Live: the lap in progress counts too, so a caution appears as soon as it's thrown.
+    if (isLive(b)) lapFlags.push(flagFromFeed(b.currentFlag));
+    return c.json(buildRaceControlView(b.lapNotes, lapFlags, isLive(b) ? Infinity : b.atLap));
+  }),
+);
+
 /** The series' next race, for the header when nothing is live. */
 api.get('/series/:id/upcoming', async (c) => {
   const profile = getProfile(c.req.param('id'));
@@ -172,9 +189,44 @@ api.get('/series/:id/upcoming', async (c) => {
     miles: race.scheduled_distance ?? null,
     // Only meaningful when they add up to the race length.
     stageLaps: stageLaps.reduce((a, n) => a + n, 0) === race.scheduled_laps ? stageLaps : [],
-    tv: race.television_broadcaster ?? null,
+    tv: tvNetwork(race.television_broadcaster) ?? null,
     radio: race.radio_broadcaster ?? null,
   });
+});
+
+/** On-track sessions of the series' next race weekend (practice, qualifying, race) in ET. */
+api.get('/series/:id/schedule', async (c) => {
+  const profile = getProfile(c.req.param('id'));
+  const feedSeries = profile && FEED_SERIES[profile.id];
+  if (!profile || !feedSeries) return c.json({ error: 'unknown series' }, 404);
+  const race = await nextRace(feedSeries).catch(() => undefined);
+  if (!race) return c.json({ error: 'no upcoming race on the schedule' }, 404);
+  return c.json(buildScheduleView(profile.id, race, Date.now()));
+});
+
+/** Chase standings after the series' last race, for weeks with nothing live. */
+api.get('/series/:id/chase/standings', async (c) => {
+  const profile = getProfile(c.req.param('id'));
+  if (!profile) return c.json({ error: 'unknown series' }, 404);
+  try {
+    const { race, livePoints } = await lastRaceResults(profile.id);
+    if (!livePoints?.some((d) => d.is_in_chase)) return c.json({ error: 'no Chase data for this series' }, 404);
+    return c.json(buildChaseStandingsView(livePoints, race.results, race.race_name, profile));
+  } catch (e) {
+    return c.json({ error: `standings unavailable: ${(e as Error).message}` }, 503);
+  }
+});
+
+/** Final results of the series' most recent completed race. */
+api.get('/series/:id/results', async (c) => {
+  const profile = getProfile(c.req.param('id'));
+  if (!profile) return c.json({ error: 'unknown series' }, 404);
+  try {
+    const { race, livePoints } = await lastRaceResults(profile.id);
+    return c.json(buildResultsView(profile, race, livePoints));
+  } catch (e) {
+    return c.json({ error: `results unavailable: ${(e as Error).message}` }, 503);
+  }
 });
 
 api.get('/series/:id/car-badges/:file', async (c) => {

@@ -1,6 +1,8 @@
 // Splits a feed name like "Shane Van Gisbergen" or "Brennan Poole(i) (C)" into display parts.
 // The replay files only carry full names, so first/last are inferred.
 
+import type { FeedLapTimes } from './feed';
+
 const MARKER = /\([^)]*\)|[#*]/g;
 const SUFFIX = /^(Jr\.?|Sr\.?|II|III|IV)$/;
 const PARTICLES = new Set(['van', 'von', 'de', 'da', 'del', 'la', 'le', 'di']);
@@ -21,4 +23,19 @@ export function parseDriverName(full: string): { firstName: string; lastName: st
   if (i > 0 && SUFFIX.test(words[i]!)) i--; // keep "Jr." with the surname
   while (i > 1 && PARTICLES.has(words[i - 1]!.toLowerCase())) i--; // "Van Gisbergen"
   return { firstName: words.slice(0, i).join(' '), lastName: words.slice(i).join(' '), markerTokens };
+}
+
+/**
+ * Rewrites each car's "(C)" marker from NASCAR's is_in_chase flag. The name text over-marks:
+ * it tags drivers who aren't in this series' Chase (some even carry "(i)" too). With no flag
+ * data the marker is dropped rather than guessed.
+ */
+export function withChaseMarkers(lapTimes: FeedLapTimes, chaseCars: ReadonlySet<string> | undefined): FeedLapTimes {
+  return {
+    ...lapTimes,
+    laps: lapTimes.laps.map((c) => {
+      const bare = c.FullName.replace(/\s*\(C\)/g, '');
+      return { ...c, FullName: chaseCars?.has(c.Number) ? `${bare} (C)` : bare };
+    }),
+  };
 }

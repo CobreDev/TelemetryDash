@@ -56,7 +56,7 @@ export interface LiveState {
   flag: number;
   /** Flag state per lap number (the lap being run), recorded as seen. */
   flags: Record<number, number>;
-  cars: Record<string, { fullName: string; laps: RecordedLap[] }>;
+  cars: Record<string, { fullName: string; inChase?: boolean; laps: RecordedLap[] }>;
   /** ms epoch of the last snapshot that changed anything. */
   updatedAt: number;
 }
@@ -120,7 +120,7 @@ export function applySnapshot(prev: LiveState | null, snap: FeedLiveSnapshot, no
       }
       changed = true;
     }
-    state.cars[v.vehicle_number] = { fullName: v.driver.full_name, laps };
+    state.cars[v.vehicle_number] = { fullName: v.driver.full_name, inChase: v.driver.is_in_chase, laps };
   }
   if (changed) state.updatedAt = now;
   return state;
@@ -130,10 +130,21 @@ export function applySnapshot(prev: LiveState | null, snap: FeedLiveSnapshot, no
 export function toLapTimes(state: LiveState): FeedLapTimes {
   const maxLap = Math.max(state.lap, ...Object.values(state.cars).map((c) => c.laps.at(-1)?.lap ?? 0));
   const flags = [{ LapsCompleted: 0, FlagState: 8 }];
+  // A lap with no flag seen (laps run faster than a poll, or the server was down) takes the
+  // flag around it only when the flags on both sides agree; otherwise it's unknown (8), so a
+  // recording gap never reads as a caution or a restart.
+  // Flags are also kept for the lap in progress (lap + 1), and the current flag is known.
+  const lastFlagged = Math.max(maxLap + 1, ...Object.keys(state.flags).map(Number));
+  const nextSeen = (from: number) => {
+    for (let lap = from; lap <= lastFlagged; lap++) if (state.flags[lap] !== undefined) return state.flags[lap];
+    return state.flag;
+  };
   let carry = 1;
   for (let lap = 1; lap <= maxLap; lap++) {
-    carry = state.flags[lap] ?? carry;
-    flags.push({ LapsCompleted: lap, FlagState: carry });
+    const seen = state.flags[lap];
+    if (seen !== undefined) carry = seen;
+    const next = seen ?? nextSeen(lap + 1);
+    flags.push({ LapsCompleted: lap, FlagState: seen ?? (next === undefined || next === carry ? carry : 8) });
   }
   return {
     flags,
@@ -153,3 +164,38 @@ export function toLapTimes(state: LiveState): FeedLapTimes {
     })),
   };
 }
+
+/**
+ * Swaps estimated laps (time split evenly over a recording gap, e.g. a server restart) for
+ * NASCAR's official lap-times.json, which is published live during races, and fills in flags
+ * for laps the collector never saw. Laps recorded exactly are left as they are.
+ */
+export function backfillFromLapTimes(state: LiveState, official: FeedLapTimes): LiveState {
+  const flags = { ...state.flags };
+  for (const f of official.flags) if (f.LapsCompleted > 0 && flags[f.LapsCompleted] === undefined) flags[f.LapsCompleted] = f.FlagState;
+
+  const cars = { ...state.cars };
+  for (const c of official.laps) {
+    const mine = cars[c.Number];
+    if (!mine?.laps.some((l) => l.estimated)) continue;
+    const byLap = new Map(c.Laps.map((l) => [l.Lap, l]));
+    let prevAt = 0;
+    const laps = mine.laps.map((l) => {
+      const o = byLap.get(l.lap);
+      if (!l.estimated || !o || o.LapTime == null || !(o.LapTime > 0)) {
+        prevAt = l.at;
+        return l;
+      }
+      // Crossing times rebuilt from the official lap times, chained from the last known one.
+      prevAt += o.LapTime;
+      return { ...l, time: o.LapTime, speed: o.LapSpeed ? Number(o.LapSpeed) || null : null, pos: o.RunningPos || l.pos, at: prevAt, estimated: false };
+    });
+    cars[c.Number] = { ...mine, laps };
+  }
+  return { ...state, flags, cars };
+}
+
+/** Whether the collector is missing anything lap-times.json could supply. */
+export const needsBackfill = (s: LiveState) =>
+  Object.values(s.cars).some((c) => c.laps.some((l) => l.estimated)) ||
+  Array.from({ length: s.lap }, (_, i) => s.flags[i + 1]).some((f) => f === undefined);
