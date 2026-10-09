@@ -72,10 +72,17 @@ export function buildRaceControlView(notes: FeedLapNotes | undefined, lapFlags: 
   // stretch unless the lap flags already have one nearby.
   const redLaps = new Set(entries.filter((e) => e.kind === 'flag' && e.flag === 'red').map((e) => e.lap));
   let lastRedNote = -Infinity;
+  const redNoteLaps = new Set(entries.filter((x) => x.kind === 'note' && x.flag === 'red').map((x) => x.lap));
   for (const e of [...entries].filter((x) => x.kind === 'note' && x.flag === 'red').sort((a, b) => a.lap - b.lap)) {
     const nearFlag = [e.lap - 1, e.lap, e.lap + 1].some((l) => redLaps.has(l));
     if (!nearFlag && e.lap - lastRedNote > 1) {
       entries.push({ id: `r${e.lap}`, lap: e.lap, lapLabel: e.lapLabel, kind: 'flag', flag: 'red', text: FLAG_TEXT.red! });
+      // Then back to yellow: the next lap after the red stretch still under caution.
+      let after = e.lap + 1;
+      while (redNoteLaps.has(after)) after++;
+      if (lapFlags[after - 1] === 'yellow') {
+        entries.push({ id: `l${after}`, lap: after, lapLabel: label(after), kind: 'flag', flag: 'yellow', text: 'Red flag lifted: caution' });
+      }
     }
     lastRedNote = e.lap;
   }

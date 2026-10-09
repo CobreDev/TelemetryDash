@@ -32,7 +32,9 @@ describe('buildRaceControlView', () => {
       { laps: { '120': [{ FlagState: 3, Note: 'Red flag displayed for cleanup', NoteID: 9 }] } },
       flags([[100, 'green'], [22, 'yellow']]),
     );
-    expect(red.entries.slice(0, 3).map((e) => [e.lapLabel, e.kind, e.flag, e.text])).toEqual([
+    // Caution, red flag, back to caution (then green, once it comes), each kept in the history.
+    expect(red.entries.slice(0, 4).map((e) => [e.lapLabel, e.kind, e.flag, e.text])).toEqual([
+      ['Lap 121', 'flag', 'yellow', 'Red flag lifted: caution'],
       ['Lap 120', 'note', 'red', 'Red flag displayed for cleanup'],
       ['Lap 120', 'flag', 'red', 'Red flag'],
       ['Lap 101', 'flag', 'yellow', 'Caution'],
