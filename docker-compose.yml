@@ -1,0 +1,13 @@
+services:
+  telemetrydash:
+    build: .
+    image: telemetrydash:latest
+    container_name: telemetrydash
+    ports:
+      - "8080:8080"
+    environment:
+      ATTRIBUTION_HANDLE: "@yourhandle"
+      TZ: America/New_York
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

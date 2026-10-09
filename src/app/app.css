@@ -1,0 +1,232 @@
+/* Dashboard: dark theme, 60% of card sizes, 14 px minimum. */
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #0F1115; }
+.dash {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 14px/1.4 var(--font-sans);
+}
+.muted { color: var(--text-muted); }
+button { font: inherit; color: inherit; }
+
+/* Top bar takes the series brand (SeriesBrand.dashboard); falls back to neutral tokens. */
+.topbar {
+  /* Bottom padding (not a tab margin, which collapses to the page color) keeps the
+     active-tab underline off the series stripes. */
+  padding: 12px 16px 8px;
+  background: var(--bar-bg, var(--surface));
+  color: var(--bar-fg, var(--text));
+  /* Headers use Stainless Black (falls back to Saira ExtraBold), same for every series. */
+  --bar-font: var(--font-heading);
+  --bar-weight: 900;
+}
+/* One row: series names scroll sideways on narrow screens so the body switcher stays top-right. */
+.topbar-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px 16px; }
+.body-switch { flex: none; }
+.series-switch { display: flex; gap: 4px; overflow-x: auto; }
+.series-switch button {
+  background: none; border: 0; border-bottom: 3px solid transparent;
+  padding: 6px 8px; white-space: nowrap; cursor: pointer;
+  font: 400 17px/1 var(--font-sans); text-transform: uppercase; /* Stainless Regular */
+  color: var(--bar-muted, var(--text-muted));
+}
+.series-switch button.active { color: var(--bar-fg, var(--text)); border-bottom-color: var(--bar-highlight, var(--accent)); }
+.series-switch { flex: 1 1 auto; min-width: 0; }
+/* Sanctioning-body switcher, pinned to the top-right of the bar. */
+.body-switch { margin-left: auto; }
+.body-switch select {
+  appearance: none; cursor: pointer;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 8px center;
+  color: var(--bar-fg, var(--text));
+  border: 1px solid var(--bar-muted, var(--border)); border-radius: 6px;
+  padding: 5px 26px 5px 10px;
+  font: 800 15px/1 var(--font-logo); text-transform: uppercase;
+}
+.body-switch select option { color: #12151B; background: #fff; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.race-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; padding: 0 8px; }
+
+/* [track logo] | race name + location / status block / lap bar (as wide as the status block). */
+.race-summary { display: flex; align-items: center; gap: 14px; }
+.track-logo { display: block; height: 52px; width: auto; max-width: 132px; object-fit: contain; flex: none; }
+.track-logo.on-tile { background: #fff; border-radius: 6px; padding: 4px 6px; }
+.race-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.race-title { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; }
+.race-location { font: 400 14px/1.2 var(--font-sans); color: var(--bar-muted, var(--text-muted)); }
+.race-progress { display: grid; row-gap: 8px; align-self: flex-start; }
+.lap-bar { position: relative; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.18); }
+.lap-bar-seg { position: absolute; top: 0; bottom: 0; }
+.lap-bar-seg.flag-green { background: #2BB34B; }
+.lap-bar-seg.flag-yellow { background: #FFD100; }
+.lap-bar-seg.flag-red { background: #E4002B; }
+.lap-bar-seg.flag-white { background: #FFFFFF; }
+.lap-bar-seg.flag-checkered { background: repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 6px 6px; }
+.lap-bar-seg.flag-none { background: rgba(255, 255, 255, 0.45); }
+.lap-bar-notch { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--bar-bg, var(--surface)); }
+
+/* TV-style status block. A flag icon shows track status, like TNT's. */
+.race-status { display: flex; align-items: center; gap: 10px; }
+.race-status-flag-wrap { display: flex; color: var(--bar-muted, var(--text-muted)); }
+.race-status-flag { display: block; width: 24px; height: 24px; }
+.race-status-lines { display: grid; grid-template-columns: auto auto; column-gap: 24px; row-gap: 2px; }
+.race-status-line { display: contents; }
+.race-status-label { font: 400 14px/1.2 var(--font-sans); }
+.race-status-value { text-align: right; font: 600 14px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+.is-primary .race-status-label { font: var(--bar-weight, 900) 15px/1.2 var(--bar-font, var(--font-heading)); text-transform: uppercase; }
+.is-primary .race-status-value { font-weight: 600; }
+.race-status-sep { margin: 0 3px; color: var(--bar-muted, var(--text-muted)); }
+.race-name { font: var(--bar-weight, 600) 16px/1.2 var(--bar-font, var(--font-display)); text-transform: uppercase; }
+.chip {
+  font: 600 14px/1 var(--font-sans); padding: 4px 8px; border-radius: 999px;
+  border: 1px dashed currentColor; color: var(--bar-muted, var(--text-muted));
+}
+
+.tabs { display: flex; gap: 16px; margin-top: 8px; overflow-x: auto; }
+.tabs button {
+  /* Baseline-to-underline gap matches the series switcher (8.5px); Inter's shallower
+     descent needs the extra half pixel. */
+  background: none; border: 0; border-bottom: 3px solid transparent; padding: 6px 0 6.5px; line-height: 1;
+  white-space: nowrap; color: var(--bar-muted, var(--text-muted)); font-weight: 600; cursor: pointer;
+}
+.tabs button:disabled { cursor: default; }
+.tabs button.active { color: var(--bar-fg, var(--text)); border-bottom-color: var(--bar-highlight, var(--accent)); }
+.topbar-stripes > span { height: 4px; }
+
+main { padding: 16px; }
+.error { color: var(--perf-bad); }
+.pace-view { display: grid; gap: 16px; max-width: 640px; align-items: start; }
+/* Pace rankings and Top speed side by side when there's room. */
+@media (min-width: 1100px) { .pace-view { max-width: 1080px; grid-template-columns: minmax(0, 640px) minmax(0, 420px); } }
+.overview-view { display: grid; gap: 16px; max-width: 980px; align-items: start; }
+/* Running order and Chase side by side when there's room. */
+@media (min-width: 1360px) { .overview-view { max-width: 1440px; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); } }
+.chase-table .dash-last { font-size: 16px; }
+.dash-table td.change-up { color: var(--perf-good); }
+.dash-table td.change-down { color: var(--perf-bad); }
+.dash-table td.change-same { color: var(--text-muted); }
+/* Wide timing table: scrolls sideways inside its panel on phones, never the page. */
+.table-scroll { overflow-x: auto; }
+
+.panel { container-type: inline-size; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.panel-head h2 { margin: 0; font: 900 22px/1 var(--font-heading); text-transform: uppercase; }
+.btn {
+  background: var(--accent); color: var(--on-accent); border: 0; border-radius: 6px; padding: 8px 12px;
+  font-weight: 600; cursor: pointer;
+}
+.btn:disabled { opacity: 0.6; }
+
+.dash-table { width: 100%; border-collapse: collapse; }
+.dash-table th {
+  font: 600 14px/1 var(--font-sans); text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted); text-align: right; padding: 8px;
+}
+.dash-table td { padding: 0 8px; height: 40px; text-align: right; }
+.dash-table .left { text-align: left; }
+/* Fit-to-content columns; the driver column takes whatever width is left. */
+.dash-table th.shrink { width: 1%; white-space: nowrap; }
+/* Narrow panel (phone or small window): let "Pace score" etc. wrap. Keyed to the panel's
+   own width so it stays in step with useUniformNameWrap, which also measures the panel. */
+@container (max-width: 480px) { .dash-table th.shrink { white-space: normal; } }
+.dash-table tbody tr:nth-child(odd) { background: var(--surface-alt); }
+.dash-table tr.is-leader td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+.dash-table .num { font: 600 17px/1 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dash-table .car { font: 900 20px/1 var(--font-display); }
+/* Badges are 78×70 PNGs; 34px tall keeps rows at 40px. */
+.car-badge {
+  display: block; height: 34px; width: auto; margin-left: auto;
+  /* Some team artwork is dark (navy, maroon); a thin light halo keeps it legible on dark rows. */
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+}
+/* "Chase BRISCOE" on one line. useUniformNameWrap switches the whole table to two-line
+   names (.names-wrapped) when the longest name doesn't fit, so rows never mix. */
+.dash-first, .dash-last { display: inline-block; white-space: nowrap; }
+.dash-table td.left { white-space: nowrap; }
+.dash-table.names-wrapped td.left { white-space: normal; }
+.dash-table.names-wrapped .dash-first, .dash-table.names-wrapped .dash-last { display: block; }
+.dash-first { font-size: 15px; line-height: 1.1; color: var(--text-muted); margin-right: 6px; }
+.dash-last { font: 700 18px/1 var(--font-display); text-transform: uppercase; }
+.dash-marker { font: 400 14px/1 var(--font-sans); color: var(--text-muted); text-transform: none; }
+.good { color: var(--perf-good); }
+.dash-table tr.is-excluded td { opacity: 0.55; }
+/* Chase drivers: a faint yellow tint layered over the zebra stripe. */
+.dash-table tbody tr.is-highlight td { background-image: linear-gradient(rgba(255, 209, 0, 0.09), rgba(255, 209, 0, 0.09)); }
+.dash-notes { margin: 12px 0 0; padding: 0; list-style: none; color: var(--text-muted); }
+
+
+@media (max-width: 480px) {
+  main { padding: 12px 8px; }
+  .panel { padding: 12px 8px; }
+  .dash-table th, .dash-table td { padding-left: 4px; padding-right: 4px; }
+}
+
+/* ---- Data tabs ---------------------------------------------------------------------- */
+.tab-grid { display: grid; gap: 16px; max-width: 980px; align-items: start; }
+@media (min-width: 900px) { .tab-grid { grid-template-columns: 1fr 1fr; } .tab-grid .span-2 { grid-column: 1 / -1; } }
+.nowrap { white-space: nowrap; }
+.flag-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.flag-dot.flag-green { background: #2BB34B; }
+.flag-dot.flag-yellow { background: #FFD100; }
+
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg button { background: none; border: 0; padding: 5px 10px; font: 600 14px/1 var(--font-sans); color: var(--text-muted); cursor: pointer; }
+.seg button.active { background: var(--surface-alt); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--text-muted); font-size: 14px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i, .legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.legend-swatch { margin-right: 8px; vertical-align: -1px; }
+
+/* Fuel gauge: one neutral hue for magnitude; status words carry the judgment. */
+.gauge { display: inline-block; width: 72px; height: 8px; border-radius: 4px; background: var(--surface-alt); overflow: hidden; vertical-align: middle; margin-right: 8px; }
+.gauge span { display: block; height: 100%; background: var(--text-muted); border-radius: 4px; }
+.gauge-label { font: 600 15px/1 var(--font-mono); }
+.status-good { color: var(--perf-good); }
+.status-mid { color: var(--perf-mid); }
+.status-bad { color: var(--perf-bad); }
+
+/* Stint bars: 2px surface gap between segments, notches at stage ends. */
+.strategy-table .stint-cell { width: 60%; min-width: 220px; padding-right: 12px; }
+.stint-bar { position: relative; height: 14px; border-radius: 4px; background: rgba(255, 255, 255, 0.05); }
+.stint { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.stint-notch { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text-muted); opacity: 0.6; }
+
+/* Compare chart */
+.compare-picker { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.chip-driver { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px; border: 1px solid var(--border); border-radius: 999px; font: 700 15px/1 var(--font-display); text-transform: uppercase; }
+.chip-driver i { width: 10px; height: 10px; border-radius: 50%; }
+.chip-driver .car-badge { height: 20px; }
+.chip-driver button { background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 0 4px; }
+.compare-picker select { background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: 400 14px/1 var(--font-sans); }
+.chart { position: relative; overflow: hidden; min-width: 0; }
+.chart svg { display: block; touch-action: pan-y; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-tick { fill: var(--text-muted); font: 400 12px var(--font-mono); }
+.chart-label { fill: var(--text); font: 700 13px var(--font-display); text-transform: uppercase; }
+.chart-caution { fill: rgba(255, 209, 0, 0.08); }
+.chart-crosshair { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart-tip { position: absolute; top: 8px; min-width: 170px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 14px; pointer-events: none; }
+.chart-tip div { display: flex; align-items: center; gap: 6px; }
+.chart-tip i { width: 8px; height: 8px; border-radius: 50%; }
+.chart-tip .num { margin-left: auto; font: 600 14px var(--font-mono); }
+.chart-axis-label { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+.compare-table { margin-top: 12px; }
+
+/* ---- Live / Sample ------------------------------------------------------------------ */
+.source-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* On the series bar, the toggle takes the bar's colors rather than the panel's. */
+.seg.seg-bar { border-color: var(--bar-muted, var(--border)); }
+.seg.seg-bar button { color: var(--bar-muted, var(--text-muted)); padding: 4px 10px; }
+.seg.seg-bar button.active { background: rgba(0, 0, 0, 0.25); color: var(--bar-fg, var(--text)); box-shadow: inset 0 -2px 0 var(--bar-highlight, var(--accent)); }
+.live-chip { display: inline-flex; align-items: center; gap: 6px; border-style: solid; }
+.live-chip i { width: 8px; height: 8px; border-radius: 50%; background: #E4002B; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6); animation: live-pulse 1.6s ease-in-out infinite; }
+.live-chip.is-stale { color: #FFD100; border-color: #FFD100; }
+.live-chip.is-stale i { background: #FFD100; animation: none; }
+@keyframes live-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .live-chip i { animation: none; } }
+.no-live { max-width: 560px; }
+.no-live h2 { margin: 0 0 8px; font: 900 22px/1 var(--font-heading); text-transform: uppercase; }
+.no-live p { margin: 6px 0; color: var(--text-muted); }
+.no-live p strong { color: var(--text); }
+.no-live .btn { margin-top: 10px; }

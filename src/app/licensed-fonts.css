@@ -1,0 +1,16 @@
+/*
+ * Licensed fonts (purchased), committed in public/fonts and served at /fonts/. Any face that's
+ * missing falls back to the families in tokens.ts (Saira / Inter).
+ *
+ * Files (woff2; .otf also tried):
+ *   Stainless-Regular, Stainless-Bold, Stainless-Black   - headers (Black) and body text (Regular)
+ *   NascarLogo                                           - the logo face, for the body dropdown
+ */
+@font-face { font-family: 'Stainless'; font-weight: 400; font-display: swap;
+  src: url('/fonts/Stainless-Regular.woff2') format('woff2'), url('/fonts/Stainless-Regular.otf') format('opentype'); }
+@font-face { font-family: 'Stainless'; font-weight: 700; font-display: swap;
+  src: url('/fonts/Stainless-Bold.woff2') format('woff2'), url('/fonts/Stainless-Bold.otf') format('opentype'); }
+@font-face { font-family: 'Stainless'; font-weight: 900; font-display: swap;
+  src: url('/fonts/Stainless-Black.woff2') format('woff2'), url('/fonts/Stainless-Black.otf') format('opentype'); }
+@font-face { font-family: 'NASCAR Logo'; font-display: swap;
+  src: url('/fonts/NascarLogo.woff2') format('woff2'), url('/fonts/NascarLogo.otf') format('opentype'); }
