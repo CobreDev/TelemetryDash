@@ -3,10 +3,13 @@
   Unraid container template for TelemetryDash.
   Copy to /boot/config/plugins/dockerMan/templates-user/my-telemetrydash.xml, then
   Docker tab > Add Container > Template: telemetrydash.
+  The image is built by GitHub Actions on every push to main and published (privately) to
+  GHCR, so Unraid needs `docker login ghcr.io` first; see the README.
 -->
 <Container version="2">
   <Name>telemetrydash</Name>
-  <Repository>telemetrydash:latest</Repository>
+  <Repository>ghcr.io/cobredev/telemetrydash:latest</Repository>
+  <Registry>https://github.com/CobreDev/TelemetryDash/pkgs/container/telemetrydash</Registry>
   <Network>bridge</Network>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>

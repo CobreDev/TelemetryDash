@@ -15,26 +15,49 @@ npm test
 
 ## Run in Docker (Unraid)
 
-Build the image for an Intel/AMD server (works from an Apple Silicon Mac too; only the
-small runtime stage is cross-built) and export it:
+Every push to `main` builds a `linux/amd64` image with GitHub Actions
+(`.github/workflows/docker.yml`) and publishes it to GHCR as
+`ghcr.io/cobredev/telemetrydash:latest` (plus `:sha-<commit>` for each commit). The tests run
+inside the build, so a failing commit never ships. The package is **private** because it
+contains the licensed fonts.
+
+### One-time setup on Unraid
+
+1. On GitHub, create a personal access token (classic) with only the `read:packages` scope.
+2. In the Unraid terminal, log in to GHCR (paste the token as the password):
+   `docker login ghcr.io -u CobreDev`
+3. Unraid keeps `/root` in RAM, so make the login survive reboots. Either add it to
+   `/boot/config/go`, or run it from a **User Scripts** script set to "At Startup of Array":
+   ```bash
+   echo "<token>" | docker login ghcr.io -u CobreDev --password-stdin
+   ```
+4. Copy `unraid/telemetrydash.xml` to
+   `/boot/config/plugins/dockerMan/templates-user/my-telemetrydash.xml`, then Docker tab >
+   **Add Container** > Template: **telemetrydash** > Apply. For an existing container, just
+   **Edit** it and set Repository to `ghcr.io/cobredev/telemetrydash:latest`.
+5. Open `http://<server>:8099`.
+
+The template maps `/data` to `/mnt/user/appdata/telemetrydash` and runs as `99:100`
+(nobody:users).
+
+### Updates
+
+- **By hand:** Docker tab > **Check for Updates**, then **Apply update** on the container.
+- **Automatic:** install **CA Auto Update Applications** (Community Apps), enable it for
+  telemetrydash and pick a schedule outside race hours (e.g. daily at 4 AM). If an update
+  does land mid-race, laps missed during the restart are backfilled from NASCAR's official
+  lap times.
+- **Roll back:** set Repository to `ghcr.io/cobredev/telemetrydash:sha-<commit>`.
+
+### Building locally instead
 
 ```bash
 docker buildx build --platform linux/amd64 -t telemetrydash:latest --load .
 docker save telemetrydash:latest | gzip > telemetrydash-amd64.tar.gz
 ```
 
-On Unraid:
-
-1. Copy `telemetrydash-amd64.tar.gz` to the server (e.g. `/mnt/user/appdata/`) and load it:
-   `docker load -i /mnt/user/appdata/telemetrydash-amd64.tar.gz`
-2. Copy `unraid/telemetrydash.xml` to
-   `/boot/config/plugins/dockerMan/templates-user/my-telemetrydash.xml`.
-3. Docker tab > **Add Container** > Template: **telemetrydash** > Apply.
-4. Open `http://<server>:8099`.
-
-The template maps `/data` to `/mnt/user/appdata/telemetrydash`, runs as `99:100`
-(nobody:users), and sets `ATTRIBUTION_HANDLE`. To update, load a new tar and click
-**Force Update** on the container. Or with compose: `docker compose up -d --build`.
+Then `docker load -i telemetrydash-amd64.tar.gz` on the server and recreate the container
+(Edit > Apply).
 
 ## Data sources
 
@@ -61,6 +84,11 @@ When nothing is live for a series, live endpoints answer `409` with
 | `GET /api/v1/series/:id/cards/pace-rankings` | Pace rankings plus header data (race, stage/lap status, flag) |
 | `GET /api/v1/series/:id/overview` | Running order (race) or best-lap timing (practice/qualifying) |
 | `GET /api/v1/series/:id/chase` | Chase standings entering the race and as they run |
+| `GET /api/v1/series/:id/race-control` | Race notes and flag changes, newest first (races only) |
+| `GET /api/v1/series/:id/upcoming` | Next race for the header (name, start ET, laps, stages, TV) |
+| `GET /api/v1/series/:id/schedule` | Next race weekend's on-track sessions |
+| `GET /api/v1/series/:id/results` | Last race's final results |
+| `GET /api/v1/series/:id/chase/standings` | Chase standings after the last race (off-week) |
 | `GET /api/v1/series/:id/pit-road` · `strategy` · `fuel` · `laps` · `top-speed` | Data for the other tabs |
 | `GET /api/v1/series/:id/car-badges/:number.png` | Team number artwork (cached copy of NASCAR's) |
 

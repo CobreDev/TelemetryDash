@@ -282,7 +282,11 @@ Image export was removed; these rules apply when cards return.
 One container (Node 22, bundled server, no `node_modules` at runtime) serves the UI and API on port
 8080, storing data in `/data`. Built for `linux/amd64` (Intel Unraid) from any machine; the Unraid
 template (`unraid/telemetrydash.xml`) maps port 8099, `/mnt/user/appdata/telemetrydash`, and runs as
-`99:100`. Steps are in the README.
+`99:100`. GitHub Actions builds the image on every push to `main` (tests run inside the build) and
+publishes it **privately** to `ghcr.io/cobredev/telemetrydash` (`:latest` and `:sha-<commit>`);
+Unraid pulls it after a one-time `docker login ghcr.io`, updating by hand or on a schedule with CA
+Auto Update Applications, outside race hours. The image must stay private (licensed fonts). Steps
+are in the README.
 
 ## Backlog
 
