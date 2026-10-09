@@ -18,33 +18,17 @@ npm test
 Every push to `main` builds a `linux/amd64` image with GitHub Actions
 (`.github/workflows/docker.yml`) and publishes it to GHCR as
 `ghcr.io/cobredev/telemetrydash:latest` (plus `:sha-<commit>` for each commit). The tests run
-inside the build, so a failing commit never ships. The package is **private** because it
-contains the licensed fonts.
+inside the build, so a failing commit never ships. The image is public, so no registry login
+is needed.
 
-### One-time setup on Unraid
+### Setup on Unraid
 
-1. **Token.** On GitHub: Settings > Developer settings > Personal access tokens >
-   **Tokens (classic)** > Generate new token (classic), with only the `read:packages` scope.
-   Fine-grained tokens don't work: GHCR only accepts classic tokens.
-2. **Log in** in the Unraid terminal (paste the token as the password):
-   ```bash
-   docker login ghcr.io -u CobreDev
-   ```
-3. **Keep the login across reboots.** Unraid keeps `/root` in RAM, so save the credentials to
-   the flash drive and restore them from `/boot/config/go`. (Don't put `docker login` in `go`:
-   it runs before Docker starts, so the login would fail.)
-   ```bash
-   cp /root/.docker/config.json /boot/config/docker-config.json
-   printf '\n# Restore registry logins (ghcr.io for TelemetryDash)\nmkdir -p /root/.docker && cp /boot/config/docker-config.json /root/.docker/config.json && chmod 600 /root/.docker/config.json\n' >> /boot/config/go
-   ```
-   The token is stored unencrypted on the flash drive, so keep the **flash** share's SMB export
-   off or private. After replacing an expired token, log in again and repeat the `cp`.
-4. **Container.** Copy `unraid/telemetrydash.xml` to
+1. Copy `unraid/telemetrydash.xml` to
    `/boot/config/plugins/dockerMan/templates-user/my-telemetrydash.xml`, then Docker tab >
    **Add Container** > Template: **telemetrydash** > Apply. For an existing container,
    **Edit** it, set Repository to `ghcr.io/cobredev/telemetrydash:latest` and Apply.
    Check with `docker inspect telemetrydash --format '{{.Config.Image}}'`.
-5. Open `http://<server>:8099`.
+2. Open `http://<server>:8099`.
 
 The template maps `/data` to `/mnt/user/appdata/telemetrydash` and runs as `99:100`
 (nobody:users).

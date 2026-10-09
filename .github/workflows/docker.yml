@@ -1,6 +1,6 @@
 # Builds the Unraid image on every push to main and publishes it to GitHub's container
 # registry as ghcr.io/cobredev/telemetrydash. The Dockerfile runs the tests, so a failing
-# commit never becomes an image. Keep the package private: it contains the licensed fonts.
+# commit never becomes an image.
 name: Docker image
 
 on:

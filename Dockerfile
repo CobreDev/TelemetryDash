@@ -13,7 +13,7 @@ FROM node:22-alpine
 LABEL org.opencontainers.image.title="TelemetryDash" \
       org.opencontainers.image.description="Live NASCAR race-stats dashboard and JSON API" \
       net.unraid.docker.webui="http://[IP]:[PORT:8080]/" \
-      net.unraid.docker.icon="http://127.0.0.1:8099/icon.png"
+      net.unraid.docker.icon="https://raw.githubusercontent.com/CobreDev/TelemetryDash/main/public/icon.png"
 ENV NODE_ENV=production \
     PORT=8080 \
     STATIC_DIR=/app/client \

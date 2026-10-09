@@ -130,7 +130,7 @@ A driver keeps its color slot for as long as it's selected; removing one never r
 | NASCAR/IMSA switcher | NASCAR logo face slot (falls back to Saira) | 800 | 15 px |
 
 - Minimum size is 14 px. Numbers are never set in the display face; numeric columns are right-aligned.
-- Stainless (Regular, Bold, Black) is **purchased and licensed**, stored in `public/fonts` and committed. The license generally forbids redistribution: **keep the repository private.** Missing faces fall back to Saira/Inter. Never download fonts from nascar.com or other sites; NASCAR's logo face ("Big Bill") is proprietary and unavailable, so its slot stays on the fallback.
+- Stainless (Regular, Bold, Black) is **purchased and licensed**, stored in `public/fonts` and committed (the owner keeps them in the public repo under that license). Missing faces fall back to Saira/Inter. Never download fonts from nascar.com or other sites; NASCAR's logo face ("Big Bill") is proprietary and unavailable, so its slot stays on the fallback.
 - Free fonts are bundled with the app (no CDN), so the container works offline.
 
 ## Dashboard layout
@@ -264,11 +264,11 @@ Image export was removed; these rules apply when cards return.
 
 ## Branding and legal
 
-- The dashboard runs privately on your own server, so it uses team number artwork and track logos (loaded from NASCAR, which blocks server-side logo fetches; the browser loads them). Posted cards must not.
+- The dashboard runs on your own server for personal use, so it uses team number artwork and track logos (loaded from NASCAR, which blocks server-side logo fetches; the browser loads them). Posted cards must not.
 - No series, sponsor or manufacturer logos in the UI chrome; series identity comes from bar color and stripes.
 - Data: unofficial use of NASCAR's public feeds. Keep request rates low, check terms of use, and credit "Timing data from public NASCAR feeds; unofficial" wherever it's published.
-- Fonts: only licensed or open-licensed fonts (see Typography). Keep the repo private while it contains Stainless.
-- **App icon** (`public/icon.svg`, plus `icon.png` 512 px and `apple-touch-icon.png` 180 px): an original drawing, a dark rounded tile with a speedometer arc in the Cup stripe colors (blue, yellow, red), ticks and a white needle. Used as the favicon, the phone home-screen icon and the Unraid Docker icon (served by the container at `/icon.png`, since the repo is private). Don't use SF Symbols or look-alikes for icons or logos: Apple's license forbids it (a draft built from `gauge.with.dots.needle.50percent` was rejected for this).
+- Fonts: only licensed or open-licensed fonts (see Typography).
+- **App icon** (`public/icon.svg`, plus `icon.png` 512 px and `apple-touch-icon.png` 180 px): an original drawing, a dark rounded tile with a speedometer arc in the Cup stripe colors (blue, yellow, red), ticks and a white needle. Used as the favicon, the phone home-screen icon and the Unraid Docker icon (from the repo's raw GitHub URL). Don't use SF Symbols or look-alikes for icons or logos: Apple's license forbids it (a draft built from `gauge.with.dots.needle.50percent` was rejected for this).
 - Borrow structure from other creators and broadcasters, not their exact look. (An AmberConsole terminal-style variant was tried and rejected.)
 
 ## Accessibility
@@ -284,10 +284,9 @@ One container (Node 22, bundled server, no `node_modules` at runtime) serves the
 8080, storing data in `/data`. Built for `linux/amd64` (Intel Unraid) from any machine; the Unraid
 template (`unraid/telemetrydash.xml`) maps port 8099, `/mnt/user/appdata/telemetrydash`, and runs as
 `99:100`. GitHub Actions builds the image on every push to `main` (tests run inside the build) and
-publishes it **privately** to `ghcr.io/cobredev/telemetrydash` (`:latest` and `:sha-<commit>`);
-Unraid pulls it after a one-time `docker login ghcr.io`, updating by hand or on a schedule with CA
-Auto Update Applications, outside race hours. The image must stay private (licensed fonts). Steps
-are in the README.
+publishes it to `ghcr.io/cobredev/telemetrydash` (`:latest` and `:sha-<commit>`, public, no
+login); Unraid updates by hand or on a schedule with CA Auto Update Applications, outside race
+hours. Steps are in the README.
 
 ## Backlog
 
