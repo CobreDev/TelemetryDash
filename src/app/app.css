@@ -108,6 +108,8 @@ main { padding: 16px; }
 /* Same max width live and off-week, so the 420px Chase column sits in the same spot in both. */
 @media (min-width: 1360px) { .overview-view { max-width: 1640px; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); } }
 .chase-table .dash-last { font-size: 16px; }
+/* Seven columns in the 420px card: tighter cell padding keeps it from overflowing. */
+.dash-table.chase-table th, .dash-table.chase-table td { padding-left: 5px; padding-right: 5px; }
 .dash-table td.change-up { color: var(--perf-good); }
 .dash-table td.change-down { color: var(--perf-bad); }
 .dash-table td.change-same { color: var(--text-muted); }

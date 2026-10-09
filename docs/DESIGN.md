@@ -199,10 +199,12 @@ restart, White, Checkered), newest first, car numbers in bold, a fixed 360px lis
 Flag changes right after a recording gap are skipped (the change could be anywhere in the gap). A red flag sticks to its lap in the recorder (the caution that resumes on the same lap can't erase it), the next caution reads "Red flag lifted: caution", and a note NASCAR marks red adds the Red flag entry (plus the "Red flag lifted: caution" entry on the next caution lap) if the lap flags missed it. Every flag stays in the history: Caution → Red flag → Red flag lifted: caution → Green flag: restart. Flag entries are labelled like the header's lap counter, by **laps completed when the flag came out** (white at 133 and checkered at 134 in a 134-lap race; the opening green is "Start"), so a flag can read one lap earlier than NASCAR's note about it. When the leader completes the last lap, a **Checkered flag** entry goes on that lap (the feed can keep sending white after the finish, so the header shows checkered and "Final" from the race length, not the feed's flag). Live races use the feed's `laps_in_race` for the race length (the schedule can be wrong, and overtime adds laps); the final stage absorbs the difference.
 Replays show only notes up to the replay lap. Hidden in practice/qualifying.
 
-**Chase card:** Pos and Pts are the standings **entering the race**, sorted by those points; ± is the
-projected move if the race ended now (green up, red down, dash for none); Currently is the current running
-position. Hovering shows the live points and position. It hides in practice and when a race has no
-Chase data.
+**Chase card:** columns Pos, ±, Current, Car, Driver, Pts, Gain. Pos and Pts are the standings
+**entering the race**, sorted by those points; ± is the projected move if the race ended now (green
+up, red down, dash for none); Current is the current running position; Gain is the points picked up
+so far as they run (stage points plus what the running position pays). Hovering Pts shows the live
+total. It hides in practice and when a race has no Chase data. Off-week the same columns read Pos,
+±, Finish, Car, Driver, Pts, Gain for the last race. Cell padding is 5px so seven columns fit 420px.
 
 **Compare chart rules** (from the dataviz guidance): 2 px lines; faster laps plot lower (the axis reads as lap time, the user's choice); a legend
 always, plus right-end name labels for up to 4 drivers, spread so they never overprint; cautions

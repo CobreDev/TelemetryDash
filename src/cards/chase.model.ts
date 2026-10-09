@@ -29,9 +29,9 @@ export interface ChaseView {
   /** 'live': entering this race and as they run. 'standings': after the last race (off-week). */
   mode: 'live' | 'standings';
   /** Hover text per column. */
-  hints: { change: string; running: string; points: string };
+  hints: { change: string; running: string; points: string; gain: string };
   rows: ChaseRow[];
-  columns: { rank: string; change: string; car: string; name: string; running: string; points: string; live: string };
+  columns: { rank: string; change: string; car: string; name: string; running: string; points: string; gain: string };
   notes: string[];
 }
 
@@ -39,8 +39,8 @@ export function buildChaseView(entries: ChaseEntry[], profile: SeriesProfile, st
   return {
     title: 'Chase standings',
     mode: 'live',
-    hints: { change: 'Projected move if the race ended now', running: 'Current running position', points: 'Points entering this race' },
-    columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Currently', points: 'Pts', live: 'Live' },
+    hints: { change: 'Projected move if the race ended now', running: 'Current running position', points: 'Points entering this race', gain: 'Points gained so far as they run (stages plus current position)' },
+    columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Current', points: 'Pts', gain: 'Gain' },
     rows: [...entries].sort((a, b) => a.rankBefore - b.rankBefore).map((e) => {
       const name = parseDriverName(e.name);
       const delta = e.rankBefore - e.rankLive;
@@ -60,7 +60,7 @@ export function buildChaseView(entries: ChaseEntry[], profile: SeriesProfile, st
       };
     }),
     notes: [
-      'Pos and Pts: entering this race. ± is the projected move if the race ended now.',
+      'Pos and Pts: entering this race. ± is the projected move if the race ended now; Gain is the points picked up so far.',
       `As they run counts finishing points for the current running position${stagesComplete ? ` plus points from ${stagesComplete === 1 ? 'stage 1' : `stages 1–${stagesComplete}`}` : ''}; fastest-lap and bonus points are added at the finish.`,
     ],
   };
@@ -89,8 +89,8 @@ export function buildChaseStandingsView(
   return {
     title: 'Chase standings',
     mode: 'standings',
-    hints: { change: `Move in the ${raceName}`, running: `Finish in the ${raceName}`, points: 'Current points' },
-    columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Last race', points: 'Pts', live: 'Live' },
+    hints: { change: `Move in the ${raceName}`, running: `Finish in the ${raceName}`, points: 'Current points', gain: `Points earned in the ${raceName}` },
+    columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Finish', points: 'Pts', gain: 'Gain' },
     rows: field
       .map(({ d }) => {
         const rank = after.get(d.driver_id)!;
@@ -114,6 +114,6 @@ export function buildChaseStandingsView(
         };
       })
       .sort((a, b) => a.rank - b.rank),
-    notes: [`Points after the ${raceName}. ± is the move in that race; Last race is where they finished.`],
+    notes: [`Points after the ${raceName}. ± is the move in that race, Finish where they finished and Gain the points they earned.`],
   };
 }
