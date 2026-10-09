@@ -35,7 +35,13 @@ const FLAG_TEXT: Partial<Record<TrackFlag, string>> = {
  * progress so a caution shows the moment it's thrown. Notes after `notesUpToLap` are left out,
  * so a replay never shows what happens later.
  */
-export function buildRaceControlView(notes: FeedLapNotes | undefined, lapFlags: TrackFlag[], notesUpToLap = Infinity): RaceControlView {
+export function buildRaceControlView(
+  notes: FeedLapNotes | undefined,
+  lapFlags: TrackFlag[],
+  notesUpToLap = Infinity,
+  /** The race's last lap once it's complete: adds the checkered flag on that lap. */
+  finishedAt?: number,
+): RaceControlView {
   const entries: RaceControlEntry[] = [];
   const label = (lap: number) => (lap === 0 ? 'Pre-race' : `Lap ${lap}`);
 
@@ -66,6 +72,9 @@ export function buildRaceControlView(notes: FeedLapNotes | undefined, lapFlags: 
     }
     prev = flag;
   });
+
+  // The checkered waves as the leader completes the last lap (newest entry of that lap).
+  if (finishedAt) entries.push({ id: `z${finishedAt}`, lap: finishedAt, lapLabel: label(finishedAt), kind: 'flag', flag: 'checkered', text: FLAG_TEXT.checkered! });
 
   // A red flag can come and go within a lap, and older recordings may have missed it; NASCAR's
   // notes mark it (FlagState 3), so add the red flag entry from the first note of each red

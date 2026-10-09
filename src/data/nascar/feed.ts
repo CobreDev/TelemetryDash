@@ -145,3 +145,22 @@ export function easternToEpoch(s: string): number {
   const shown = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
   return asUtc + (asUtc - shown);
 }
+
+/**
+ * The race at the length the live feed reports. The schedule can be wrong (Charlotte Trucks
+ * 2026: listed 167 laps / stages 30-30-107, run as 134 / 30-30-74) and overtime adds laps, so
+ * the live laps_in_race wins and the final stage absorbs the difference.
+ */
+export function withRaceLength(race: FeedRace, lapsInRace: number): FeedRace {
+  if (!(lapsInRace > 0) || lapsInRace === race.scheduled_laps) return race;
+  const keys = (['stage_1_laps', 'stage_2_laps', 'stage_3_laps', 'stage_4_laps'] as const).filter((k) => (race[k] ?? 0) > 0);
+  const out: FeedRace = { ...race, scheduled_laps: lapsInRace };
+  const last = keys.at(-1);
+  if (last) {
+    const before = keys.slice(0, -1).reduce((a, k) => a + (race[k] ?? 0), 0);
+    // Only when the earlier stages still fit; otherwise drop stages rather than show bad ones.
+    if (lapsInRace - before > 0) out[last] = lapsInRace - before;
+    else for (const k of keys) out[k] = null;
+  }
+  return out;
+}

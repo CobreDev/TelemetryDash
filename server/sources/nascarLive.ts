@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { FeedLapNotes, FeedLapTimes, FeedPitStop } from '../../src/data/nascar/feed';
+import { withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop } from '../../src/data/nascar/feed';
 import { applySnapshot, backfillFromLapTimes, isRace as isRaceState, needsBackfill, toLapTimes, type FeedLiveSnapshot, type LiveState } from '../../src/data/nascar/live';
 import { withChaseMarkers } from '../../src/data/nascar/names';
 import type { FeedLivePoints } from '../../src/data/nascar/points';
@@ -194,7 +194,7 @@ export async function liveBundle(seriesId: string): Promise<LiveBundle | null> {
     isRace,
     updatedAt: s.updatedAt,
     // Practice/qualifying have no lap count or stages; the race uses the schedule's.
-    race: isRace ? { ...race, actual_laps: null } : { ...race, actual_laps: null, scheduled_laps: 0, stage_1_laps: null, stage_2_laps: null, stage_3_laps: null, stage_4_laps: null },
+    race: isRace ? { ...withRaceLength(race, s.lapsInRace), actual_laps: null } : { ...race, actual_laps: null, scheduled_laps: 0, stage_1_laps: null, stage_2_laps: null, stage_3_laps: null, stage_4_laps: null },
     // The points file is the Chase authority in a race; practice has only the snapshot's flag.
     lapTimes: withChaseMarkers(
       toLapTimes(s),

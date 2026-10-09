@@ -70,7 +70,16 @@ describe('live collector', () => {
   });
 });
 
-import { easternToEpoch } from './feed';
+import { easternToEpoch, withRaceLength, type FeedRace } from './feed';
+describe('withRaceLength', () => {
+  const race = { scheduled_laps: 167, stage_1_laps: 30, stage_2_laps: 30, stage_3_laps: 107, stage_4_laps: null } as FeedRace;
+  it('uses the live length and fits the final stage to it', () => {
+    expect(withRaceLength(race, 134)).toMatchObject({ scheduled_laps: 134, stage_1_laps: 30, stage_2_laps: 30, stage_3_laps: 74 });
+    expect(withRaceLength(race, 170)).toMatchObject({ scheduled_laps: 170, stage_3_laps: 110 }); // overtime
+    expect(withRaceLength(race, 167)).toBe(race);
+  });
+});
+
 describe('easternToEpoch', () => {
   it('reads schedule times as US Eastern, with daylight saving', () => {
     expect(new Date(easternToEpoch('2026-10-11T15:00:00')).toISOString()).toBe('2026-10-11T19:00:00.000Z'); // EDT

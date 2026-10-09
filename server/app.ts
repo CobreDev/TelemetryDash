@@ -165,8 +165,10 @@ api.get(
     const flagAt = (lap: number) => flagFromFeed(b.lapTimes.flags.find((f) => f.LapsCompleted === lap)?.FlagState);
     const lapFlags = Array.from({ length: b.atLap }, (_, i) => flagAt(i + 1));
     // Live: the lap in progress counts too, so a caution appears as soon as it's thrown.
-    if (isLive(b)) lapFlags.push(flagFromFeed(b.currentFlag));
-    return c.json(buildRaceControlView(b.lapNotes, lapFlags, isLive(b) ? Infinity : b.atLap));
+    const total = b.race.actual_laps ?? b.race.scheduled_laps;
+    const finished = b.atLap >= total;
+    if (isLive(b) && !finished) lapFlags.push(flagFromFeed(b.currentFlag));
+    return c.json(buildRaceControlView(b.lapNotes, lapFlags, isLive(b) ? Infinity : b.atLap, finished ? b.atLap : undefined));
   }),
 );
 

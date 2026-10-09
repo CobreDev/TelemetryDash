@@ -88,6 +88,8 @@ export interface PaceRankingsCard {
 export type StatusFlag = TrackFlag | 'stage-green' | 'stage-yellow';
 
 export function statusFlag(progress: RaceProgress | null, flag: TrackFlag | undefined, lapFlags: TrackFlag[] | undefined): StatusFlag {
+  // The feed can keep reporting the white flag after the finish, so the last lap means checkered.
+  if (progress && progress.lap >= progress.totalLaps) return 'checkered';
   const stageEnded = progress && progress.stage !== null && progress.stageLapsRemaining === 0 && progress.lap < progress.totalLaps;
   if (!stageEnded) return flag ?? 'none';
   return lapFlags?.[progress.lap - 1] === 'yellow' ? 'stage-yellow' : 'stage-green';

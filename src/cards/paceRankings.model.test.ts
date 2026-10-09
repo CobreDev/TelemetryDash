@@ -66,4 +66,8 @@ describe('statusFlag', () => {
     expect(statusFlag(raceProgress(134, 134, stages), 'checkered', flags(134, 'green'))).toBe('checkered');
     expect(statusFlag(null, undefined, undefined)).toBe('none');
   });
+
+  it('shows the checkered at the finish even while the feed still says white', () => {
+    expect(statusFlag(raceProgress(134, 134, stages), 'white', flags(134, 'green'))).toBe('checkered');
+  });
 });

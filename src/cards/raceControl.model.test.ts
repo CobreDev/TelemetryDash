@@ -50,6 +50,11 @@ describe('buildRaceControlView', () => {
     expect(flagsOnly).toEqual(['Red flag lifted: caution', 'Red flag', 'Caution']);
   });
 
+  it('ends with the checkered flag on the last lap, above the white', () => {
+    const done = buildRaceControlView(undefined, flags([[133, 'green'], [1, 'white']]), Infinity, 134);
+    expect(done.entries.slice(0, 2).map((e) => [e.lapLabel, e.text])).toEqual([['Lap 134', 'Checkered flag'], ['Lap 134', 'White flag']]);
+  });
+
   it('skips flag changes that follow a recording gap', () => {
     const gap = buildRaceControlView(undefined, flags([[5, 'green'], [3, 'none'], [2, 'yellow']]));
     expect(gap.entries.map((e) => e.text)).toEqual(['Green flag']);
