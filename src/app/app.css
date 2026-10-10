@@ -110,6 +110,8 @@ main { padding: 16px; }
 .chase-table .dash-last { font-size: 16px; }
 /* Seven columns in the 420px card: tighter cell padding keeps it from overflowing. */
 .dash-table.chase-table th, .dash-table.chase-table td { padding-left: 5px; padding-right: 5px; }
+/* The driver column soaks up spare width; give back a little so Current, Pts and Gain sit closer to the names. */
+.dash-table.chase-table { width: calc(100% - 14px); }
 .dash-table td.change-up { color: var(--perf-good); }
 .dash-table td.change-down { color: var(--perf-bad); }
 .dash-table td.change-same { color: var(--text-muted); }
