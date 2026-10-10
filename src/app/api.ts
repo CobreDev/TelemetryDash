@@ -75,7 +75,7 @@ export const api = {
   chaseStandings: (seriesId: string) => get<ChaseView>(`/series/${seriesId}/chase/standings`),
   /** Which series to open to (the live race; Fri-Sun the next race's series; else Cup). */
   home: () => get<{ seriesId: string; reason: 'live' | 'next-race' | 'weekday' }>('/home'),
-  paceRankings: seriesGet<PaceRankingsCard & { updatedAt: number | null; final?: boolean }>('/cards/pace-rankings'),
+  paceRankings: seriesGet<PaceRankingsCard & { updatedAt: number | null; final?: boolean; showNextRace?: boolean }>('/cards/pace-rankings'),
   overview: seriesGet<OverviewView>('/overview'),
   chase: seriesGet<ChaseView>('/chase'),
   raceControl: seriesGet<RaceControlView>('/race-control'),

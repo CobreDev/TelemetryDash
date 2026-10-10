@@ -29,7 +29,7 @@ export function ScheduleCard({ seriesId }: { seriesId: string }) {
   return (
     <section className="panel schedule-card">
       <div className="panel-head">
-        <h2>Upcoming weekend</h2>
+        <h2>Next Race</h2>
       </div>
       {failed && <p className="muted">No upcoming race on the schedule.</p>}
       {data && <ScheduleBody view={data} />}

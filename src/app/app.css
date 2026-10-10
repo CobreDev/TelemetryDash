@@ -104,6 +104,8 @@ main { padding: 16px; }
 .overview-view { display: grid; gap: 16px; max-width: 980px; align-items: start; }
 /* Overview: the running order and Chase cards sit centered on the screen. */
 .overview-view.is-overview { margin-inline: auto; }
+/* Left column during/after a race: (Next Race on the day after) above the running order. */
+.overview-main { display: grid; gap: 16px; align-content: start; min-width: 0; }
 /* Running order and Chase side by side when there's room. */
 /* Same max width live and off-week, so the 420px Chase column sits in the same spot in both. */
 @media (min-width: 1360px) { .overview-view { max-width: 1640px; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); } }

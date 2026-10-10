@@ -11,6 +11,11 @@ export function etDayOfWeek(now: number): number {
   return DAYS.indexOf(day);
 }
 
+/** The Eastern calendar date, "2026-10-10", comparable with the schedule's race_date prefix. */
+export function etDateKey(now: number): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: ET, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}
+
 /**
  * When a finished race stops being shown: midnight ET at the end of Sunday (Monday 00:00)
  * after the race. A race run on a Monday (rain delay) stays until the end of that Monday.

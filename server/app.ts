@@ -5,7 +5,7 @@ import { buildOverviewView, buildPracticeView } from '../src/cards/overview.mode
 import { buildPaceRankings } from '../src/cards/paceRankings.model';
 import { buildRaceControlView } from '../src/cards/raceControl.model';
 import { easternToEpoch, flagFromFeed, type FeedRace } from '../src/data/nascar/feed';
-import { homeSeries } from '../src/data/nascar/weekend';
+import { etDateKey, homeSeries } from '../src/data/nascar/weekend';
 import { buildResultsView, buildScheduleView } from '../src/cards/weekend.model';
 import { buildFuelView, buildLapsView, buildPitRoadView, buildStrategyView, buildTopSpeedView, type Inputs } from '../src/cards/tabs.model';
 import { buildOverview } from '../src/data/nascar/overview';
@@ -58,7 +58,7 @@ async function bundleFor(c: Context, profile: SeriesProfile): Promise<ReplayBund
   const fin = await finishedRaceBundle(profile.id, raceIsOver).catch(() => undefined);
   if (fin) return fin;
   if (b) return b; // official files not available yet: keep the recorded finish
-  const next = await nextRace(FEED_SERIES[profile.id]!).catch(() => undefined);
+  const next = await nextRace(FEED_SERIES[profile.id]!, new Date(), raceIsOver).catch(() => undefined);
   return c.json(
     {
       error: 'no-live-session',
@@ -134,7 +134,9 @@ api.get('/series/:id/cards/pace-rankings', async (c) => {
       session: isLive(b) && !b.isRace ? b.runName : undefined,
       currentFlag: isLive(b) ? b.currentFlag : undefined,
     });
-    return cc.json({ ...buildPaceRankings(data, p, config.attributionHandle, opts), updatedAt: isLive(b) ? b.updatedAt : null, final: !!b.finished });
+    // From the day after a finished race (ET), the Overview also shows the series' next race.
+    const showNextRace = !!b.finished && etDateKey(Date.now()) > b.race.race_date.slice(0, 10);
+    return cc.json({ ...buildPaceRankings(data, p, config.attributionHandle, opts), updatedAt: isLive(b) ? b.updatedAt : null, final: !!b.finished, showNextRace });
   })(c);
 });
 
@@ -204,7 +206,7 @@ api.get('/series/:id/upcoming', async (c) => {
   const profile = getProfile(c.req.param('id'));
   const feedSeries = profile && FEED_SERIES[profile.id];
   if (!profile || !feedSeries) return c.json({ error: 'unknown series' }, 404);
-  const race = await nextRace(feedSeries).catch(() => undefined);
+  const race = await nextRace(feedSeries, new Date(), raceIsOver).catch(() => undefined);
   if (!race) return c.json({ error: 'no upcoming race on the schedule' }, 404);
   const track = await trackInfo(race.track_id);
   const stageLaps = [race.stage_1_laps, race.stage_2_laps, race.stage_3_laps, race.stage_4_laps].filter((n): n is number => !!n && n > 0);
@@ -228,7 +230,7 @@ api.get('/series/:id/schedule', async (c) => {
   const profile = getProfile(c.req.param('id'));
   const feedSeries = profile && FEED_SERIES[profile.id];
   if (!profile || !feedSeries) return c.json({ error: 'unknown series' }, 404);
-  const race = await nextRace(feedSeries).catch(() => undefined);
+  const race = await nextRace(feedSeries, new Date(), raceIsOver).catch(() => undefined);
   if (!race) return c.json({ error: 'no upcoming race on the schedule' }, 404);
   return c.json(buildScheduleView(profile.id, race, Date.now()));
 });

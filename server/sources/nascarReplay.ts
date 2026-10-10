@@ -48,8 +48,11 @@ export async function raceById(feedSeries: number, raceId: number, now = new Dat
   return undefined;
 }
 
-/** The series' next race that hasn't run yet, for "no live session" messages. */
-export async function nextRace(feedSeries: number, now = new Date()): Promise<FeedRace | undefined> {
+/**
+ * The series' next race that hasn't run yet. A race counts until 6 hours after its start
+ * (delays), unless `isOver` says it has finished.
+ */
+export async function nextRace(feedSeries: number, now = new Date(), isOver?: (race: FeedRace) => boolean): Promise<FeedRace | undefined> {
   const list = await cachedJson<Record<string, FeedRace[]>>(
     `${now.getFullYear()}/race_list_basic.json`,
     `${BASE}/${now.getFullYear()}/race_list_basic.json`,
@@ -57,7 +60,7 @@ export async function nextRace(feedSeries: number, now = new Date()): Promise<Fe
   );
   return (list[`series_${feedSeries}`] ?? [])
     // actual_laps is filled in ahead of time, so only the start time tells what's upcoming.
-    .filter((r) => easternToEpoch(r.race_date) >= now.getTime() - 6 * 3600_000)
+    .filter((r) => easternToEpoch(r.race_date) >= now.getTime() - 6 * 3600_000 && !isOver?.(r))
     .sort((a, b) => a.race_date.localeCompare(b.race_date))[0];
 }
 

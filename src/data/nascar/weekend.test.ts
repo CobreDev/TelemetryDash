@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { easternToEpoch } from './feed';
-import { etDayOfWeek, homeSeries, weekendEndsAt } from './weekend';
+import { etDateKey, etDayOfWeek, homeSeries, weekendEndsAt } from './weekend';
 
 const et = (s: string) => easternToEpoch(s);
 
@@ -19,6 +19,7 @@ describe('race weekends (US Eastern)', () => {
   it('reads the day of the week in Eastern time, not UTC', () => {
     expect(etDayOfWeek(et('2026-10-11T23:30:00'))).toBe(0); // Sunday 11:30 PM ET is Monday in UTC
     expect(etDayOfWeek(et('2026-10-12T00:30:00'))).toBe(1);
+    expect(etDateKey(et('2026-10-11T23:30:00'))).toBe('2026-10-11');
   });
 
   it('opens to the live race, the next race on weekends, else Cup', () => {
