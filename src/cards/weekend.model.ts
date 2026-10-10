@@ -7,6 +7,7 @@ import { tvNetwork, type TvNetwork } from '../data/nascar/networks';
 import type { FeedLivePoints } from '../data/nascar/points';
 import { markerHighlight, markerNotes, markerSuffixes } from '../series/markers';
 import type { SeriesProfile } from '../series/types';
+import { runHasTimes, type FeedWeekendRun } from './qualifying.model';
 
 export type SessionKind = 'practice' | 'qualifying' | 'race';
 const KIND: Record<number, SessionKind> = { 1: 'practice', 2: 'qualifying', 3: 'race' };
@@ -29,6 +30,8 @@ export interface ScheduleView {
     /** Start in ms epoch, for clients that want local time. */
     startsAt: number;
     done: boolean;
+    /** Practice/qualifying that never ran: no timed results an hour after its start. */
+    cancelled: boolean;
   }[];
   tv: TvNetwork | null;
   radio: string | null;
@@ -38,13 +41,21 @@ const ET = 'America/New_York';
 const dayFmt = new Intl.DateTimeFormat('en-US', { timeZone: ET, weekday: 'short', month: 'short', day: 'numeric' });
 const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: ET, hour: 'numeric', minute: '2-digit' });
 
-/** On-track sessions only (practice, qualifying, race); garage hours and meetings are left out. */
-export function buildScheduleView(seriesId: string, race: FeedRace, now: number): ScheduleView {
+/**
+ * On-track sessions only (practice, qualifying, race); garage hours and meetings are left out.
+ * `runs` (the weekend feed's practice/qualifying results) mark sessions that never ran: the
+ * nth practice is cancelled when fewer than n practice runs have times an hour after it began.
+ */
+export function buildScheduleView(seriesId: string, race: FeedRace, now: number, runs?: FeedWeekendRun[]): ScheduleView {
+  const timedRuns = (runType: number) => (runs ?? []).filter((r) => r.run_type === runType && runHasTimes(r)).length;
+  const seen: Record<number, number> = {};
   const sessions = (race.schedule ?? [])
     .filter((e) => KIND[e.run_type])
     .map((e) => {
       const kind = KIND[e.run_type]!;
       const startsAt = Date.parse(`${e.start_time_utc}Z`);
+      const nth = (seen[e.run_type] = (seen[e.run_type] ?? 0) + 1);
+      const cancelled = !!runs && kind !== 'race' && now > startsAt + 3_600_000 && timedRuns(e.run_type) < nth;
       return {
         name: e.event_name.trim(),
         kind,
@@ -52,13 +63,14 @@ export function buildScheduleView(seriesId: string, race: FeedRace, now: number)
         time: `${timeFmt.format(startsAt)} ET`,
         startsAt,
         done: startsAt + RUNS_FOR_MS[kind] < now,
+        cancelled,
       };
     })
     .sort((a, b) => a.startsAt - b.startsAt);
   // No on-track times published yet: fall back to the race start from the season schedule.
   if (!sessions.length) {
     const startsAt = easternToEpoch(race.race_date);
-    sessions.push({ name: 'Race', kind: 'race', day: dayFmt.format(startsAt), time: `${timeFmt.format(startsAt)} ET`, startsAt, done: false });
+    sessions.push({ name: 'Race', kind: 'race', day: dayFmt.format(startsAt), time: `${timeFmt.format(startsAt)} ET`, startsAt, done: false, cancelled: false });
   }
   return {
     seriesId,

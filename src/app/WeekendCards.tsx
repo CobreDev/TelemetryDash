@@ -58,10 +58,10 @@ function ScheduleBody({ view }: { view: ScheduleView }) {
             const day = s.day === lastDay ? '' : s.day;
             lastDay = s.day;
             return (
-              <tr key={s.startsAt + s.name} className={[s.kind === 'race' && 'is-race', s.done && 'is-done'].filter(Boolean).join(' ') || undefined}>
+              <tr key={s.startsAt + s.name} className={[s.kind === 'race' && 'is-race', (s.done || s.cancelled) && 'is-done', s.cancelled && 'is-cancelled'].filter(Boolean).join(' ') || undefined}>
                 <td className="left nowrap schedule-day">{day}</td>
                 <td className="left">{s.name}</td>
-                <td className="nowrap">{s.done ? 'Done' : clockET(s.startsAt)}</td>
+                <td className="nowrap">{s.cancelled ? 'Cancelled' : s.done ? 'Done' : clockET(s.startsAt)}</td>
               </tr>
             );
           })}
@@ -142,7 +142,7 @@ function ResultsBody({ view }: { view: ResultsView }) {
   );
 }
 
-/** Last race in the narrow right column (qualifying mode): the top 10 and the points they took. */
+/** Last race in the narrow right column (qualifying mode): the full field in a ~10-row scroll box. */
 export function LastRaceMini({ seriesId }: { seriesId: string }) {
   const { data, failed } = useOnce(api.results, seriesId);
   if (failed) return null;
@@ -156,32 +156,34 @@ export function LastRaceMini({ seriesId }: { seriesId: string }) {
           <p className="card-sub">
             <strong>{data.raceName}</strong> · {data.date}
           </p>
-          <table className="dash-table chase-table">
-            <thead>
-              <tr>
-                <th className="shrink">{data.columns.pos}</th>
-                <th className="shrink">{data.columns.car}</th>
-                <th className="left">{data.columns.name}</th>
-                <th className="shrink" title="Laps led">{data.columns.led}</th>
-                <th className="shrink" title="Points earned in this race">{data.columns.points}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.rows.slice(0, 10).map((r) => (
-                <tr key={r.carNumber} className={[r.isWinner && 'is-leader', r.highlight && 'is-highlight'].filter(Boolean).join(' ') || undefined}>
-                  <td className="num">{r.position}</td>
-                  <td className="car">
-                    <CarNumber number={r.carNumber} badge={r.carBadge} />
-                  </td>
-                  <td className="left">
-                    <span className="dash-last">{r.lastName}</span>
-                  </td>
-                  <td className="num">{r.led}</td>
-                  <td className="num">{r.points}</td>
+          <div className="scroll-box">
+            <table className="dash-table chase-table">
+              <thead>
+                <tr>
+                  <th className="shrink">{data.columns.pos}</th>
+                  <th className="shrink">{data.columns.car}</th>
+                  <th className="left">{data.columns.name}</th>
+                  <th className="shrink" title="Laps led">{data.columns.led}</th>
+                  <th className="shrink" title="Points earned in this race">{data.columns.points}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.rows.map((r) => (
+                  <tr key={r.carNumber} className={[r.isWinner && 'is-leader', r.highlight && 'is-highlight'].filter(Boolean).join(' ') || undefined}>
+                    <td className="num">{r.position}</td>
+                    <td className="car">
+                      <CarNumber number={r.carNumber} badge={r.carBadge} />
+                    </td>
+                    <td className="left">
+                      <span className="dash-last">{r.lastName}</span>
+                    </td>
+                    <td className="num">{r.led}</td>
+                    <td className="num">{r.points}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </section>

@@ -233,7 +233,8 @@ api.get('/series/:id/schedule', async (c) => {
   if (!profile || !feedSeries) return c.json({ error: 'unknown series' }, 404);
   const race = await nextRace(feedSeries, new Date(), raceIsOver).catch(() => undefined);
   if (!race) return c.json({ error: 'no upcoming race on the schedule' }, 404);
-  return c.json(buildScheduleView(profile.id, race, Date.now()));
+  const runs = await weekendRuns(feedSeries, race).catch(() => undefined);
+  return c.json(buildScheduleView(profile.id, race, Date.now(), runs));
 });
 
 /**
