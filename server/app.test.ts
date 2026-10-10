@@ -12,8 +12,10 @@ vi.mock('./sources/nascarReplay', () => ({
   }),
   trackInfo: async () => ({ track_id: 162, track_name: 'Charlotte Motor Speedway', city: 'Concord', state: 'NC', track_logo: 'https://example/logo.png' }),
   carBadge: async () => null,
+  finishedRaceBundle: async () => undefined,
+  nextStarts: async () => [{ seriesId: 'oreilly', startsAt: Date.UTC(2099, 0, 1) }],
 }));
-vi.mock('./sources/nascarLive', () => ({ liveBundle: async () => null, liveStatus: () => null }));
+vi.mock('./sources/nascarLive', () => ({ liveBundle: async () => null, liveStatus: () => null, raceFinishedLive: () => undefined }));
 
 describe('api v1', () => {
   it('lists the three NASCAR series', async () => {
@@ -25,6 +27,12 @@ describe('api v1', () => {
     const res = await app.request('/api/v1/series/cup/overview');
     expect(res.status).toBe(409);
     expect(await res.json()).toMatchObject({ error: 'no-live-session', next: { raceName: 'Bank of America 400', startsET: '2026-10-11T15:00:00' } });
+  });
+
+  it('names a series to open to', async () => {
+    const home = await (await app.request('/api/v1/home')).json();
+    expect(['cup', 'oreilly']).toContain(home.seriesId); // Cup on weekdays, the next race's series Fri-Sun
+    expect(['next-race', 'weekday']).toContain(home.reason);
   });
 
   it('serves the fictional sample pace card when the replay is unreachable', async () => {

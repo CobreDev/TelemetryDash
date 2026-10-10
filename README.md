@@ -77,6 +77,7 @@ When nothing is live for a series, live endpoints answer `409` with
 | `GET /api/v1/series` | All series profiles |
 | `GET /api/v1/series/:id` | One series profile |
 | `GET /api/v1/live` | What's live right now (series, session, lap, flag, last update) |
+| `GET /api/v1/home` | Series to open to: the live race's; Fri-Sun the next race's; Mon-Thu Cup |
 | `GET /api/v1/series/:id/cards/pace-rankings` | Pace rankings plus header data (race, stage/lap status, flag) |
 | `GET /api/v1/series/:id/overview` | Running order (race) or best-lap timing (practice/qualifying) |
 | `GET /api/v1/series/:id/chase` | Chase standings entering the race and as they run |

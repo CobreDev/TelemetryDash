@@ -73,7 +73,9 @@ export const api = {
   schedule: (seriesId: string) => get<ScheduleView>(`/series/${seriesId}/schedule`),
   results: (seriesId: string) => get<ResultsView>(`/series/${seriesId}/results`),
   chaseStandings: (seriesId: string) => get<ChaseView>(`/series/${seriesId}/chase/standings`),
-  paceRankings: seriesGet<PaceRankingsCard & { updatedAt: number | null }>('/cards/pace-rankings'),
+  /** Which series to open to (the live race; Fri-Sun the next race's series; else Cup). */
+  home: () => get<{ seriesId: string; reason: 'live' | 'next-race' | 'weekday' }>('/home'),
+  paceRankings: seriesGet<PaceRankingsCard & { updatedAt: number | null; final?: boolean }>('/cards/pace-rankings'),
   overview: seriesGet<OverviewView>('/overview'),
   chase: seriesGet<ChaseView>('/chase'),
   raceControl: seriesGet<RaceControlView>('/race-control'),

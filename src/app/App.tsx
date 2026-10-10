@@ -25,6 +25,8 @@ const SOURCE_KEY = 'td.source';
 const LIVE_REFRESH_MS = 5_000;
 /** The badge turns amber when the server hasn't reached NASCAR's feed for this long. */
 const STALE_MS = 30_000;
+/** Longest the first paint waits for the server's choice of series. */
+const HOME_WAIT_MS = 1_000;
 
 const TABS = [
   { id: 'overview', label: 'Overview', ready: true },
@@ -122,9 +124,11 @@ function SourceToggle({ onSource }: { onSource: (s: Source) => void }) {
   );
 }
 
-function LiveBadge({ live, stale, seriesId }: { live: LiveStatus | null; stale: boolean; seriesId: string }) {
+function LiveBadge({ live, stale, seriesId, final }: { live: LiveStatus | null; stale: boolean; seriesId: string; final?: boolean }) {
   const { source } = useContext(SourceContext);
   if (source === 'sample') return <span className="chip">Replay</span>;
+  // A race that's over, shown until its weekend ends.
+  if (final) return <span className="chip final-chip" title="This race is over; shown until Monday 00:00 ET">Final</span>;
   if (!live?.active || live.seriesId !== seriesId) return null;
   return (
     <span
@@ -150,15 +154,25 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
   const series: SeriesProfile[] = seriesList;
   const [seriesId, setSeriesId] = useState<string>(savedSeries() ?? 'cup');
   const { source } = useContext(SourceContext);
-  const { live, loaded: liveLoaded, stale } = useLiveStatus(source);
-  // On page load in live mode, open to whichever series is live right now (once only, so it
-  // never overrides a series the viewer picks afterwards).
-  const [openedLive, setOpenedLive] = useState(false);
+  const { live, stale } = useLiveStatus(source);
+  // On page load in live mode, open to the series the server picks (the live race; Fri-Sun the
+  // series racing next; Mon-Thu Cup). Once only, so it never overrides a later pick. The page
+  // waits for the answer (up to HOME_WAIT_MS) so it doesn't draw one series and jump to another.
+  const [homeReady, setHomeReady] = useState(source !== 'live');
   useEffect(() => {
-    if (openedLive || source !== 'live' || !liveLoaded) return;
-    setOpenedLive(true);
-    if (live?.active) setSeriesId(live.seriesId);
-  }, [openedLive, source, liveLoaded, live]);
+    if (homeReady) return;
+    let done = false;
+    const finish = (id?: string) => {
+      if (done) return;
+      done = true;
+      if (id && seriesList.some((s) => s.id === id)) setSeriesId(id);
+      setHomeReady(true);
+    };
+    api.home().then((r) => finish(r.seriesId), () => finish());
+    const t = setTimeout(() => finish(), HOME_WAIT_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [body, setBody] = useState<BodyId>('nascar');
   const [tab, setTab] = useState<TabId>(savedTab);
   const chooseTab = (t: TabId) => {
@@ -184,6 +198,7 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
   const accent = profile?.accent.dark ?? neutrals.dark['text-muted'];
   const brand = profile?.brand.dashboard;
 
+  if (!homeReady) return <div className="dash" style={themeVars('dark', accent)} aria-busy />;
   return (
     <div className="dash" style={themeVars('dark', accent)}>
       <header
@@ -238,7 +253,7 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
             </div>
             <div className="race-badges">
               {card.header.tv && <TvLogo network={card.header.tv} />}
-              <LiveBadge live={live} stale={stale} seriesId={seriesId} />
+              <LiveBadge live={live} stale={stale} seriesId={seriesId} final={card.final} />
             </div>
           </div>
         )}

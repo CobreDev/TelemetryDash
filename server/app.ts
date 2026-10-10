@@ -4,7 +4,8 @@ import { buildChaseStandingsView, buildChaseView } from '../src/cards/chase.mode
 import { buildOverviewView, buildPracticeView } from '../src/cards/overview.model';
 import { buildPaceRankings } from '../src/cards/paceRankings.model';
 import { buildRaceControlView } from '../src/cards/raceControl.model';
-import { flagFromFeed } from '../src/data/nascar/feed';
+import { easternToEpoch, flagFromFeed, type FeedRace } from '../src/data/nascar/feed';
+import { homeSeries } from '../src/data/nascar/weekend';
 import { buildResultsView, buildScheduleView } from '../src/cards/weekend.model';
 import { buildFuelView, buildLapsView, buildPitRoadView, buildStrategyView, buildTopSpeedView, type Inputs } from '../src/cards/tabs.model';
 import { buildOverview } from '../src/data/nascar/overview';
@@ -14,8 +15,8 @@ import { samplePace } from '../src/data/sample/pace';
 import { isTemplateEnabled, profiles, seriesList } from '../src/series/profiles';
 import type { SeriesProfile } from '../src/series/types';
 import { config } from './config';
-import { liveBundle, liveStatus, type LiveBundle } from './sources/nascarLive';
-import { carBadge, FEED_SERIES, lastRaceResults, nextRace, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
+import { liveBundle, liveStatus, raceFinishedLive, type LiveBundle } from './sources/nascarLive';
+import { carBadge, FEED_SERIES, finishedRaceBundle, lastRaceResults, nextRace, nextStarts, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
 import { trackLocation } from '../src/data/nascar/tracks';
 import { tvNetwork } from '../src/data/nascar/networks';
 
@@ -49,8 +50,14 @@ const sourceOf = (c: Context): Source => (c.req.query('source') === 'sample' ? '
  */
 async function bundleFor(c: Context, profile: SeriesProfile): Promise<ReplayBundle | LiveBundle | Response> {
   if (sourceOf(c) === 'sample') return replayBundle(profile.id);
+  // A running session wins. A race that's over is shown from NASCAR's official files until its
+  // weekend ends (Monday 00:00 ET), then the series falls back to "nothing live" (Upcoming).
   const b = await liveBundle(profile.id);
-  if (b) return b;
+  const over = b?.isRace && b.atLap >= (b.race.actual_laps ?? b.race.scheduled_laps);
+  if (b && !over) return b;
+  const fin = await finishedRaceBundle(profile.id, raceIsOver).catch(() => undefined);
+  if (fin) return fin;
+  if (b) return b; // official files not available yet: keep the recorded finish
   const next = await nextRace(FEED_SERIES[profile.id]!).catch(() => undefined);
   return c.json(
     {
@@ -63,6 +70,26 @@ async function bundleFor(c: Context, profile: SeriesProfile): Promise<ReplayBund
 }
 
 const isLive = (b: ReplayBundle | LiveBundle): b is LiveBundle => 'live' in b;
+
+/** The collector saw the finish, or (it wasn't recording that race) 5 hours have passed. */
+function raceIsOver(race: FeedRace): boolean {
+  const seen = raceFinishedLive(race.race_id);
+  if (seen !== undefined) return seen;
+  const status = liveStatus();
+  const runningNow = status?.active && status.raceId === race.race_id;
+  return !runningNow && Date.now() > easternToEpoch(race.race_date) + 5 * 3600_000;
+}
+
+/**
+ * The series to open to: the live race's series; Friday-Sunday the series racing next;
+ * Monday-Thursday Cup. Days are US Eastern.
+ */
+api.get('/home', async (c) => {
+  const status = liveStatus();
+  const liveSeriesId = status?.active && status.isRace ? status.seriesId : null;
+  const starts = await nextStarts().catch(() => []);
+  return c.json(homeSeries({ now: Date.now(), liveSeriesId, nextStarts: starts }));
+});
 
 function stageEndsOf(b: ReplayBundle) {
   const lengths = [b.race.stage_1_laps, b.race.stage_2_laps, b.race.stage_3_laps, b.race.stage_4_laps].filter(
@@ -107,7 +134,7 @@ api.get('/series/:id/cards/pace-rankings', async (c) => {
       session: isLive(b) && !b.isRace ? b.runName : undefined,
       currentFlag: isLive(b) ? b.currentFlag : undefined,
     });
-    return cc.json({ ...buildPaceRankings(data, p, config.attributionHandle, opts), updatedAt: isLive(b) ? b.updatedAt : null });
+    return cc.json({ ...buildPaceRankings(data, p, config.attributionHandle, opts), updatedAt: isLive(b) ? b.updatedAt : null, final: !!b.finished });
   })(c);
 });
 

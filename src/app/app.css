@@ -251,6 +251,7 @@ main { padding: 16px; }
 /* The race date reads as a date ("Sun, Oct 11"), not a shouted label. */
 .race-status.is-upcoming .is-primary .race-status-label { text-transform: none; }
 .upcoming-chip { border-style: solid; }
+.final-chip { border-style: solid; color: var(--bar-fg, var(--text)); }
 
 /* TV network stacked above the Live / Upcoming / Replay badge. */
 .race-badges { display: flex; flex-direction: column; align-items: center; gap: 6px; }

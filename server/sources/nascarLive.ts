@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop } from '../../src/data/nascar/feed';
 import { applySnapshot, backfillFromLapTimes, isRace as isRaceState, needsBackfill, toLapTimes, type FeedLiveSnapshot, type LiveState } from '../../src/data/nascar/live';
 import { withChaseMarkers } from '../../src/data/nascar/names';
+import { weekendEndsAt } from '../../src/data/nascar/weekend';
 import type { FeedLivePoints } from '../../src/data/nascar/points';
 import { config } from '../config';
 import { BASE, FEED_SERIES, raceById, trackInfo, UA, type ReplayBundle } from './nascarReplay';
@@ -15,8 +16,6 @@ const IDLE_MS = 60_000; // feed unchanged for a while: check once a minute
 const IDLE_AFTER_MS = 10 * 60_000;
 const EXTRAS_MS = 15_000; // pit detail, live points, lap notes
 const BACKFILL_MS = 60_000; // official lap times, only while laps are estimated or flags unseen
-/** A finished race is kept this long after the feed goes quiet, then deleted from disk. */
-const CLEAR_AFTER_MS = 60 * 60_000;
 
 let state: LiveState | null = null;
 let lastModified: string | null = null;
@@ -42,10 +41,11 @@ async function save() {
   await rename(`${file}.tmp`, file);
 }
 
-/** Deletes the saved race once it's over and the feed has been quiet for CLEAR_AFTER_MS. */
+/** Deletes the saved race once it's over and its race weekend has ended (Monday 00:00 ET). */
 async function clearIfFinished() {
   if (!state || !isRaceState(state) || state.lap < state.lapsInRace) return;
-  if (Date.now() - lastFeedChange < CLEAR_AFTER_MS) return;
+  const race = await raceById(state.seriesId, state.raceId).catch(() => undefined);
+  if (race && Date.now() < weekendEndsAt(race.race_date)) return;
   console.log(`live: race ${state.raceId} finished; clearing the saved session`);
   state = null;
   pits = [];
@@ -151,6 +151,15 @@ export interface LiveStatus {
   polledAt: number;
   /** True while the feed is still changing (not idle). */
   active: boolean;
+}
+
+/**
+ * Whether the recorded session for this race has reached its finish: true / false, or
+ * undefined when the collector isn't holding that race.
+ */
+export function raceFinishedLive(raceId: number): boolean | undefined {
+  if (!state || state.raceId !== raceId || !isRaceState(state)) return undefined;
+  return state.lap >= state.lapsInRace;
 }
 
 export function liveStatus(): LiveStatus | null {
