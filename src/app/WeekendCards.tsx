@@ -45,6 +45,13 @@ function ScheduleBody({ view }: { view: ScheduleView }) {
       <p className="card-sub">
         <strong>{view.raceName}</strong> · {view.venue}
       </p>
+      {/* TV and radio right under the race, above the sessions. */}
+      {(view.tv || view.radio) && (
+        <div className="schedule-broadcast">
+          {view.tv && <TvLogo network={view.tv} />}
+          {view.radio && <span className="muted">Radio: {view.radio}</span>}
+        </div>
+      )}
       <table className="dash-table schedule-table">
         <tbody>
           {view.sessions.map((s) => {
@@ -60,12 +67,6 @@ function ScheduleBody({ view }: { view: ScheduleView }) {
           })}
         </tbody>
       </table>
-      {(view.tv || view.radio) && (
-        <div className="schedule-broadcast">
-          {view.tv && <TvLogo network={view.tv} />}
-          {view.radio && <span className="muted">Radio: {view.radio}</span>}
-        </div>
-      )}
     </>
   );
 }
