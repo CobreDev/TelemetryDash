@@ -7,6 +7,7 @@ import { buildRaceControlView } from '../src/cards/raceControl.model';
 import { easternToEpoch, flagFromFeed, type FeedRace } from '../src/data/nascar/feed';
 import { etDateKey, homeSeries } from '../src/data/nascar/weekend';
 import { buildResultsView, buildScheduleView } from '../src/cards/weekend.model';
+import { buildQualifyingView, entriesFromLive, entriesFromRun, runHasTimes } from '../src/cards/qualifying.model';
 import { buildFuelView, buildLapsView, buildPitRoadView, buildStrategyView, buildTopSpeedView, type Inputs } from '../src/cards/tabs.model';
 import { buildOverview } from '../src/data/nascar/overview';
 import { chaseStandings, finishPointsTable } from '../src/data/nascar/points';
@@ -16,7 +17,7 @@ import { isTemplateEnabled, profiles, seriesList } from '../src/series/profiles'
 import type { SeriesProfile } from '../src/series/types';
 import { config } from './config';
 import { liveBundle, liveStatus, raceFinishedLive, type LiveBundle } from './sources/nascarLive';
-import { carBadge, FEED_SERIES, finishedRaceBundle, lastRaceResults, nextRace, nextStarts, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
+import { carBadge, FEED_SERIES, weekendRuns, finishedRaceBundle, lastRaceResults, nextRace, nextStarts, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
 import { trackLocation } from '../src/data/nascar/tracks';
 import { tvNetwork } from '../src/data/nascar/networks';
 
@@ -233,6 +234,35 @@ api.get('/series/:id/schedule', async (c) => {
   const race = await nextRace(feedSeries, new Date(), raceIsOver).catch(() => undefined);
   if (!race) return c.json({ error: 'no upcoming race on the schedule' }, 404);
   return c.json(buildScheduleView(profile.id, race, Date.now()));
+});
+
+/**
+ * Qualifying for the series' next race: live best laps while the session runs, the official
+ * order once it has times, or the lineup NASCAR set when qualifying didn't run (no times and
+ * the scheduled session is an hour past). 404 when there's nothing yet.
+ */
+api.get('/series/:id/qualifying', async (c) => {
+  const profile = getProfile(c.req.param('id'));
+  const feedSeries = profile && FEED_SERIES[profile.id];
+  if (!profile || !feedSeries) return c.json({ error: 'unknown series' }, 404);
+  if (sourceOf(c) === 'sample') return c.json({ error: 'no-qualifying' }, 404);
+  const race = await nextRace(feedSeries, new Date(), raceIsOver).catch(() => undefined);
+  if (!race) return c.json({ error: 'no-qualifying' }, 404);
+  // Chase field from the last race's points file (by car number).
+  const chaseCars = await lastRaceResults(profile.id)
+    .then(({ livePoints }) => new Set((livePoints ?? []).filter((d) => d.is_in_chase).map((d) => d.car_number)))
+    .catch(() => new Set<string>());
+
+  const live = await liveBundle(profile.id);
+  if (live && live.runType === 2 && live.race.race_id === race.race_id) {
+    return c.json(buildQualifyingView(profile, 'live', entriesFromLive(live.lapTimes), chaseCars));
+  }
+  const run = (await weekendRuns(feedSeries, race).catch(() => [])).find((r) => r.run_type === 2 && r.results?.length);
+  if (!run) return c.json({ error: 'no-qualifying' }, 404);
+  if (runHasTimes(run)) return c.json(buildQualifyingView(profile, 'final', entriesFromRun(run), chaseCars));
+  const qualStart = race.schedule?.find((e) => e.run_type === 2)?.start_time_utc;
+  const past = qualStart ? Date.now() > Date.parse(`${qualStart}Z`) + 3600_000 : false;
+  return past ? c.json(buildQualifyingView(profile, 'rulebook', entriesFromRun(run), chaseCars)) : c.json({ error: 'no-qualifying' }, 404);
 });
 
 /** Chase standings after the series' last race, for weeks with nothing live. */

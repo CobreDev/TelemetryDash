@@ -5,13 +5,34 @@ import { RaceControlCard } from './RaceControlCard';
 import { DataError } from './NoLive';
 import { useSeriesApi } from './useApi';
 import { useUniformNameWrap } from './useUniformNameWrap';
-import { ResultsCard, ScheduleCard } from './WeekendCards';
+import { LastRaceMini, ResultsCard, ScheduleCard } from './WeekendCards';
+import { QualifyingCard } from './QualifyingCard';
 
-/** `showNextRace`: a finished race seen from the next day on also gets the Next Race card on top. */
-export function OverviewTab({ seriesId, showNextRace }: { seriesId: string; showNextRace?: boolean }) {
+/**
+ * `showNextRace`: a finished race seen from the next day on also gets the Next Race card on top.
+ * `final`: the race is over, so the running order is titled Results.
+ */
+export function OverviewTab({ seriesId, showNextRace, final }: { seriesId: string; showNextRace?: boolean; final?: boolean }) {
   const { data: view, error } = useSeriesApi(api.overview, seriesId);
   const practice = view?.mode === 'practice';
   const { tableRef, wrapped } = useUniformNameWrap([view]);
+  // Qualifying for the next race (live, final, or a rulebook lineup); 404 means none yet.
+  const { data: qualifying } = useSeriesApi(api.qualifying, seriesId);
+
+  // Qualifying mode (no race running, qualifying live or done): the schedule, a large
+  // Qualifying card, and on the right Chase standings over a slim Last Race.
+  if (qualifying && (isNoLive(error) || view?.mode === 'practice')) {
+    return (
+      <div className="overview-view is-overview is-offweek">
+        <ScheduleCard seriesId={seriesId} />
+        <QualifyingCard view={qualifying} />
+        <div className="offweek-side">
+          <ChaseStandingsCard seriesId={seriesId} />
+          <LastRaceMini seriesId={seriesId} />
+        </div>
+      </div>
+    );
+  }
 
   // Nothing live for this series: the coming weekend's schedule and last race's results.
   if (isNoLive(error)) {
@@ -19,7 +40,9 @@ export function OverviewTab({ seriesId, showNextRace }: { seriesId: string; show
       <div className="overview-view is-overview is-offweek">
         <ScheduleCard seriesId={seriesId} />
         <ResultsCard seriesId={seriesId} />
-        <ChaseStandingsCard seriesId={seriesId} />
+        <div className="offweek-side">
+          <ChaseStandingsCard seriesId={seriesId} />
+        </div>
       </div>
     );
   }
@@ -30,7 +53,7 @@ export function OverviewTab({ seriesId, showNextRace }: { seriesId: string; show
         {showNextRace && <ScheduleCard seriesId={seriesId} />}
         <section className="panel">
           <div className="panel-head">
-            <h2>{view?.mode === 'practice' ? 'Practice timing' : 'Running order'}</h2>
+            <h2>{view?.mode === 'practice' ? 'Practice timing' : final ? 'Results' : 'Running order'}</h2>
           </div>
           {error != null && <DataError error={error} />}
           {view && (

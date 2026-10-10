@@ -2,6 +2,7 @@ import type { ChaseView } from '../cards/chase.model';
 import type { OverviewView } from '../cards/overview.model';
 import type { PaceRankingsCard } from '../cards/paceRankings.model';
 import type { ResultsView, ScheduleView } from '../cards/weekend.model';
+import type { QualifyingView } from '../cards/qualifying.model';
 import type { RaceControlView } from '../cards/raceControl.model';
 import type { FuelView, LapsView, PitRoadView, StrategyView, TopSpeedView } from '../cards/tabs.model';
 import type { SeriesProfile } from '../series/types';
@@ -78,6 +79,7 @@ export const api = {
   paceRankings: seriesGet<PaceRankingsCard & { updatedAt: number | null; final?: boolean; showNextRace?: boolean }>('/cards/pace-rankings'),
   overview: seriesGet<OverviewView>('/overview'),
   chase: seriesGet<ChaseView>('/chase'),
+  qualifying: seriesGet<QualifyingView>('/qualifying'),
   raceControl: seriesGet<RaceControlView>('/race-control'),
   pitRoad: seriesGet<PitRoadView>('/pit-road'),
   strategy: seriesGet<StrategyView>('/strategy'),

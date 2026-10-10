@@ -4,6 +4,7 @@ import { easternToEpoch, withRaceLength, type FeedLapNotes, type FeedLapTimes, t
 import { withChaseMarkers } from '../../src/data/nascar/names';
 import { halfwayLap, replayPaceDataset } from '../../src/data/nascar/replay';
 import { weekendEndsAt } from '../../src/data/nascar/weekend';
+import type { FeedWeekendRun } from '../../src/cards/qualifying.model';
 import type { FeedTrack } from '../../src/data/nascar/tracks';
 import type { FeedLivePoints, FeedResult } from '../../src/data/nascar/points';
 import type { PaceDataset } from '../../src/data/types';
@@ -258,4 +259,11 @@ export async function carBadge(seriesId: string, carNumber: string): Promise<Buf
   } catch {
     return cached;
   }
+}
+
+/** A race's practice/qualifying runs from its weekend feed, re-checked every couple of minutes. */
+export async function weekendRuns(feedSeries: number, race: FeedRace): Promise<FeedWeekendRun[]> {
+  const dir = `${race.race_season}/${feedSeries}/${race.race_id}`;
+  const feed = await cachedJson<{ weekend_runs?: FeedWeekendRun[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`, 2 * 60_000);
+  return feed.weekend_runs ?? [];
 }

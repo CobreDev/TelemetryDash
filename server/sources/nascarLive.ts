@@ -185,6 +185,8 @@ export interface LiveBundle extends ReplayBundle {
   /** Feed flag code right now (the lap in progress), not the last completed lap's. */
   currentFlag: number;
   runName: string;
+  /** Feed run type: 1 practice, 2 qualifying, 3 race. */
+  runType: number;
   isRace: boolean;
   updatedAt: number;
 }
@@ -200,6 +202,7 @@ export async function liveBundle(seriesId: string): Promise<LiveBundle | null> {
     live: true,
     currentFlag: s.flag,
     runName: s.runName,
+    runType: s.runType,
     isRace,
     updatedAt: s.updatedAt,
     // Practice/qualifying have no lap count or stages; the race uses the schedule's.

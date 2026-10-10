@@ -29,7 +29,7 @@ export function ScheduleCard({ seriesId }: { seriesId: string }) {
   return (
     <section className="panel schedule-card">
       <div className="panel-head">
-        <h2>Next Race</h2>
+        <h2>{data?.title ?? 'Next Race'}</h2>
       </div>
       {failed && <p className="muted">No upcoming race on the schedule.</p>}
       {data && <ScheduleBody view={data} />}
@@ -138,5 +138,51 @@ function ResultsBody({ view }: { view: ResultsView }) {
         </ul>
       )}
     </>
+  );
+}
+
+/** Last race in the narrow right column (qualifying mode): the top 10 and the points they took. */
+export function LastRaceMini({ seriesId }: { seriesId: string }) {
+  const { data, failed } = useOnce(api.results, seriesId);
+  if (failed) return null;
+  return (
+    <section className="panel last-race-mini">
+      <div className="panel-head">
+        <h2>Last Race</h2>
+      </div>
+      {data && (
+        <>
+          <p className="card-sub">
+            <strong>{data.raceName}</strong> · {data.date}
+          </p>
+          <table className="dash-table chase-table">
+            <thead>
+              <tr>
+                <th className="shrink">{data.columns.pos}</th>
+                <th className="shrink">{data.columns.car}</th>
+                <th className="left">{data.columns.name}</th>
+                <th className="shrink" title="Laps led">{data.columns.led}</th>
+                <th className="shrink" title="Points earned in this race">{data.columns.points}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows.slice(0, 10).map((r) => (
+                <tr key={r.carNumber} className={[r.isWinner && 'is-leader', r.highlight && 'is-highlight'].filter(Boolean).join(' ') || undefined}>
+                  <td className="num">{r.position}</td>
+                  <td className="car">
+                    <CarNumber number={r.carNumber} badge={r.carBadge} />
+                  </td>
+                  <td className="left">
+                    <span className="dash-last">{r.lastName}</span>
+                  </td>
+                  <td className="num">{r.led}</td>
+                  <td className="num">{r.points}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+    </section>
   );
 }

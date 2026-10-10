@@ -280,7 +280,7 @@ function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
       </header>
       {profile && <SeriesStripes colors={profile.brand.stripes} className="topbar-stripes" />}
       <main>
-        {tab === 'overview' && <OverviewTab seriesId={seriesId} showNextRace={card?.showNextRace} />}
+        {tab === 'overview' && <OverviewTab seriesId={seriesId} showNextRace={card?.showNextRace} final={card?.final} />}
         {tab === 'pace' && card && <PaceView card={card} />}
         {tab === 'pace' && !card && cardError != null && <DataError error={cardError} />}
         {tab === 'pit' && <PitRoadTab seriesId={seriesId} />}

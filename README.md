@@ -85,6 +85,7 @@ When nothing is live for a series, live endpoints answer `409` with
 | `GET /api/v1/series/:id/upcoming` | Next race for the header (name, start ET, laps, stages, TV) |
 | `GET /api/v1/series/:id/schedule` | Next race weekend's on-track sessions |
 | `GET /api/v1/series/:id/results` | Last race's final results |
+| `GET /api/v1/series/:id/qualifying` | Next race's qualifying: live, final, or the rulebook lineup (404 before) |
 | `GET /api/v1/series/:id/chase/standings` | Chase standings after the last race (off-week) |
 | `GET /api/v1/series/:id/pit-road` · `strategy` · `fuel` · `laps` · `top-speed` | Data for the other tabs |
 | `GET /api/v1/series/:id/car-badges/:number.png` | Team number artwork (cached copy of NASCAR's) |

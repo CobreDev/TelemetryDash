@@ -15,6 +15,8 @@ const RUNS_FOR_MS: Record<SessionKind, number> = { practice: 3_600_000, qualifyi
 
 export interface ScheduleView {
   seriesId: string;
+  /** "Next Race", or "Weekend Schedule" once the weekend's first session has started. */
+  title: string;
   raceName: string;
   venue: string;
   sessions: {
@@ -60,6 +62,7 @@ export function buildScheduleView(seriesId: string, race: FeedRace, now: number)
   }
   return {
     seriesId,
+    title: sessions.some((s) => s.startsAt <= now) ? 'Weekend Schedule' : 'Next Race',
     raceName: race.race_name,
     venue: race.track_name,
     sessions,
