@@ -1,5 +1,10 @@
 # TelemetryDash
 
+> **Heads up: this project is heavily vibe-coded.** Most of the code was written with an AI
+> coding assistant and reviewed by feel rather than line by line. It works for my own setup,
+> but expect rough edges, and read the code before relying on it for anything important.
+> Timing data comes from NASCAR's public feeds and is unofficial.
+
 Live race-stats dashboard and shareable card templates. Design rules live in [docs/DESIGN.md](docs/DESIGN.md).
 
 One container serves the web UI (desktop + mobile) and a JSON API at `/api/v1` for future clients.
