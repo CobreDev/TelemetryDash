@@ -147,7 +147,7 @@ api.get(
     c.json(
       isLive(b) && !b.isRace
         ? buildPracticeView(b.lapTimes, profile, b.runName)
-        : buildOverviewView(buildOverview(b.lapTimes, b.pits, b.atLap), profile, b.atLap),
+        : buildOverviewView(buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b)), profile, b.atLap),
     ),
   ),
 );
@@ -156,7 +156,7 @@ api.get(
   '/series/:id/chase',
   withBundle((c, profile, b) => {
     if (!b.livePoints?.some((d) => d.is_in_chase)) return c.json({ error: 'no Chase data for this race' }, 404);
-    const running = new Map(buildOverview(b.lapTimes, b.pits, b.atLap).filter((r) => !r.out).map((r) => [r.carNumber, r.position]));
+    const running = new Map(buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b)).filter((r) => !r.out).map((r) => [r.carNumber, r.position]));
     const stagesComplete = stageEndsOf(b).filter((end) => end <= b.atLap).length;
     if (isLive(b)) {
       return c.json(buildChaseView(chaseStandings(b.livePoints, [], running, stagesComplete, { asTheyRun: true }), profile, stagesComplete));
@@ -181,7 +181,7 @@ for (const [path, build] of Object.entries(TAB_VIEWS)) {
     `/series/:id/${path}`,
     withBundle((c, profile, b) => {
       const totalLaps = b.race.actual_laps ?? b.race.scheduled_laps;
-      const order = buildOverview(b.lapTimes, b.pits, b.atLap);
+      const order = buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b));
       return c.json(build({ profile, lapTimes: b.lapTimes, pits: b.pits, atLap: b.atLap, totalLaps, stageEnds: stageEndsOf(b), order }));
     }),
   );

@@ -54,6 +54,14 @@ describe('live collector', () => {
     expect(laps[2]).toMatchObject({ LapTime: 30.2, LapSpeed: '179.1' });
   });
 
+  it('counts laps the cars behind completed after the leader crossed (live)', () => {
+    let s = applySnapshot(null, snap(0, 1, [['5', 0, 0, 0], ['45', 0, 0, 0]]), 1);
+    s = applySnapshot(s, snap(1, 1, [['5', 1, 30, 30], ['45', 1, 30.8, 30.8]]), 2);
+    const lt = toLapTimes(s);
+    expect(buildOverview(lt, [], 1).map((r) => r.lapsCompleted)).toEqual([1, 0]); // replay: at the leader's crossing
+    expect(buildOverview(lt, [], 1, true).map((r) => [r.lapsCompleted, r.gapToLeader])).toEqual([[1, 0], [1, expect.closeTo(0.8)]]);
+  });
+
   it('keeps a red flag on its lap when the caution resumes', () => {
     let s = applySnapshot(null, snap(10, 2, [['1', 10, 400, 60]]), 1);
     s = applySnapshot(s, snap(10, 3, [['1', 10, 400, 60]]), 2); // red during lap 11

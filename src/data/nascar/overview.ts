@@ -37,7 +37,17 @@ const AVG_LAPS = 10;
 /** Laps without crossing the line (at the car's normal pace) before it counts as out. */
 const OUT_LAPS = 4;
 
-export function buildOverview(lapTimes: FeedLapTimes, pits: FeedPitStop[], atLap: number): OverviewEntry[] {
+export function buildOverview(
+  lapTimes: FeedLapTimes,
+  pits: FeedPitStop[],
+  atLap: number,
+  /**
+   * Live data: "now" is the latest line crossing recorded, not the leader's. A snapshot comes
+   * in after the cars behind have crossed too, and cutting at the leader's crossing would
+   * leave them a lap short until the leader's next lap.
+   */
+  latest = false,
+): OverviewEntry[] {
   // Cumulative race time at the end of each lap, per car (index = lap).
   const cars = lapTimes.laps.map((car) => {
     const elapsed: number[] = [0];
@@ -52,7 +62,8 @@ export function buildOverview(lapTimes: FeedLapTimes, pits: FeedPitStop[], atLap
     .filter((c) => Number.isFinite(c.elapsed[atLap]))
     .sort((a, b) => a.elapsed[atLap]! - b.elapsed[atLap]!)[0];
   if (!leader) return [];
-  const tNow = leader.elapsed[atLap]!;
+  const crossed = cars.flatMap((c) => c.elapsed.filter((t) => Number.isFinite(t)));
+  const tNow = latest ? Math.max(leader.elapsed[atLap]!, ...crossed) : leader.elapsed[atLap]!;
 
   const fuel = fuelModel(lapTimes, pits, atLap);
 
