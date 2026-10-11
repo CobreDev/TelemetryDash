@@ -29,7 +29,10 @@ describe('race weekends (US Eastern)', () => {
     ];
     expect(homeSeries({ now: et('2026-10-10T10:00:00'), liveSeriesId: 'craftsman', nextStarts })).toEqual({ seriesId: 'craftsman', reason: 'live' });
     expect(homeSeries({ now: et('2026-10-10T10:00:00'), nextStarts })).toEqual({ seriesId: 'oreilly', reason: 'next-race' });
-    expect(homeSeries({ now: et('2026-10-10T20:00:00'), nextStarts })).toEqual({ seriesId: 'cup', reason: 'next-race' });
+    // nextStarts drops finished races; one that started late and is still running stays.
+    expect(homeSeries({ now: et('2026-10-10T20:00:00'), nextStarts: nextStarts.slice(0, 1) })).toEqual({ seriesId: 'cup', reason: 'next-race' });
+    const trucksNext = { seriesId: 'craftsman', startsAt: et('2026-10-16T20:00:00') };
+    expect(homeSeries({ now: et('2026-10-11T15:20:00'), nextStarts: [nextStarts[0]!, trucksNext] })).toEqual({ seriesId: 'cup', reason: 'next-race' });
     expect(homeSeries({ now: et('2026-10-13T10:00:00'), nextStarts })).toEqual({ seriesId: 'cup', reason: 'weekday' }); // Tuesday
   });
 });

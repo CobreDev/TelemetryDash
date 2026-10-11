@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildOverview } from './overview';
 import { applySnapshot, backfillFromLapTimes, needsBackfill, toLapTimes, type FeedLiveSnapshot } from './live';
 
 const snap = (lap: number, flag: number, cars: [string, number, number, number][]): FeedLiveSnapshot => ({
@@ -27,6 +28,13 @@ describe('live collector', () => {
     expect(laps.map((l) => [l.Lap, l.LapTime, l.Estimated ?? false])).toEqual([[1, 31, false], [2, 31.5, false], [3, 33, false], [4, 34.5, false]]);
     expect(toLapTimes(filled).flags.slice(1).map((f) => f.FlagState)).toEqual([1, 1, 2, 2]);
     expect(needsBackfill(filled)).toBe(false);
+  });
+
+  it('orders the field by starting position before the green', () => {
+    const pre = snap(0, 2, [['1', 0, 0, 0], ['9', 0, 0, 0], ['24', 0, 0, 0]]);
+    pre.vehicles.forEach((v, i) => (v.running_position = [3, 1, 2][i]!));
+    const s = applySnapshot(null, pre, 1);
+    expect(buildOverview(toLapTimes(s), [], 0).map((r) => r.carNumber)).toEqual(['9', '24', '1']);
   });
 
   it('keeps a red flag on its lap when the caution resumes', () => {

@@ -88,7 +88,7 @@ function raceIsOver(race: FeedRace): boolean {
 api.get('/home', async (c) => {
   const status = liveStatus();
   const liveSeriesId = status?.active && status.isRace ? status.seriesId : null;
-  const starts = await nextStarts().catch(() => []);
+  const starts = await nextStarts(Date.now(), raceIsOver).catch(() => []);
   return c.json(homeSeries({ now: Date.now(), liveSeriesId, nextStarts: starts }));
 });
 

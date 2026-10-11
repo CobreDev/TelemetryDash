@@ -184,14 +184,24 @@ export async function finishedRaceBundle(seriesId: string, isFinished: (race: Fe
 }
 
 /** The soonest race start per series that hasn't started yet (for choosing the home series). */
-export async function nextStarts(now = Date.now()): Promise<{ seriesId: string; startsAt: number }[]> {
+/**
+ * Each series' next race start. A race whose start has passed still counts until `isOver`
+ * says it's done (a late or long-delayed green), within 6 hours of its scheduled start.
+ */
+export async function nextStarts(now = Date.now(), isOver: (race: FeedRace) => boolean = () => true): Promise<{ seriesId: string; startsAt: number }[]> {
   const year = new Date(now).getFullYear();
   const out: { seriesId: string; startsAt: number }[] = [];
   for (const y of [year, year + 1]) {
     const list = await cachedJson<Record<string, FeedRace[]>>(`${y}/race_list_basic.json`, `${BASE}/${y}/race_list_basic.json`, SCHEDULE_TTL_MS).catch(() => ({}) as Record<string, FeedRace[]>);
     for (const [seriesId, feed] of Object.entries(FEED_SERIES)) {
       if (out.some((o) => o.seriesId === seriesId)) continue;
-      const starts = (list[`series_${feed}`] ?? []).map((r) => easternToEpoch(r.race_date)).filter((t) => t > now).sort((a, b) => a - b);
+      const starts = (list[`series_${feed}`] ?? [])
+        .filter((r) => {
+          const t = easternToEpoch(r.race_date);
+          return t > now || (t > now - 6 * 3600_000 && !isOver(r));
+        })
+        .map((r) => easternToEpoch(r.race_date))
+        .sort((a, b) => a - b);
       if (starts[0]) out.push({ seriesId, startsAt: starts[0] });
     }
   }

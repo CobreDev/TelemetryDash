@@ -77,6 +77,8 @@ export function buildOverview(lapTimes: FeedLapTimes, pits: FeedPitStop[], atLap
     return {
       elapsed,
       progress,
+      // Lap 0's running position is the starting spot: orders the field before the green.
+      start: car.Laps.find((l) => l.Lap === 0)?.RunningPos || Infinity,
       carNumber: car.Number,
       fullName: car.FullName,
       lapsCompleted: m,
@@ -97,7 +99,8 @@ export function buildOverview(lapTimes: FeedLapTimes, pits: FeedPitStop[], atLap
     (a, b) =>
       Number(a.out) - Number(b.out) ||
       b.lapsCompleted - a.lapsCompleted ||
-      a.elapsed[a.lapsCompleted]! - b.elapsed[b.lapsCompleted]!,
+      a.elapsed[a.lapsCompleted]! - b.elapsed[b.lapsCompleted]! ||
+      a.start - b.start,
   );
 
   /**
@@ -114,7 +117,7 @@ export function buildOverview(lapTimes: FeedLapTimes, pits: FeedPitStop[], atLap
   const first = rows[0];
 
   return rows.map((row, i) => {
-    const { elapsed: _e, progress: _p, ...r } = row;
+    const { elapsed: _e, progress: _p, start: _s, ...r } = row;
     const ahead = rows[i - 1];
     const lapsBehindAhead = ahead ? r.lapsDown - ahead.lapsDown : 0;
     return {

@@ -56,7 +56,8 @@ export interface LiveState {
   flag: number;
   /** Flag state per lap number (the lap being run), recorded as seen. */
   flags: Record<number, number>;
-  cars: Record<string, { fullName: string; inChase?: boolean; laps: RecordedLap[] }>;
+  /** `start`: running position before the car's first lap (the starting order). */
+  cars: Record<string, { fullName: string; inChase?: boolean; start?: number; laps: RecordedLap[] }>;
   /** ms epoch of the last snapshot that changed anything. */
   updatedAt: number;
 }
@@ -122,7 +123,9 @@ export function applySnapshot(prev: LiveState | null, snap: FeedLiveSnapshot, no
       }
       changed = true;
     }
-    state.cars[v.vehicle_number] = { fullName: v.driver.full_name, inChase: v.driver.is_in_chase, laps };
+    // Before the green every car is on lap 0, so the feed's running order is the starting order.
+    const start = laps.length ? prevCar?.start : v.running_position || prevCar?.start;
+    state.cars[v.vehicle_number] = { fullName: v.driver.full_name, inChase: v.driver.is_in_chase, start, laps };
   }
   if (changed) state.updatedAt = now;
   return state;
@@ -154,7 +157,7 @@ export function toLapTimes(state: LiveState): FeedLapTimes {
       Number: num,
       FullName: c.fullName,
       Laps: [
-        { Lap: 0, LapTime: null, RunningPos: c.laps[0]?.pos ?? 0 },
+        { Lap: 0, LapTime: null, RunningPos: c.start ?? c.laps[0]?.pos ?? 0 },
         ...c.laps.map((l) => ({
           Lap: l.lap,
           LapTime: l.time,

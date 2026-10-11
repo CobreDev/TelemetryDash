@@ -33,7 +33,7 @@ export type HomeReason = 'live' | 'next-race' | 'weekday';
 
 /**
  * The series to open to: a live race's series; else Friday-Sunday the series whose next race
- * starts soonest; else (Monday-Thursday, or nothing scheduled) Cup.
+ * starts soonest (or has started and isn't over); else (Monday-Thursday, or nothing scheduled) Cup.
  */
 export function homeSeries(opts: {
   now: number;
@@ -43,7 +43,8 @@ export function homeSeries(opts: {
   if (opts.liveSeriesId) return { seriesId: opts.liveSeriesId, reason: 'live' };
   const dow = etDayOfWeek(opts.now);
   if (dow === 5 || dow === 6 || dow === 0) {
-    const next = opts.nextStarts.filter((n) => n.startsAt > opts.now).sort((a, b) => a.startsAt - b.startsAt)[0];
+    // Starts in the past are races still running (the caller drops finished ones).
+    const next = [...opts.nextStarts].sort((a, b) => a.startsAt - b.startsAt)[0];
     if (next) return { seriesId: next.seriesId, reason: 'next-race' };
   }
   return { seriesId: 'cup', reason: 'weekday' };

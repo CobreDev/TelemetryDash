@@ -1,6 +1,6 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop } from '../../src/data/nascar/feed';
+import { easternToEpoch, withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop } from '../../src/data/nascar/feed';
 import { applySnapshot, backfillFromLapTimes, isRace as isRaceState, needsBackfill, toLapTimes, type FeedLiveSnapshot, type LiveState } from '../../src/data/nascar/live';
 import { withChaseMarkers } from '../../src/data/nascar/names';
 import { weekendEndsAt } from '../../src/data/nascar/weekend';
@@ -14,6 +14,10 @@ const FEED_URL = 'https://cf.nascar.com/live/feeds/live-feed.json';
 const ACTIVE_MS = 5_000; // DESIGN.md: poll every 5-10 s during a session
 const IDLE_MS = 60_000; // feed unchanged for a while: check once a minute
 const IDLE_AFTER_MS = 10 * 60_000;
+/** An unfinished race counts as live from this long before its scheduled start... */
+const PRE_RACE_MS = 90 * 60_000;
+/** ...until this long after (pre-race and pace laps leave the feed unchanged for a while). */
+const RACE_WINDOW_MS = 6 * 3600_000;
 const EXTRAS_MS = 15_000; // pit detail, live points, lap notes
 const BACKFILL_MS = 60_000; // official lap times, only while laps are estimated or flags unseen
 
@@ -26,6 +30,8 @@ let notes: { raceId: number; data: FeedLapNotes } | undefined;
 let extrasAt = 0;
 let backfillAt = 0;
 let lastFeedChange = 0;
+/** Scheduled start of the race being recorded (from the schedule; ms epoch). */
+let scheduled: { raceId: number; startsAt: number } | undefined;
 /** Last time NASCAR answered (a fresh copy, or 304 = unchanged). */
 let lastPolledOk = 0;
 let started = false;
@@ -115,7 +121,21 @@ async function poll(): Promise<number> {
     throw new Error(`live feed ${res.status}`);
   }
   await clearIfFinished();
-  return Date.now() - lastFeedChange > IDLE_AFTER_MS ? IDLE_MS : ACTIVE_MS;
+  if (state && isRaceState(state) && scheduled?.raceId !== state.raceId) {
+    const race = await raceById(state.seriesId, state.raceId).catch(() => undefined);
+    if (race) scheduled = { raceId: race.race_id, startsAt: easternToEpoch(race.race_date) };
+  }
+  return isActive() ? ACTIVE_MS : IDLE_MS;
+}
+
+/**
+ * The session is live while the feed keeps changing, and for a race not yet finished, for its
+ * whole window around the scheduled start (the field can sit on lap 0 for a long time).
+ */
+function isActive(now = Date.now()): boolean {
+  if (now - lastFeedChange < IDLE_AFTER_MS) return true;
+  if (!state || !isRaceState(state) || state.lap >= state.lapsInRace || scheduled?.raceId !== state.raceId) return false;
+  return now > scheduled.startsAt - PRE_RACE_MS && now < scheduled.startsAt + RACE_WINDOW_MS;
 }
 
 /** Starts polling once; safe to call more than once. */
@@ -176,7 +196,7 @@ export function liveStatus(): LiveStatus | null {
     flag: state.flag,
     updatedAt: state.updatedAt,
     polledAt: lastPolledOk,
-    active: Date.now() - lastFeedChange < IDLE_AFTER_MS,
+    active: isActive(),
   };
 }
 
