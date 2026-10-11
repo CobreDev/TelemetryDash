@@ -16,6 +16,8 @@
    version="1.1"
    inkscape:version="0.47 r22583"
    sodipodi:docname="Logo Chevrolet.svg">
+  <!-- Recolored from olive to Chevrolet bowtie gold -->
+  <defs><linearGradient id="bowtie-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6D47A"/><stop offset="0.55" stop-color="#D9A93C"/><stop offset="1" stop-color="#B07E22"/></linearGradient></defs>
   <defs
      id="defs2862">
     <inkscape:perspective
@@ -74,7 +76,7 @@
       <g
          id="g3690">
         <rect
-           style="fill:#808000;stroke:#808000;stroke-width:2.03929639;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
+           style="fill:url(#bowtie-gold);stroke:url(#bowtie-gold);stroke-width:2.03929639;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
            id="rect2828"
            width="649.11755"
            height="172.41231"
@@ -84,7 +86,7 @@
            ry="8.8406582"
            transform="matrix(1,0,-0.44661638,0.89472555,0,0)" />
         <rect
-           style="fill:#808000;stroke:#808000;stroke-width:1.54307926;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
+           style="fill:url(#bowtie-gold);stroke:url(#bowtie-gold);stroke-width:1.54307926;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
            id="rect2832"
            width="259.4985"
            height="258.46414"
@@ -97,7 +99,7 @@
          id="g3685">
         <text
            xml:space="preserve"
-           style="font-size:9.15978813px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#808000;fill-opacity:1;stroke:#808000;stroke-width:0.91597879;font-family:Arial;-inkscape-font-specification:Arial"
+           style="font-size:9.15978813px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:url(#bowtie-gold);fill-opacity:1;stroke:url(#bowtie-gold);stroke-width:0.91597879;font-family:Arial;-inkscape-font-specification:Arial"
            x="521.07745"
            y="602.27441"
            id="text3668"
@@ -107,10 +109,10 @@
              id="tspan3670"
              x="521.07745"
              y="602.27441"
-             style="font-size:25.64740562px;fill:#808000;stroke:#808000;stroke-width:0.91597879">R</tspan></text>
+             style="font-size:25.64740562px;fill:url(#bowtie-gold);stroke:url(#bowtie-gold);stroke-width:0.91597879">R</tspan></text>
         <path
            sodipodi:type="arc"
-           style="fill:none;stroke:#808000;stroke-width:2.93798923;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
+           style="fill:none;stroke:url(#bowtie-gold);stroke-width:2.93798923;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
            id="path3666"
            sodipodi:cx="781.09796"
            sodipodi:cy="261.3403"
