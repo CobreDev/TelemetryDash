@@ -7,7 +7,7 @@ import { seriesList } from '../series/profiles';
 import { api, isNoLive, type LiveStatus, type Source } from './api';
 import { UpcomingHeader } from './UpcomingHeader';
 import { DataError } from './NoLive';
-import { SourceContext, useSeriesApi } from './useApi';
+import { LIVE_REFRESH_MS, SourceContext, useSeriesApi } from './useApi';
 import { CompareTab } from './CompareTab';
 import { FuelTab } from './FuelTab';
 import { OverviewTab } from './OverviewTab';
@@ -22,9 +22,10 @@ import { TvLogo } from './TvLogo';
 const SERIES_KEY = 'td.series';
 const TAB_KEY = 'td.tab';
 const SOURCE_KEY = 'td.source';
-const LIVE_REFRESH_MS = 5_000;
 /** The badge turns amber when the server hasn't reached NASCAR's feed for this long. */
 const STALE_MS = 30_000;
+/** How often to check what's live when nothing is (the server checks NASCAR once a minute then). */
+const STATUS_IDLE_MS = 15_000;
 /** Longest the first paint waits for the server's choice of series. */
 const HOME_WAIT_MS = 1_000;
 
@@ -69,9 +70,11 @@ export function App() {
     setSource(s);
     remember(SOURCE_KEY, s);
   };
+  const status = useLiveStatus(source);
+  const liveSeriesId = status.live?.active ? status.live.seriesId : null;
   return (
-    <SourceContext.Provider value={{ source, refreshMs: source === 'live' ? LIVE_REFRESH_MS : 0 }}>
-      <Dashboard onSource={choose} />
+    <SourceContext.Provider value={{ source, liveSeriesId }}>
+      <Dashboard onSource={choose} status={status} />
     </SourceContext.Provider>
   );
 }
@@ -86,6 +89,7 @@ function useLiveStatus(source: Source) {
   const [loaded, setLoaded] = useState(false);
   const [skew, setSkew] = useState(0); // server clock minus ours
   const [now, setNow] = useState(Date.now());
+  const active = !!live?.active;
   useEffect(() => {
     if (source !== 'live') return;
     const load = () =>
@@ -101,13 +105,14 @@ function useLiveStatus(source: Source) {
         },
       );
     void load();
-    const poll = setInterval(load, LIVE_REFRESH_MS);
+    // Fast while anything is running; otherwise slow enough to just notice a session starting.
+    const poll = setInterval(load, active ? LIVE_REFRESH_MS : STATUS_IDLE_MS);
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => {
       clearInterval(poll);
       clearInterval(tick);
     };
-  }, [source]);
+  }, [source, active]);
   return { live, loaded, stale: live ? now + skew - live.polledAt > STALE_MS : false };
 }
 
@@ -148,13 +153,13 @@ function savedSeries() {
   }
 }
 
-function Dashboard({ onSource }: { onSource: (s: Source) => void }) {
+function Dashboard({ onSource, status }: { onSource: (s: Source) => void; status: ReturnType<typeof useLiveStatus> }) {
   // Profiles ship in the bundle (same module the API serves), so the bar has its series colors
   // on the first paint instead of flashing the default and then switching.
   const series: SeriesProfile[] = seriesList;
   const [seriesId, setSeriesId] = useState<string>(savedSeries() ?? 'cup');
   const { source } = useContext(SourceContext);
-  const { live, stale } = useLiveStatus(source);
+  const { live, stale } = status;
   // On page load in live mode, open to the series the server picks (the live race; Fri-Sun the
   // series racing next; Mon-Thu Cup). Once only, so it never overrides a later pick. The page
   // waits for the answer (up to HOME_WAIT_MS) so it doesn't draw one series and jump to another.

@@ -20,6 +20,11 @@ const SCHEDULE_TTL_MS = 60 * 60 * 1000;
 const BADGE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const UA = { 'User-Agent': 'TelemetryDash (personal, unofficial)' };
 
+/** NASCAR fetches that just failed (a file not published yet answers 403), by URL. */
+const failedAt = new Map<string, { at: number; error: Error }>();
+/** How long a failed fetch is remembered, so polling clients don't re-ask NASCAR every request. */
+const RETRY_AFTER_MS = 2 * 60_000;
+
 export async function cachedJson<T>(path: string, url: string, maxAgeMs = Infinity): Promise<T> {
   const file = join(config.dataDir, 'nascar', path);
   try {
@@ -30,10 +35,15 @@ export async function cachedJson<T>(path: string, url: string, maxAgeMs = Infini
   }
   let text: string;
   try {
+    const failed = failedAt.get(url);
+    if (failed && Date.now() - failed.at < RETRY_AFTER_MS) throw failed.error;
     const res = await fetch(url, { headers: UA });
     if (!res.ok) throw new Error(`${res.status} ${url}`);
     text = await res.text();
+    failedAt.delete(url);
   } catch (e) {
+    // Remember a fresh failure (not one replayed from the map) for RETRY_AFTER_MS.
+    if (failedAt.get(url)?.error !== e) failedAt.set(url, { at: Date.now(), error: e as Error });
     // NASCAR unreachable or erroring: an out-of-date copy beats none (the schedule, a race's
     // files). Only a file never fetched fails.
     const stale = await readFile(file, 'utf8').catch(() => undefined);

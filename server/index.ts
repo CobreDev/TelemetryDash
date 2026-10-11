@@ -11,9 +11,10 @@ if (existsSync(config.staticDir)) {
   // serveStatic resolves `root` against the working directory and mishandles absolute paths
   // (every file then falls through to the HTML shell), so always hand it a relative one.
   app.use('/*', serveStatic({ root: relative(process.cwd(), config.staticDir) || '.' }));
-  // SPA fallback: any non-API path loads the app shell.
+  // SPA fallback: any non-API page path loads the app shell. A missing file (a path with an
+  // extension, like a font) is a 404, not the shell: browsers reject HTML served as a font.
   const shell = await readFile(join(config.staticDir, 'index.html'), 'utf8');
-  app.get('*', (c) => c.html(shell));
+  app.get('*', (c) => (/\.[a-z0-9]+$/i.test(c.req.path) ? c.notFound() : c.html(shell)));
 }
 
 void startLiveCollector();
