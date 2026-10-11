@@ -23,6 +23,9 @@ export interface ChaseRow {
   points: string;
   /** Same as `points` (kept for API clients). */
   livePoints: string;
+  /** Points behind the leader, "−74" ("–" for the leader), and behind the driver just ahead. */
+  gap: string;
+  gapAhead: string;
   /** Points gained so far this race, e.g. "+43". */
   earned: string;
   /** Current running position, e.g. "P14", or "–". */
@@ -34,20 +37,31 @@ export interface ChaseView {
   /** 'live': entering this race and as they run. 'standings': after the last race (off-week). */
   mode: 'live' | 'standings';
   /** Hover text per column. */
-  hints: { change: string; running: string; points: string; gain: string };
+  hints: { change: string; running: string; points: string; gap: string; gain: string };
   rows: ChaseRow[];
-  columns: { rank: string; change: string; car: string; name: string; running: string; points: string; gain: string };
+  columns: { rank: string; change: string; car: string; name: string; running: string; points: string; gap: string; gain: string };
   notes: string[];
+}
+
+const MINUS = '\u2212';
+/** Fills in `gap` (to the leader) and `gapAhead` on rows already sorted by `points`. */
+function withGaps<R extends { points: string }>(rows: R[]): (R & { gap: string; gapAhead: string })[] {
+  const lead = Number(rows[0]?.points ?? 0);
+  return rows.map((r, i) => {
+    const pts = Number(r.points);
+    const behind = (n: number) => (n > 0 ? `${MINUS}${n}` : '–');
+    return { ...r, gap: i === 0 ? '–' : behind(lead - pts), gapAhead: i === 0 ? '–' : behind(Number(rows[i - 1]!.points) - pts) };
+  });
 }
 
 export function buildChaseView(entries: ChaseEntry[], profile: SeriesProfile, stagesComplete: number): ChaseView {
   return {
     title: 'Chase standings',
     mode: 'live',
-    hints: { change: 'Move from where they entered this race', running: 'Current running position', points: 'Points as they run', gain: 'Points gained so far as they run (stages plus current position)' },
-    columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Current', points: 'Pts', gain: 'Gain' },
+    hints: { change: 'Move from where they entered this race', running: 'Current running position', points: 'Points as they run', gap: 'Points behind the leader as they run', gain: 'Points gained so far as they run (stages plus current position)' },
+    columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Current', points: 'Pts', gap: 'Gap', gain: 'Gain' },
     // As they run: the order the standings would be in if the race ended now.
-    rows: [...entries].sort((a, b) => a.rankLive - b.rankLive).map((e) => {
+    rows: withGaps([...entries].sort((a, b) => a.rankLive - b.rankLive).map((e) => {
       const name = parseDriverName(e.name);
       const delta = e.rankBefore - e.rankLive;
       return {
@@ -66,7 +80,7 @@ export function buildChaseView(entries: ChaseEntry[], profile: SeriesProfile, st
         earned: `+${e.pointsLive - e.pointsBefore}`,
         running: e.running ? `P${e.running}` : '–',
       };
-    }),
+    })),
     notes: [
       'As they run: Pos and Pts are the standings if the race ended now. ± is the move from where they entered the race; Gain is the points picked up so far.',
       `As they run counts finishing points for the current running position${stagesComplete ? ` plus points from ${stagesComplete === 1 ? 'stage 1' : `stages 1–${stagesComplete}`}` : ''}; fastest-lap and bonus points are added at the finish.`,
@@ -97,9 +111,9 @@ export function buildChaseStandingsView(
   return {
     title: 'Chase standings',
     mode: 'standings',
-    hints: { change: `Move in the ${raceName}`, running: `Finish in the ${raceName}`, points: 'Current points', gain: `Points earned in the ${raceName}` },
-    columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Finish', points: 'Pts', gain: 'Gain' },
-    rows: field
+    hints: { change: `Move in the ${raceName}`, running: `Finish in the ${raceName}`, points: 'Current points', gap: 'Points behind the leader', gain: `Points earned in the ${raceName}` },
+    columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Finish', points: 'Pts', gap: 'Gap', gain: 'Gain' },
+    rows: withGaps(field
       .map(({ d }) => {
         const rank = after.get(d.driver_id)!;
         const delta = before.get(d.driver_id)! - rank;
@@ -123,7 +137,7 @@ export function buildChaseStandingsView(
           running: pos ? `P${pos}` : '–',
         };
       })
-      .sort((a, b) => a.rank - b.rank),
+      .sort((a, b) => a.rank - b.rank)),
     notes: [`Points after the ${raceName}. ± is the move in that race, Finish where they finished and Gain the points they earned.`],
   };
 }

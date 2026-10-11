@@ -42,6 +42,7 @@ function ChasePanel({ view }: { view: ChaseView }) {
             <th className="left">{view.columns.name}</th>
             <th className="shrink" title={view.hints.running}>{view.columns.running}</th>
             <th className="shrink" title={view.hints.points}>{view.columns.points}</th>
+            <th className="shrink" title={view.hints.gap}>{view.columns.gap}</th>
             <th className="shrink" title={view.hints.gain}>{view.columns.gain}</th>
           </tr>
         </thead>
@@ -61,6 +62,9 @@ function ChasePanel({ view }: { view: ChaseView }) {
               <td className="num muted">{r.running}</td>
               <td className="num" title={`${r.pointsBefore} ${view.mode === 'live' ? 'entering this race' : 'before the last race'}`}>
                 {r.points}
+              </td>
+              <td className="num muted" title={r.gapAhead === '–' ? undefined : `${r.gapAhead} to the driver ahead`}>
+                {r.gap}
               </td>
               <td className="num chase-gain">{r.earned}</td>
             </tr>
