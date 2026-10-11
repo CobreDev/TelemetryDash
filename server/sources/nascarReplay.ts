@@ -27,9 +27,18 @@ export async function cachedJson<T>(path: string, url: string, maxAgeMs = Infini
   } catch {
     /* not cached yet */
   }
-  const res = await fetch(url, { headers: UA });
-  if (!res.ok) throw new Error(`${res.status} ${url}`);
-  const text = await res.text();
+  let text: string;
+  try {
+    const res = await fetch(url, { headers: UA });
+    if (!res.ok) throw new Error(`${res.status} ${url}`);
+    text = await res.text();
+  } catch (e) {
+    // NASCAR unreachable or erroring: an out-of-date copy beats none (the schedule, a race's
+    // files). Only a file never fetched fails.
+    const stale = await readFile(file, 'utf8').catch(() => undefined);
+    if (stale !== undefined) return JSON.parse(stale) as T;
+    throw e;
+  }
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, text);
   return JSON.parse(text) as T;

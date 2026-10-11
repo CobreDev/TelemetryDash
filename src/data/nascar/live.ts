@@ -8,7 +8,13 @@ export interface FeedLiveVehicle {
   vehicle_number: string;
   driver: { driver_id: number; full_name: string; first_name: string; last_name: string; is_in_chase?: boolean };
   running_position: number;
+  /** Starting spot (0 or missing in practice). */
+  starting_position?: number;
   laps_completed: number;
+  /** The car's fastest lap so far, per NASCAR: lap number, seconds and mph. */
+  best_lap?: number;
+  best_lap_time?: number;
+  best_lap_speed?: number;
   last_lap_time: number;
   last_lap_speed: number;
   /** Seconds since the session started, as of the car's latest timing line. */
@@ -123,8 +129,14 @@ export function applySnapshot(prev: LiveState | null, snap: FeedLiveSnapshot, no
       }
       changed = true;
     }
-    // Before the green every car is on lap 0, so the feed's running order is the starting order.
-    const start = laps.length ? prevCar?.start : v.running_position || prevCar?.start;
+    // NASCAR's own best lap fixes a lap we only estimated (run while the server was down).
+    const bi = v.best_lap ? laps.findIndex((l) => l.lap === v.best_lap && l.estimated) : -1;
+    if (bi >= 0 && v.best_lap_time! > 0) {
+      laps[bi] = { ...laps[bi]!, time: v.best_lap_time!, speed: v.best_lap_speed || null, estimated: false };
+      changed = true;
+    }
+    // The starting spot; before the green the running order is the same thing.
+    const start = v.starting_position || (laps.length ? prevCar?.start : v.running_position || prevCar?.start);
     state.cars[v.vehicle_number] = { fullName: v.driver.full_name, inChase: v.driver.is_in_chase, start, laps };
   }
   if (changed) state.updatedAt = now;

@@ -37,6 +37,23 @@ describe('live collector', () => {
     expect(buildOverview(toLapTimes(s), [], 0).map((r) => r.carNumber)).toEqual(['9', '24', '1']);
   });
 
+  it('takes the starting spot from the feed, even when joining after the green', () => {
+    const mid = snap(5, 1, [['1', 5, 150, 30], ['9', 5, 151, 30]]);
+    mid.vehicles[0]!.starting_position = 2;
+    mid.vehicles[1]!.starting_position = 1;
+    expect(toLapTimes(applySnapshot(null, mid, 1)).laps.map((c) => c.Laps[0]!.RunningPos)).toEqual([2, 1]);
+  });
+
+  it("uses NASCAR's best lap for a lap it only estimated", () => {
+    let s = applySnapshot(null, snap(1, 1, [['1', 1, 31, 31]]), 1);
+    const back = snap(4, 1, [['1', 4, 124, 31]]); // laps 2-4 run while down
+    Object.assign(back.vehicles[0]!, { best_lap: 3, best_lap_time: 30.2, best_lap_speed: 179.1 });
+    s = applySnapshot(s, back, 2);
+    const laps = toLapTimes(s).laps[0]!.Laps.slice(1);
+    expect(laps.map((l) => [l.Lap, l.Estimated ?? false])).toEqual([[1, false], [2, true], [3, false], [4, true]]);
+    expect(laps[2]).toMatchObject({ LapTime: 30.2, LapSpeed: '179.1' });
+  });
+
   it('keeps a red flag on its lap when the caution resumes', () => {
     let s = applySnapshot(null, snap(10, 2, [['1', 10, 400, 60]]), 1);
     s = applySnapshot(s, snap(10, 3, [['1', 10, 400, 60]]), 2); // red during lap 11
