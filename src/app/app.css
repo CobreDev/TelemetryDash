@@ -122,6 +122,10 @@ main { padding: 16px; }
 /* Pit road's stop log: about 12 rows tall, older stops scroll; the header stays put. */
 .stops-scroll { max-height: 520px; overflow-y: auto; }
 .stops-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+/* Penalties: about six rows, then it scrolls with the header pinned. */
+.penalties-scroll { max-height: 260px; overflow-y: auto; }
+.penalties-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.penalties .dash-table td.left { font-size: 14px; }
 
 .panel { container-type: inline-size; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
 .panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }

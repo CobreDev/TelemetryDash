@@ -1,6 +1,7 @@
 import { api, isNoLive } from './api';
 import { CarNumber } from './CarNumber';
 import { ChaseCard, ChaseStandingsCard } from './ChaseCard';
+import { PenaltiesCard } from './PenaltiesCard';
 import { RaceControlCard } from './RaceControlCard';
 import { DataError } from './NoLive';
 import { useSeriesApi } from './useApi';
@@ -127,6 +128,7 @@ export function OverviewTab({ seriesId, showNextRace, final }: { seriesId: strin
       {/* Right column, the same 420px as off-week: race control above the Chase standings. */}
       <div className="overview-side">
         {!practice && <RaceControlCard seriesId={seriesId} />}
+        {!practice && <PenaltiesCard seriesId={seriesId} />}
         <ChaseCard seriesId={seriesId} />
       </div>
     </div>

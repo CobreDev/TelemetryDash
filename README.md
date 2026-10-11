@@ -87,6 +87,7 @@ When nothing is live for a series, live endpoints answer `409` with
 | `GET /api/v1/series/:id/overview` | Running order (race) or best-lap timing (practice/qualifying) |
 | `GET /api/v1/series/:id/chase` | Chase standings entering the race and as they run |
 | `GET /api/v1/series/:id/race-control` | Race notes and flag changes, newest first (races only) |
+| `GET /api/v1/series/:id/penalties` | Penalties read from the race notes, with the punishment (races only) |
 | `GET /api/v1/series/:id/upcoming` | Next race for the header (name, start ET, laps, stages, TV) |
 | `GET /api/v1/series/:id/schedule` | Next race weekend's on-track sessions |
 | `GET /api/v1/series/:id/results` | Last race's final results |

@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { buildChaseStandingsView, buildChaseView } from '../src/cards/chase.model';
 import { buildOverviewView, buildPracticeView } from '../src/cards/overview.model';
 import { buildPaceRankings } from '../src/cards/paceRankings.model';
+import { buildPenaltiesView } from '../src/cards/penalties.model';
 import { buildRaceControlView, type StageResult } from '../src/cards/raceControl.model';
 import { parseDriverName } from '../src/data/nascar/names';
 import { easternToEpoch, flagFromFeed, type FeedRace } from '../src/data/nascar/feed';
@@ -240,6 +241,17 @@ api.get(
         stages: stageResults(b),
       }),
     );
+  }),
+);
+
+/** Penalties from NASCAR's race notes, newest first. Races only. */
+api.get(
+  '/series/:id/penalties',
+  withBundle((c, profile, b) => {
+    if (isLive(b) && !b.isRace) return c.json({ error: 'not a race' }, 404);
+    const lapFlags = Array.from({ length: b.atLap + 1 }, (_, i) => flagFromFeed(b.lapTimes.flags.find((f) => f.LapsCompleted === i + 1)?.FlagState));
+    const names = new Map(b.lapTimes.laps.map((car) => [car.Number, car.FullName]));
+    return c.json(buildPenaltiesView(profile.id, b.lapNotes, lapFlags, names, isLive(b) ? Infinity : b.atLap));
   }),
 );
 
