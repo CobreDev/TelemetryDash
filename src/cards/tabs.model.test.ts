@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FeedLapTimes, FeedPitStop } from '../data/nascar/feed';
 import { buildOverview } from '../data/nascar/overview';
 import { cup } from '../series/profiles';
-import { buildFuelView, buildTopSpeedView, type Inputs } from './tabs.model';
+import { buildFuelView, buildPitRoadView, buildTopSpeedView, type Inputs } from './tabs.model';
 
 // Two cars, 40 green laps; car 1 stops for four tires on lap 30, car 2 never stops.
 const N = 40;
@@ -45,5 +45,20 @@ describe('tab view models', () => {
     expect([car1.fuel, car1.lapsLeft, car1.reachesStatus]).toEqual(['67%', '~20', 'mid']);
     const car2 = v.rows.find((r) => r.carNumber === '2')!;
     expect([car2.fuel, car2.reachesStatus]).toEqual(['0%', 'bad']);
+  });
+
+  it('lists cars on pit road, most positions gained first (live only)', () => {
+    const carInfo = {
+      '1': { pit: true, position: 5, pitInRank: 3 },
+      '2': { pit: true, position: 2, pitInRank: 6 },
+      '3': { pit: false, position: 1, pitInRank: 1 },
+      '4': { pit: true, out: true, position: 30, pitInRank: 20 },
+    };
+    const live = buildPitRoadView({ ...inputs(), carInfo, live: true }).onPitRoad!;
+    expect(live.map((r) => [r.carNumber, r.entered, r.now, r.gained])).toEqual([
+      ['2', '6', '2', '+4'],
+      ['1', '3', '5', '−2'],
+    ]);
+    expect(buildPitRoadView({ ...inputs(), carInfo }).onPitRoad).toBeNull();
   });
 });

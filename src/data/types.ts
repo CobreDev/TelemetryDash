@@ -54,4 +54,6 @@ export interface PaceDataset {
   source: DataSource;
   /** Live practice/qualifying: the session name. Absent for races. */
   session?: string;
+  /** Live races: NASCAR's laps to go, used instead of working it out. */
+  lapsToGo?: number;
 }

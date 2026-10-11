@@ -18,7 +18,17 @@ function Entry({ e }: { e: RaceControlEntry }) {
       <span className="rc-text">
         {e.kind === 'flag' && <i className={`flag-dot flag-${e.flag}`} aria-hidden />}
         {e.kind === 'info' && <span className="rc-tag">Stat</span>}
+        {e.kind === 'stage' && <i className="flag-dot flag-stage" aria-hidden />}
         <NoteText text={e.text} />
+        {e.stage && (
+          <span className="rc-stage-list">
+            {e.stage.results.map((r) => (
+              <span key={r.carNumber} className="rc-stage-pts">
+                <strong>#{r.carNumber}</strong> {r.name.split(' ').slice(-1)[0]} <span className="muted">{r.points}</span>
+              </span>
+            ))}
+          </span>
+        )}
       </span>
     </li>
   );
@@ -35,6 +45,7 @@ export function RaceControlCard({ seriesId }: { seriesId: string }) {
     <section className="panel race-control">
       <div className="panel-head">
         <h2>{view.title}</h2>
+        <span className="muted rc-cautions">{view.cautions}</span>
       </div>
       {view.entries.length === 0 ? (
         <p className="muted">No notes yet.</p>

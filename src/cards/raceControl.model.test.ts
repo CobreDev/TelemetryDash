@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TrackFlag } from '../data/types';
-import { buildRaceControlView } from './raceControl.model';
+import { buildRaceControlView, countCautions } from './raceControl.model';
 
 const notes = {
   laps: {
@@ -63,5 +63,29 @@ describe('buildRaceControlView', () => {
   it('leaves out notes after the replay lap', () => {
     const replay = buildRaceControlView(notes, flags([[30, 'green']]), 30);
     expect(replay.entries.map((e) => e.lapLabel)).toEqual(['Lap 30', 'Start', 'Pre-race']);
+  });
+
+  it('counts cautions and caution laps, or takes NASCAR\'s', () => {
+    expect(view.cautions).toBe('1 caution · 7 laps');
+    expect(countCautions(flags([[5, 'green'], [2, 'yellow'], [1, 'red'], [2, 'yellow'], [3, 'green'], [1, 'yellow']]))).toEqual({ count: 2, laps: 5 });
+    expect(buildRaceControlView(notes, flags([[3, 'green']]), Infinity, undefined, { cautions: { count: 2, laps: 9 } }).cautions).toBe('2 cautions · 9 laps');
+  });
+
+  it('calls a caution NASCAR notes as a competition caution "Competition Caution"', () => {
+    const comp = { laps: { '21': [{ FlagState: 2, Note: 'Competition caution to check tire wear', NoteID: 9 }] } };
+    const v = buildRaceControlView(comp, flags([[20, 'green'], [4, 'yellow'], [1, 'green']]));
+    expect(v.entries.find((e) => e.kind === 'flag' && e.flag === 'yellow')?.text).toBe('Competition Caution');
+  });
+
+  it('puts the stage result on the stage\'s last lap, above that lap\'s notes', () => {
+    const v = buildRaceControlView(notes, flags([[30, 'green'], [7, 'yellow'], [3, 'green']]), Infinity, undefined, {
+      stages: [{ stage: 1, lap: 30, results: [{ carNumber: '34', name: 'Todd Gilliland', points: 10 }, { carNumber: '11', name: 'Denny Hamlin', points: 9 }] }],
+    });
+    const lap30 = v.entries.filter((e) => e.lap === 30).map((e) => [e.kind, e.text]);
+    expect(lap30).toEqual([
+      ['stage', 'Stage 1 winner: #34 Todd Gilliland'],
+      ['note', '#34 wins stage 1'],
+      ['flag', 'Caution'],
+    ]);
   });
 });

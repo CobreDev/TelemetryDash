@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="721.67017"
+   height="277.13992"
+   viewBox="0 0 721.67017 277.13992"
+   id="svg2860"
+   version="1.1"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="Logo Chevrolet.svg">
+  <defs
+     id="defs2862">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 526.18109 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="744.09448 : 526.18109 : 1"
+       inkscape:persp3d-origin="372.04724 : 350.78739 : 1"
+       id="perspective2868" />
+    <inkscape:perspective
+       id="perspective2848"
+       inkscape:persp3d-origin="0.5 : 0.33333333 : 1"
+       inkscape:vp_z="1 : 0.5 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_x="0 : 0.5 : 1"
+       sodipodi:type="inkscape:persp3d" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.49497475"
+     inkscape:cx="-40.110647"
+     inkscape:cy="-56.0469"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1280"
+     inkscape:window-height="748"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata2865">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Capa 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-6.7262278,-5.396016)">
+    <g
+       id="g3694"
+       transform="translate(-1.0101526,-334.36049)">
+      <g
+         id="g3690">
+        <rect
+           style="fill:#808000;stroke:#808000;stroke-width:2.03929639;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
+           id="rect2828"
+           width="649.11755"
+           height="172.41231"
+           x="278.47842"
+           y="438.77628"
+           rx="10"
+           ry="8.8406582"
+           transform="matrix(1,0,-0.44661638,0.89472555,0,0)" />
+        <rect
+           style="fill:#808000;stroke:#808000;stroke-width:1.54307926;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
+           id="rect2832"
+           width="259.4985"
+           height="258.46414"
+           x="240.5085"
+           y="340.52805"
+           rx="10"
+           ry="10" />
+      </g>
+      <g
+         id="g3685">
+        <text
+           xml:space="preserve"
+           style="font-size:9.15978813px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;writing-mode:lr-tb;text-anchor:start;fill:#808000;fill-opacity:1;stroke:#808000;stroke-width:0.91597879;font-family:Arial;-inkscape-font-specification:Arial"
+           x="521.07745"
+           y="602.27441"
+           id="text3668"
+           sodipodi:linespacing="125%"
+           transform="scale(0.9865551,1.0136281)"><tspan
+             sodipodi:role="line"
+             id="tspan3670"
+             x="521.07745"
+             y="602.27441"
+             style="font-size:25.64740562px;fill:#808000;stroke:#808000;stroke-width:0.91597879">R</tspan></text>
+        <path
+           sodipodi:type="arc"
+           style="fill:none;stroke:#808000;stroke-width:2.93798923;stroke-miterlimit:4;stroke-opacity:0.94117647;stroke-dasharray:none;stroke-dashoffset:0"
+           id="path3666"
+           sodipodi:cx="781.09796"
+           sodipodi:cy="261.3403"
+           sodipodi:rx="14.015096"
+           sodipodi:ry="13.865201"
+           d="m 795.11306,261.3403 c 0,7.65754 -6.27477,13.8652 -14.0151,13.8652 -7.74032,0 -14.01509,-6.20766 -14.01509,-13.8652 0,-7.65754 6.27477,-13.8652 14.01509,-13.8652 7.74033,0 14.0151,6.20766 14.0151,13.8652 z"
+           transform="matrix(1.0156313,0,0,1.0266112,-269.43581,332.86737)" />
+      </g>
+    </g>
+  </g>
+</svg>

@@ -19,7 +19,15 @@ export function replayPaceDataset(
     source = 'replay',
     session,
     currentFlag,
-  }: { source?: 'replay' | 'live'; session?: string; /** Live: the flag right now. */ currentFlag?: number } = {},
+    lapsToGo,
+  }: {
+    source?: 'replay' | 'live';
+    session?: string;
+    /** Live: the flag right now. */
+    currentFlag?: number;
+    /** Live: NASCAR's laps to go. */
+    lapsToGo?: number;
+  } = {},
 ): PaceDataset {
   const { results, falloffPerLap } = computePace(lapTimes, pits, upToLap);
   return {
@@ -39,6 +47,7 @@ export function replayPaceDataset(
     lapFrom: 1,
     lapTo: upToLap,
     live: true,
+    lapsToGo,
     flag: flagFromFeed(currentFlag ?? lapTimes.flags.find((f) => f.LapsCompleted === upToLap)?.FlagState),
     lapFlags: Array.from({ length: upToLap }, (_, i) =>
       flagFromFeed(lapTimes.flags.find((f) => f.LapsCompleted === i + 1)?.FlagState),

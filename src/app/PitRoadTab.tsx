@@ -43,6 +43,47 @@ function AverageTable({ title, rows }: { title: string; rows: PitRoadView['fourT
   );
 }
 
+/** Cars on pit road right now, most positions gained in the pits first. Live races only. */
+function OnPitRoad({ rows }: { rows: PitRoadView['onPitRoad'] }) {
+  return (
+    <section className="panel">
+      <div className="panel-head">
+        <h2>Live pit stops</h2>
+      </div>
+      {rows === null ? (
+        <p className="muted">Shown during a live race.</p>
+      ) : rows.length === 0 ? (
+        <p className="muted">No one on pit road.</p>
+      ) : (
+        <div className="table-scroll stops-scroll">
+          <table className="dash-table">
+            <thead>
+              <tr>
+                <th className="shrink" title="Running position now">Pos</th>
+                <th className="shrink">Car</th>
+                <th className="left">Driver</th>
+                <th className="shrink" title="Running position entering pit road">In</th>
+                <th className="shrink" title="Positions gained or lost on pit road">±</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.carNumber} className={rowClass(r)}>
+                  <td className="num">{r.now}</td>
+                  <CarCell who={r} />
+                  <NameCell who={r} />
+                  <td className="num muted">{r.entered}</td>
+                  <td className={`num change-${r.gainedDir}`}>{r.gained}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function PitRoadTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.pitRoad, seriesId);
   // Full names; the whole table switches to two-line names together when they don't fit.
@@ -50,8 +91,9 @@ export function PitRoadTab({ seriesId }: { seriesId: string }) {
   if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
-    <div className="tab-grid">
-      <section className="panel span-2">
+    <div className="tab-grid pit-grid">
+      <OnPitRoad rows={data.onPitRoad} />
+      <section className="panel">
         <div className="panel-head">
           <h2>Latest stops</h2>
         </div>

@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { easternToEpoch, withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop } from '../../src/data/nascar/feed';
 import { applySnapshot, backfillFromLapTimes, isRace as isRaceState, needsBackfill, toLapTimes, type FeedLiveSnapshot, type LiveState } from '../../src/data/nascar/live';
+import { makeOf, type CarInfo } from '../../src/data/nascar/cars';
 import { withChaseMarkers } from '../../src/data/nascar/names';
 import { weekendEndsAt } from '../../src/data/nascar/weekend';
 import type { FeedLivePoints } from '../../src/data/nascar/points';
@@ -35,6 +36,7 @@ let scheduled: { raceId: number; startsAt: number } | undefined;
 /** Last time NASCAR answered (a fresh copy, or 304 = unchanged). */
 let lastPolledOk = 0;
 let started = false;
+const seenStatus = new Set<number>([1]);
 
 const stateFile = () => join(config.dataDir, 'live', 'current.json');
 
@@ -109,6 +111,13 @@ async function poll(): Promise<number> {
     // Don't start recording a race that has already finished (e.g. the saved copy was cleared,
     // or the server came up after the checkered): the replay files cover it.
     if (!state && snap.run_type === 3 && snap.lap_number >= snap.laps_in_race) return IDLE_MS;
+    // The feed's car status codes aren't documented; log new ones so they can be mapped.
+    for (const v of snap.vehicles) {
+      if (!seenStatus.has(v.status)) {
+        seenStatus.add(v.status);
+        console.log(`live: car status ${v.status} first seen (#${v.vehicle_number}, lap ${snap.lap_number}, on track ${v.is_on_track}, DVP ${v.is_on_dvp})`);
+      }
+    }
     const next = applySnapshot(state, snap, Date.now());
     if (next !== state && next.updatedAt !== state?.updatedAt) lastFeedChange = Date.now();
     state = next;
@@ -209,6 +218,10 @@ export interface LiveBundle extends ReplayBundle {
   runType: number;
   isRace: boolean;
   updatedAt: number;
+  /** NASCAR's laps to go (races). */
+  lapsToGo?: number;
+  /** NASCAR's caution count and caution laps so far (races). */
+  cautions?: { count: number; laps: number };
 }
 
 /** The current live session for this series, in the same shape as a replay bundle; or null. */
@@ -240,6 +253,14 @@ export async function liveBundle(seriesId: string): Promise<LiveBundle | null> {
     track: await trackInfo(race.track_id),
     livePoints: isRace ? points : undefined,
     lapNotes: notes?.raceId === s.raceId ? notes.data : undefined,
+    lapsToGo: isRace ? s.lapsToGo : undefined,
+    cautions: isRace ? s.cautions : undefined,
+    carInfo: Object.fromEntries(
+      Object.entries(s.cars).map(([num, c]): [string, CarInfo] => [
+        num,
+        { make: makeOf(c.make), out: c.status !== undefined && c.status !== 1, dvp: !!c.dvp, pit: c.onTrack === false, position: c.pos, pitInRank: c.pitInRank },
+      ]),
+    ),
     results: undefined,
     atLap: s.lap,
   };

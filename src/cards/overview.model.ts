@@ -1,4 +1,5 @@
 import { CAUTION_BURN, type OverviewEntry } from '../data/nascar/overview';
+import { MAKE_NAME, makeLogo, type CarInfo } from '../data/nascar/cars';
 import type { FeedLapTimes } from '../data/nascar/feed';
 import { parseDriverName } from '../data/nascar/names';
 import { gapTime, lapTime } from '../format/format';
@@ -28,6 +29,20 @@ export interface OverviewRow {
   avgLap: string;
   isLeader: boolean;
   out: boolean;
+  /** Manufacturer logo and name, when known. */
+  make?: { name: string; logo: string };
+  /** Live: on the DVP clock / on pit road right now. */
+  dvp?: boolean;
+  pit?: boolean;
+}
+
+/** Make, DVP and pit road fields for a row. */
+function carExtras(info: CarInfo | undefined): Pick<OverviewRow, 'make' | 'dvp' | 'pit'> {
+  return {
+    make: info?.make ? { name: MAKE_NAME[info.make], logo: makeLogo(info.make) } : undefined,
+    dvp: info?.dvp || undefined,
+    pit: info?.pit || undefined,
+  };
 }
 
 export interface OverviewView {
@@ -43,7 +58,12 @@ export interface OverviewView {
 const laps = (n: number) => `+${n} ${n === 1 ? 'Lap' : 'Laps'}`;
 
 /** Display strings for the Overview tab; shared by the web UI and API clients. */
-export function buildOverviewView(entries: OverviewEntry[], profile: SeriesProfile, atLap: number): OverviewView {
+export function buildOverviewView(
+  entries: OverviewEntry[],
+  profile: SeriesProfile,
+  atLap: number,
+  carInfo: Record<string, CarInfo> = {},
+): OverviewView {
   const shown = new Set<string>();
   const rows = entries.map((e): OverviewRow => {
     const name = parseDriverName(e.fullName);
@@ -65,6 +85,8 @@ export function buildOverviewView(entries: OverviewEntry[], profile: SeriesProfi
       avgLap: e.avgLap10 === null ? EN_DASH : lapTime(e.avgLap10),
       isLeader: e.position === 1,
       out: e.out,
+      // An out car isn't on pit road or the DVP clock in any useful sense.
+      ...carExtras(e.out ? { make: carInfo[e.carNumber]?.make } : carInfo[e.carNumber]),
     };
   });
 
@@ -98,7 +120,7 @@ export function buildOverviewView(entries: OverviewEntry[], profile: SeriesProfi
  * lastLap = best lap, gapToLeader = gap to the fastest, interval = gap to the car ahead,
  * lapsSincePit = laps run. Fuel and 10-lap average don't apply and show a dash.
  */
-export function buildPracticeView(lapTimes: FeedLapTimes, profile: SeriesProfile, session: string): OverviewView {
+export function buildPracticeView(lapTimes: FeedLapTimes, profile: SeriesProfile, session: string, carInfo: Record<string, CarInfo> = {}): OverviewView {
   const shown = new Set<string>();
   // Laps that include time parked in the garage are "timed" but aren't real laps: only laps
   // within 1.5x the field's fastest count toward a best lap.
@@ -133,6 +155,7 @@ export function buildPracticeView(lapTimes: FeedLapTimes, profile: SeriesProfile
       avgLap: EN_DASH,
       isLeader: i === 0 && best !== null,
       out: best === null,
+      ...carExtras(carInfo[c.Number]),
     };
   });
   return {

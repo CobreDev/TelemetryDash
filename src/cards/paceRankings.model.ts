@@ -161,7 +161,7 @@ export function buildPaceRankings(
 
   // Practice and qualifying have no race length: show the session and its lap count instead.
   const progress =
-    data.live && !data.session && data.race.totalLaps > 0 ? raceProgress(data.lapTo, data.race.totalLaps, data.race.stageLaps) : null;
+    data.live && !data.session && data.race.totalLaps > 0 ? raceProgress(data.lapTo, data.race.totalLaps, data.race.stageLaps, data.lapsToGo) : null;
   const sessionLines = data.session ? [{ label: data.session, value: `${data.lapTo} ${data.lapTo === 1 ? 'lap' : 'laps'}` }] : [];
 
   return {

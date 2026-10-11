@@ -5,6 +5,7 @@ import { flagFromFeed, type FeedLapTimes, type FeedPitStop } from '../data/nasca
 import { fuelLeft, fuelModel, CAUTION_BURN } from '../data/nascar/fuel';
 import { parseDriverName } from '../data/nascar/names';
 import type { OverviewEntry } from '../data/nascar/overview';
+import type { CarInfo } from '../data/nascar/cars';
 import { crewAverages, stints, stopsUpTo, type Stint, type StopKind } from '../data/nascar/stops';
 import { lapTime, pitTime, positionChange } from '../format/format';
 import { markerHighlight } from '../series/markers';
@@ -39,19 +40,41 @@ export interface Inputs {
   totalLaps: number;
   stageEnds: number[];
   order: OverviewEntry[];
+  /** Live only: per-car pit road state from NASCAR's feed. */
+  carInfo?: Record<string, CarInfo>;
+  live?: boolean;
 }
 
 // ---- Pit road -------------------------------------------------------------------------
 
 export interface PitRoadView {
+  /**
+   * Live: cars on pit road right now, most positions gained first (null when not live).
+   * `entered` is the running position on pit entry, `now` the position as it stands.
+   */
+  onPitRoad: (Who & { now: string; entered: string; gained: string; gainedDir: 'up' | 'down' | 'same' })[] | null;
   latest: (Who & { lap: string; kind: string; flag: TrackFlag; box: string; lane: string; gained: string; gainedDir: 'up' | 'down' | 'same' })[];
   fourTire: (Who & { rank: number; average: string; best: string; stops: string })[];
   twoTire: (Who & { rank: number; average: string; best: string; stops: string })[];
   notes: string[];
 }
 
-export function buildPitRoadView({ profile, lapTimes, pits, atLap }: Inputs): PitRoadView {
+export function buildPitRoadView({ profile, lapTimes, pits, atLap, carInfo, live }: Inputs): PitRoadView {
   const stops = stopsUpTo(lapTimes, pits, atLap);
+  const names = new Map(lapTimes.laps.map((c) => [c.Number, c.FullName]));
+  const onPitRoad = live
+    ? Object.entries(carInfo ?? {})
+        .filter(([, c]) => c.pit && !c.out && c.position)
+        .map(([num, c]) => ({ num, c, gained: c.pitInRank ? c.pitInRank - c.position! : 0 }))
+        .sort((a, b) => b.gained - a.gained || a.c.position! - b.c.position!)
+        .map(({ num, c, gained }) => ({
+          ...who(profile, num, names.get(num) ?? `#${num}`),
+          now: String(c.position),
+          entered: c.pitInRank ? String(c.pitInRank) : EN_DASH,
+          gained: c.pitInRank ? positionChange(gained) : EN_DASH,
+          gainedDir: (gained > 0 ? 'up' : gained < 0 ? 'down' : 'same') as 'up' | 'down' | 'same',
+        }))
+    : null;
   const avgRows = (kind: StopKind) =>
     crewAverages(stops, kind)
       .slice(0, 10)
@@ -63,6 +86,7 @@ export function buildPitRoadView({ profile, lapTimes, pits, atLap }: Inputs): Pi
         stops: String(a.stops),
       }));
   return {
+    onPitRoad,
     latest: [...stops]
       .sort((a, b) => b.raceTime - a.raceTime)
       .map((s) => ({

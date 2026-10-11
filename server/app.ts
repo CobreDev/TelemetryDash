@@ -3,7 +3,8 @@ import { cors } from 'hono/cors';
 import { buildChaseStandingsView, buildChaseView } from '../src/cards/chase.model';
 import { buildOverviewView, buildPracticeView } from '../src/cards/overview.model';
 import { buildPaceRankings } from '../src/cards/paceRankings.model';
-import { buildRaceControlView } from '../src/cards/raceControl.model';
+import { buildRaceControlView, type StageResult } from '../src/cards/raceControl.model';
+import { parseDriverName } from '../src/data/nascar/names';
 import { easternToEpoch, flagFromFeed, type FeedRace } from '../src/data/nascar/feed';
 import { etDateKey, homeSeries } from '../src/data/nascar/weekend';
 import { buildResultsView, buildScheduleView } from '../src/cards/weekend.model';
@@ -92,6 +93,10 @@ api.get('/home', async (c) => {
   return c.json(homeSeries({ now: Date.now(), liveSeriesId, nextStarts: starts }));
 });
 
+/** Running order at the bundle's lap; live data also takes NASCAR's word on who's out. */
+const orderOf = (b: ReplayBundle | LiveBundle) =>
+  buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b), new Set(Object.entries(b.carInfo ?? {}).filter(([, c]) => c.out).map(([n]) => n)));
+
 function stageEndsOf(b: ReplayBundle) {
   const lengths = [b.race.stage_1_laps, b.race.stage_2_laps, b.race.stage_3_laps, b.race.stage_4_laps].filter(
     (n): n is number => !!n && n > 0,
@@ -100,6 +105,34 @@ function stageEndsOf(b: ReplayBundle) {
   return lengths.reduce((a, n) => a + n, 0) === total
     ? lengths.slice(0, -1).map((_, i) => lengths.slice(0, i + 1).reduce((a, n) => a + n, 0))
     : [];
+}
+
+/**
+ * Stage results from the points file: each stage's scorers by stage points, once it's over
+ * (live: NASCAR fills them in as the stage ends; replays: only stages ended by `atLap`).
+ */
+function stageResults(b: ReplayBundle | LiveBundle): StageResult[] {
+  const ends = stageEndsOf(b);
+  const out: StageResult[] = [];
+  for (const n of [1, 2, 3] as const) {
+    const lap = ends[n - 1] ?? (isLive(b) ? b.atLap : undefined);
+    if (lap === undefined || lap > b.atLap) continue;
+    const scored = (b.livePoints ?? [])
+      .map((d) => ({ d, points: d[`stage_${n}_points`] ?? 0 }))
+      .filter((x) => x.points > 0)
+      // The winner first even if a tie on points ever happened.
+      .sort((x, y) => Number(!!y.d[`stage_${n}_winner`]) - Number(!!x.d[`stage_${n}_winner`]) || y.points - x.points);
+    if (!scored.length) continue;
+    out.push({
+      stage: n,
+      lap,
+      results: scored.map(({ d, points }) => {
+        const name = parseDriverName(`${d.first_name} ${d.last_name}`);
+        return { carNumber: d.car_number, name: `${name.firstName} ${name.lastName}`.trim(), points };
+      }),
+    });
+  }
+  return out;
 }
 
 /** Wraps a series route: resolves the profile and the source's data, maps failures to 503. */
@@ -134,6 +167,7 @@ api.get('/series/:id/cards/pace-rankings', async (c) => {
       source: 'live',
       session: isLive(b) && !b.isRace ? b.runName : undefined,
       currentFlag: isLive(b) ? b.currentFlag : undefined,
+      lapsToGo: isLive(b) ? b.lapsToGo : undefined,
     });
     // From the day after a finished race (ET), the Overview also shows the series' next race.
     const showNextRace = !!b.finished && etDateKey(Date.now()) > b.race.race_date.slice(0, 10);
@@ -146,8 +180,8 @@ api.get(
   withBundle((c, profile, b) =>
     c.json(
       isLive(b) && !b.isRace
-        ? buildPracticeView(b.lapTimes, profile, b.runName)
-        : buildOverviewView(buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b)), profile, b.atLap),
+        ? buildPracticeView(b.lapTimes, profile, b.runName, b.carInfo)
+        : buildOverviewView(orderOf(b), profile, b.atLap, b.carInfo),
     ),
   ),
 );
@@ -156,7 +190,7 @@ api.get(
   '/series/:id/chase',
   withBundle((c, profile, b) => {
     if (!b.livePoints?.some((d) => d.is_in_chase)) return c.json({ error: 'no Chase data for this race' }, 404);
-    const running = new Map(buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b)).filter((r) => !r.out).map((r) => [r.carNumber, r.position]));
+    const running = new Map(orderOf(b).filter((r) => !r.out).map((r) => [r.carNumber, r.position]));
     const stagesComplete = stageEndsOf(b).filter((end) => end <= b.atLap).length;
     if (isLive(b)) {
       return c.json(buildChaseView(chaseStandings(b.livePoints, [], running, stagesComplete, { asTheyRun: true }), profile, stagesComplete));
@@ -181,8 +215,10 @@ for (const [path, build] of Object.entries(TAB_VIEWS)) {
     `/series/:id/${path}`,
     withBundle((c, profile, b) => {
       const totalLaps = b.race.actual_laps ?? b.race.scheduled_laps;
-      const order = buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b));
-      return c.json(build({ profile, lapTimes: b.lapTimes, pits: b.pits, atLap: b.atLap, totalLaps, stageEnds: stageEndsOf(b), order }));
+      const order = orderOf(b);
+      return c.json(
+        build({ profile, lapTimes: b.lapTimes, pits: b.pits, atLap: b.atLap, totalLaps, stageEnds: stageEndsOf(b), order, carInfo: b.carInfo, live: isLive(b) && b.isRace }),
+      );
     }),
   );
 }
@@ -198,7 +234,12 @@ api.get(
     const total = b.race.actual_laps ?? b.race.scheduled_laps;
     const finished = b.atLap >= total;
     if (isLive(b) && !finished) lapFlags.push(flagFromFeed(b.currentFlag));
-    return c.json(buildRaceControlView(b.lapNotes, lapFlags, isLive(b) ? Infinity : b.atLap, finished ? b.atLap : undefined));
+    return c.json(
+      buildRaceControlView(b.lapNotes, lapFlags, isLive(b) ? Infinity : b.atLap, finished ? b.atLap : undefined, {
+        cautions: isLive(b) ? b.cautions : undefined,
+        stages: stageResults(b),
+      }),
+    );
   }),
 );
 

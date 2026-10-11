@@ -1,4 +1,5 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { makeOf, type CarInfo } from '../../src/data/nascar/cars';
 import { dirname, join } from 'node:path';
 import { easternToEpoch, withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop, type FeedRace, type FeedWeekendRace } from '../../src/data/nascar/feed';
 import { withChaseMarkers } from '../../src/data/nascar/names';
@@ -112,6 +113,8 @@ export interface ReplayBundle {
   results?: FeedResult[];
   /** True for a race shown after it ended (final lap, official files). */
   finished?: boolean;
+  /** Manufacturer and (live) pit road / DVP / out, by car number. */
+  carInfo?: Record<string, CarInfo>;
   /** Race notes by lap (optional); replays show only notes up to `atLap`. */
   lapNotes?: FeedLapNotes;
   /** The lap the replay is "live" at: halfway. */
@@ -133,12 +136,13 @@ async function loadRaceFiles(feedSeries: number, race: FeedRace, maxAgeMs = Infi
     `https://cf.nascar.com/live/feeds/series_${feedSeries}/${race.race_id}/live_points.json`,
     maxAgeMs,
   ).catch(() => undefined);
-  const results = await cachedJson<{ weekend_race: { results: FeedResult[] }[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`, maxAgeMs)
+  const results = await cachedJson<{ weekend_race: { results: (FeedResult & { car_number: string; car_make?: string })[] }[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`, maxAgeMs)
     .then((w) => w.weekend_race[0]?.results)
     .catch(() => undefined);
   const lapNotes = await cachedJson<FeedLapNotes>(`${dir}/lap-notes.json`, `${BASE}/${dir}/lap-notes.json`, maxAgeMs).catch(() => undefined);
   const chaseCars = livePoints && new Set(livePoints.filter((d) => d.is_in_chase).map((d) => d.car_number));
-  return { race, lapTimes: withChaseMarkers(lapTimes, chaseCars), pits, track, livePoints, results, lapNotes };
+  const carInfo = results && Object.fromEntries(results.map((r): [string, CarInfo] => [r.car_number, { make: makeOf(r.car_make) }]));
+  return { race, lapTimes: withChaseMarkers(lapTimes, chaseCars), pits, track, livePoints, results, lapNotes, carInfo };
 }
 
 /** Raw files for the series' most recent completed race, replayed at its halfway lap. */

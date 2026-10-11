@@ -63,9 +63,11 @@ export interface RaceProgress {
 /**
  * Where a live race stands after `lap` completed laps. `stageLaps` are stage LENGTHS, as the
  * feed lists them (Cup Las Vegas: 80, 85, 102); ignored unless they add up to the race length.
+ * `feedLapsToGo`: the live feed's laps to go, used as is.
  */
-export function raceProgress(lap: number, totalLaps: number, stageLaps: number[]): RaceProgress {
-  const lapsToGo = Math.max(0, totalLaps - lap);
+export function raceProgress(lap: number, totalLaps: number, stageLaps: number[], feedLapsToGo?: number): RaceProgress {
+  // NASCAR's own count when the live feed has one.
+  const lapsToGo = feedLapsToGo ?? Math.max(0, totalLaps - lap);
   const none = { stage: null, stageCount: 0, stageLapsRemaining: null, stageLap: null, stageLength: null };
   const valid = stageLaps.length > 1 && stageLaps.reduce((a, b) => a + b, 0) === totalLaps;
   if (!valid) return { lap, totalLaps, lapsToGo, ...none };

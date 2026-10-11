@@ -63,6 +63,7 @@ export function OverviewTab({ seriesId, showNextRace, final }: { seriesId: strin
                   <thead>
                     <tr>
                       <th className="shrink" title="Position">{view.columns.pos}</th>
+                      <th className="shrink make" aria-label="Manufacturer" />
                       <th className="shrink">{view.columns.car}</th>
                       <th className="left">{view.columns.name}</th>
                       <th className="shrink">{view.columns.lastLap}</th>
@@ -80,6 +81,9 @@ export function OverviewTab({ seriesId, showNextRace, final }: { seriesId: strin
                         className={[r.isLeader && 'is-leader', r.out && 'is-excluded', r.highlight && 'is-highlight'].filter(Boolean).join(' ') || undefined}
                       >
                         <td className="num">{r.position}</td>
+                        <td className="make">
+                          {r.make && <img className="make-logo" src={r.make.logo} alt={r.make.name} title={r.make.name} />}
+                        </td>
                         <td className="car">
                           <CarNumber number={r.carNumber} badge={r.carBadge} />
                         </td>
@@ -89,6 +93,16 @@ export function OverviewTab({ seriesId, showNextRace, final }: { seriesId: strin
                             {r.lastName}
                             {r.markers.length > 0 && <span className="dash-marker"> {r.markers.join(' ')}</span>}
                           </span>
+                          {r.pit && (
+                            <span className="dash-tag tag-pit" title="On pit road">
+                              Pit
+                            </span>
+                          )}
+                          {r.dvp && (
+                            <span className="dash-tag tag-dvp" title="On the damaged vehicle policy clock">
+                              DVP
+                            </span>
+                          )}
                         </td>
                         <td className="num">{r.lastLap}</td>
                         <td className="num">{r.gapToLeader}</td>

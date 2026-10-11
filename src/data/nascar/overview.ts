@@ -47,6 +47,8 @@ export function buildOverview(
    * leave them a lap short until the leader's next lap.
    */
   latest = false,
+  /** Cars NASCAR reports as out (live feed status), whatever their line crossings say. */
+  outCars: ReadonlySet<string> = new Set(),
 ): OverviewEntry[] {
   // Cumulative race time at the end of each lap, per car (index = lap).
   const cars = lapTimes.laps.map((car) => {
@@ -76,7 +78,7 @@ export function buildOverview(
     const typical = recent.length ? Math.min(...recent.map((l) => l.LapTime!)) : leader.laps[atLap - 1]?.LapTime ?? 30;
     const progress = m + Math.min(0.999, sinceLine / (laps[m - 1]?.LapTime ?? typical));
     // No crossing for OUT_LAPS of its normal laps: parked in the garage or out of the race.
-    const out = m < atLap && sinceLine > OUT_LAPS * typical;
+    const out = outCars.has(car.Number) || (m < atLap && sinceLine > OUT_LAPS * typical);
     const lapsDown = m >= atLap ? 0 : Math.max(0, Math.floor(atLap - progress));
 
     const stops = pits

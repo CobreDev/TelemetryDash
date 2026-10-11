@@ -20,6 +20,9 @@ export interface FeedLivePoints {
   stage_1_points: number;
   stage_2_points: number;
   stage_3_points: number;
+  stage_1_winner?: boolean;
+  stage_2_winner?: boolean;
+  stage_3_winner?: boolean;
 }
 
 export interface FeedResult {
