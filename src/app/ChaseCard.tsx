@@ -49,7 +49,7 @@ function ChasePanel({ view }: { view: ChaseView }) {
           {view.rows.map((r) => (
             <tr key={r.carNumber}>
               <td className="num">{r.rank}</td>
-              <td className={`num change-${r.changeDir}`} title={view.mode === 'live' ? `P${r.liveRank} if the race ended now` : undefined}>
+              <td className={`num change-${r.changeDir}`} title={`P${r.rankBefore} ${view.mode === 'live' ? 'entering this race' : 'before the last race'}`}>
                 {r.change}
               </td>
               <td className="car">
@@ -59,7 +59,7 @@ function ChasePanel({ view }: { view: ChaseView }) {
                 <span className="dash-last">{r.lastName}</span>
               </td>
               <td className="num muted">{r.running}</td>
-              <td className="num" title={view.mode === 'live' ? `${r.livePoints} if the race ended now` : undefined}>
+              <td className="num" title={`${r.pointsBefore} ${view.mode === 'live' ? 'entering this race' : 'before the last race'}`}>
                 {r.points}
               </td>
               <td className="num chase-gain">{r.earned}</td>

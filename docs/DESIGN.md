@@ -202,11 +202,11 @@ Replays show only notes up to the replay lap. Hidden in practice/qualifying.
 
 **Penalties card** (between Race control and Chase, races only): Car, Driver, Penalty, Punishment, newest first (hover a row for the lap), about six rows then it scrolls. NASCAR publishes no penalty feed (the results file's `infractions` is always empty), so penalties are read from the race notes: speeding / too fast entering or exiting, uncontrolled tire, commitment line, vehicle interference, crew over the wall too soon, removing equipment, pitting outside the box, blend line, restart violations, safety violation, with every car named before the infraction ("#42, #66 and #3 speeding"). Mentions of a penalty already served ("restarted at the rear following his commitment line violation") are skipped. The punishment is the note's when it says one (pass-through, stop-and-go, tail of the field, laps, black flag); otherwise NASCAR's standard for pit road penalties by the note's flag: **Pass-through** under green, **Tail of the field** under caution, with a footnote saying so.
 
-**Chase card:** columns Pos, ±, Car, Driver, Current, Pts, Gain. Pos and Pts are the standings
-**entering the race**, sorted by those points; ± is the projected move if the race ended now (green
-up, red down, dash for none); Current is the current running position; Gain is the points picked up
-so far as they run (stage points plus what the running position pays). Hovering Pts shows the live
-total. It hides in practice and when a race has no Chase data. Off-week the same columns read Pos,
+**Chase card:** columns Pos, ±, Car, Driver, Current, Pts, Gain. Live, the card is ordered **as
+they run**: Pos and Pts are the standings if the race ended now; ± is the move from where they
+entered the race (green up, red down, dash for none); Current is the current running position; Gain
+is the points picked up so far (stage points plus what the running position pays). Hovering ± or
+Pts shows the position or points entering the race. It hides in practice and when a race has no Chase data. Off-week the same columns read Pos,
 ±, Car, Driver, Finish, Pts, Gain for the last race. Cell padding is 5px so seven columns fit 420px.
 
 **Compare chart rules** (from the dataviz guidance): 2 px lines; faster laps plot lower (the axis reads as lap time, the user's choice); a legend

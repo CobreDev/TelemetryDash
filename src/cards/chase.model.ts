@@ -5,18 +5,23 @@ import { positionChange } from '../format/format';
 import type { SeriesProfile } from '../series/types';
 
 export interface ChaseRow {
-  /** Chase position entering this race (the sort order). */
+  /** Chase position shown and sorted on: as they run (live), or after the last race (off-week). */
   rank: number;
-  /** Position if the race ended now. */
+  /** Same as `rank` (kept for API clients). */
   liveRank: number;
-  /** Projected move: "+2", "−1", "–" from `rank` to `liveRank`. */
+  /** Position and points entering this race (live) or before the last race (off-week). */
+  rankBefore: number;
+  pointsBefore: string;
+  /** Move from `rankBefore` to `rank`: "+2", "−1", "–". */
   change: string;
   changeDir: 'up' | 'down' | 'same';
   carNumber: string;
   carBadge: string;
   firstName: string;
   lastName: string;
+  /** Points shown: as they run (live), or current (off-week). */
   points: string;
+  /** Same as `points` (kept for API clients). */
   livePoints: string;
   /** Points gained so far this race, e.g. "+43". */
   earned: string;
@@ -39,28 +44,31 @@ export function buildChaseView(entries: ChaseEntry[], profile: SeriesProfile, st
   return {
     title: 'Chase standings',
     mode: 'live',
-    hints: { change: 'Projected move if the race ended now', running: 'Current running position', points: 'Points entering this race', gain: 'Points gained so far as they run (stages plus current position)' },
+    hints: { change: 'Move from where they entered this race', running: 'Current running position', points: 'Points as they run', gain: 'Points gained so far as they run (stages plus current position)' },
     columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Current', points: 'Pts', gain: 'Gain' },
-    rows: [...entries].sort((a, b) => a.rankBefore - b.rankBefore).map((e) => {
+    // As they run: the order the standings would be in if the race ended now.
+    rows: [...entries].sort((a, b) => a.rankLive - b.rankLive).map((e) => {
       const name = parseDriverName(e.name);
       const delta = e.rankBefore - e.rankLive;
       return {
-        rank: e.rankBefore,
+        rank: e.rankLive,
         liveRank: e.rankLive,
+        rankBefore: e.rankBefore,
+        pointsBefore: String(e.pointsBefore),
         change: positionChange(delta),
         changeDir: delta > 0 ? 'up' : delta < 0 ? 'down' : 'same',
         carNumber: e.carNumber,
         carBadge: `/api/v1/series/${profile.id}/car-badges/${e.carNumber}.png`,
         firstName: name.firstName,
         lastName: name.lastName,
-        points: String(e.pointsBefore),
+        points: String(e.pointsLive),
         livePoints: String(e.pointsLive),
         earned: `+${e.pointsLive - e.pointsBefore}`,
         running: e.running ? `P${e.running}` : '–',
       };
     }),
     notes: [
-      'Pos and Pts: entering this race. ± is the projected move if the race ended now; Gain is the points picked up so far.',
+      'As they run: Pos and Pts are the standings if the race ended now. ± is the move from where they entered the race; Gain is the points picked up so far.',
       `As they run counts finishing points for the current running position${stagesComplete ? ` plus points from ${stagesComplete === 1 ? 'stage 1' : `stages 1–${stagesComplete}`}` : ''}; fastest-lap and bonus points are added at the finish.`,
     ],
   };
@@ -101,6 +109,8 @@ export function buildChaseStandingsView(
         return {
           rank,
           liveRank: rank,
+          rankBefore: before.get(d.driver_id)!,
+          pointsBefore: String(d.points - d.points_earned_this_race),
           change: positionChange(delta),
           changeDir: (delta > 0 ? 'up' : delta < 0 ? 'down' : 'same') as ChaseRow['changeDir'],
           carNumber: d.car_number,
