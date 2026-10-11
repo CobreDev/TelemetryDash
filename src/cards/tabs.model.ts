@@ -196,7 +196,7 @@ export function buildLapsView({ profile, lapTimes, atLap, order }: Inputs): Laps
   };
 }
 
-// ---- Top speed (Pace tab) --------------------------------------------------------------
+// ---- Fastest driver (Pace tab)-----------------------------------------------------------
 
 export interface TopSpeedView {
   rows: (Who & { rank: number; speed: string; lap: string; time: string })[];
@@ -231,6 +231,6 @@ export function buildTopSpeedView({ profile, lapTimes, atLap, order }: Inputs, l
       lap: String(b.top.lap),
       time: lapTime(b.top.time),
     })),
-    notes: ['Fastest single lap, as average lap speed in mph. NASCAR publishes no speed-trap data, so true top speed isn\'t available.'],
+    notes: ['Each car\'s fastest single lap: its time and average speed in mph. NASCAR publishes no speed-trap data, so true top speed isn\'t available.'],
   };
 }

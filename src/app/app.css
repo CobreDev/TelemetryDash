@@ -99,7 +99,7 @@ button { font: inherit; color: inherit; }
 main { padding: 16px; }
 .error { color: var(--perf-bad); }
 .pace-view { display: grid; gap: 16px; max-width: 640px; align-items: start; }
-/* Pace rankings and Top speed side by side when there's room. */
+/* Pace rankings and Fastest driver side by side when there's room. */
 @media (min-width: 1100px) { .pace-view { max-width: 1080px; grid-template-columns: minmax(0, 640px) minmax(0, 420px); } }
 .overview-view { display: grid; gap: 16px; max-width: 980px; align-items: start; }
 /* Overview: the running order and Chase cards sit centered on the screen. */
