@@ -14,6 +14,7 @@ vi.mock('./sources/nascarReplay', () => ({
   carBadge: async () => null,
   finishedRaceBundle: async () => undefined,
   nextStarts: async () => [{ seriesId: 'oreilly', startsAt: Date.UTC(2099, 0, 1) }],
+  chaseRaces: async () => [],
 }));
 vi.mock('./sources/nascarLive', () => ({ liveBundle: async () => null, liveStatus: () => null, raceFinishedLive: () => undefined }));
 

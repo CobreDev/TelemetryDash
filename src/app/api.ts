@@ -5,6 +5,7 @@ import type { ResultsView, ScheduleView } from '../cards/weekend.model';
 import type { QualifyingView } from '../cards/qualifying.model';
 import type { RaceControlView } from '../cards/raceControl.model';
 import type { PenaltiesView } from '../cards/penalties.model';
+import type { ChaseSeasonView } from '../cards/chaseSeason.model';
 import type { FuelView, LapsView, PitRoadView, StrategyView, TopSpeedView } from '../cards/tabs.model';
 import type { SeriesProfile } from '../series/types';
 import type { TvNetwork } from '../data/nascar/networks';
@@ -85,6 +86,7 @@ export const api = {
   qualifying: seriesGet<QualifyingView>('/qualifying'),
   raceControl: seriesGet<RaceControlView>('/race-control'),
   penalties: seriesGet<PenaltiesView>('/penalties'),
+  chaseSeason: seriesGet<ChaseSeasonView>('/chase/season'),
   pitRoad: seriesGet<PitRoadView>('/pit-road'),
   strategy: seriesGet<StrategyView>('/strategy'),
   fuel: seriesGet<FuelView>('/fuel'),

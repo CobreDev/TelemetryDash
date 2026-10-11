@@ -1,7 +1,7 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { makeOf, type CarInfo } from '../../src/data/nascar/cars';
 import { dirname, join } from 'node:path';
-import { easternToEpoch, withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop, type FeedRace, type FeedWeekendRace } from '../../src/data/nascar/feed';
+import { makeOf, type CarInfo } from '../../src/data/nascar/cars';
+import { easternToEpoch, withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop, type FeedRace, type FeedRaceResult, type FeedWeekendRace } from '../../src/data/nascar/feed';
 import { withChaseMarkers } from '../../src/data/nascar/names';
 import { halfwayLap, replayPaceDataset } from '../../src/data/nascar/replay';
 import { weekendEndsAt } from '../../src/data/nascar/weekend';
@@ -299,4 +299,38 @@ export async function weekendRuns(feedSeries: number, race: FeedRace): Promise<F
   const dir = `${race.race_season}/${feedSeries}/${race.race_id}`;
   const feed = await cachedJson<{ weekend_runs?: FeedWeekendRun[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`, 2 * 60_000);
   return feed.weekend_runs ?? [];
+}
+
+/** One Chase race: the schedule entry, and its final points and results once it's been run. */
+export interface ChaseRaceFiles {
+  race: FeedRace;
+  livePoints?: FeedLivePoints[];
+  results?: FeedRaceResult[];
+}
+
+/**
+ * The series' Chase races this season, in order (`playoff_round` set in the schedule), with
+ * each finished race's final points file and results. Files of a race whose weekend is over
+ * are kept for good; a race still settling is re-checked every FINAL_TTL_MS.
+ */
+export async function chaseRaces(seriesId: string, now = Date.now()): Promise<ChaseRaceFiles[]> {
+  const feedSeries = FEED_SERIES[seriesId];
+  if (!feedSeries) return [];
+  const year = new Date(now).getFullYear();
+  const list = await cachedJson<Record<string, FeedRace[]>>(`${year}/race_list_basic.json`, `${BASE}/${year}/race_list_basic.json`, SCHEDULE_TTL_MS);
+  const races = (list[`series_${feedSeries}`] ?? []).filter((r) => r.playoff_round).sort((a, b) => a.race_date.localeCompare(b.race_date));
+  return Promise.all(
+    races.map(async (race): Promise<ChaseRaceFiles> => {
+      if (easternToEpoch(race.race_date) > now) return { race };
+      const dir = `${race.race_season}/${feedSeries}/${race.race_id}`;
+      const maxAge = now < weekendEndsAt(race.race_date) ? FINAL_TTL_MS : Infinity;
+      const [livePoints, results] = await Promise.all([
+        cachedJson<FeedLivePoints[]>(`${dir}/live_points.json`, `https://cf.nascar.com/live/feeds/series_${feedSeries}/${race.race_id}/live_points.json`, maxAge).catch(() => undefined),
+        cachedJson<{ weekend_race: FeedWeekendRace[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`, maxAge)
+          .then((w) => (w.weekend_race.find((x) => x.race_id === race.race_id) ?? w.weekend_race[0])?.results)
+          .catch(() => undefined),
+      ]);
+      return { race, livePoints, results: results?.length ? results : undefined };
+    }),
+  );
 }

@@ -4,6 +4,7 @@ import { buildChaseStandingsView, buildChaseView } from '../src/cards/chase.mode
 import { buildOverviewView, buildPracticeView } from '../src/cards/overview.model';
 import { buildPaceRankings } from '../src/cards/paceRankings.model';
 import { buildPenaltiesView } from '../src/cards/penalties.model';
+import { buildChaseSeasonView } from '../src/cards/chaseSeason.model';
 import { buildRaceControlView, type StageResult } from '../src/cards/raceControl.model';
 import { parseDriverName } from '../src/data/nascar/names';
 import { easternToEpoch, flagFromFeed, type FeedRace } from '../src/data/nascar/feed';
@@ -19,7 +20,7 @@ import { isTemplateEnabled, profiles, seriesList } from '../src/series/profiles'
 import type { SeriesProfile } from '../src/series/types';
 import { config } from './config';
 import { liveBundle, liveStatus, raceFinishedLive, type LiveBundle } from './sources/nascarLive';
-import { carBadge, FEED_SERIES, weekendRuns, finishedRaceBundle, lastRaceResults, nextRace, nextStarts, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
+import { carBadge, chaseRaces, FEED_SERIES, weekendRuns, finishedRaceBundle, lastRaceResults, nextRace, nextStarts, replayBundle, replayPace, trackInfo, type ReplayBundle } from './sources/nascarReplay';
 import { trackLocation } from '../src/data/nascar/tracks';
 import { tvNetwork } from '../src/data/nascar/networks';
 
@@ -93,6 +94,9 @@ api.get('/home', async (c) => {
   const starts = await nextStarts(Date.now(), raceIsOver).catch(() => []);
   return c.json(homeSeries({ now: Date.now(), liveSeriesId, nextStarts: starts }));
 });
+
+/** Running position by car number, for cars still running. */
+const runningOrder = (b: ReplayBundle | LiveBundle) => new Map(orderOf(b).filter((r) => !r.out).map((r) => [r.carNumber, r.position]));
 
 /** Running order at the bundle's lap; live data also takes NASCAR's word on who's out. */
 const orderOf = (b: ReplayBundle | LiveBundle) =>
@@ -191,7 +195,7 @@ api.get(
   '/series/:id/chase',
   withBundle((c, profile, b) => {
     if (!b.livePoints?.some((d) => d.is_in_chase)) return c.json({ error: 'no Chase data for this race' }, 404);
-    const running = new Map(orderOf(b).filter((r) => !r.out).map((r) => [r.carNumber, r.position]));
+    const running = runningOrder(b);
     const stagesComplete = stageEndsOf(b).filter((end) => end <= b.atLap).length;
     if (isLive(b)) {
       return c.json(buildChaseView(chaseStandings(b.livePoints, [], running, stagesComplete, { asTheyRun: true }), profile, stagesComplete));
@@ -243,6 +247,31 @@ api.get(
     );
   }),
 );
+
+/**
+ * The whole Chase for the series: standings (as they run during a Chase race), each driver's
+ * result in every Chase race, and points after each race. Works off-week too.
+ */
+api.get('/series/:id/chase/season', async (c) => {
+  const profile = getProfile(c.req.param('id'));
+  if (!profile) return c.json({ error: 'unknown series' }, 404);
+  try {
+    const races = await chaseRaces(profile.id);
+    const b = sourceOf(c) === 'live' ? await liveBundle(profile.id) : null;
+    const liveRace = b?.isRace && b.atLap < (b.race.actual_laps ?? b.race.scheduled_laps) && races.some((r) => r.race.race_id === b.race.race_id) ? b : null;
+    const live =
+      liveRace?.livePoints?.some((d) => d.is_in_chase)
+        ? {
+            raceId: liveRace.race.race_id,
+            livePoints: liveRace.livePoints,
+            entries: chaseStandings(liveRace.livePoints, [], runningOrder(liveRace), stageEndsOf(liveRace).filter((end) => end <= liveRace.atLap).length, { asTheyRun: true }),
+          }
+        : undefined;
+    return c.json(buildChaseSeasonView(profile, races, live));
+  } catch (e) {
+    return c.json({ error: `Chase data unavailable: ${(e as Error).message}` }, 503);
+  }
+});
 
 /** Penalties from NASCAR's race notes, newest first. Races only. */
 api.get(

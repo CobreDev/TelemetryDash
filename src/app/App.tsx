@@ -8,6 +8,7 @@ import { api, isNoLive, type LiveStatus, type Source } from './api';
 import { UpcomingHeader } from './UpcomingHeader';
 import { DataError } from './NoLive';
 import { SourceContext, useSeriesApi } from './useApi';
+import { ChaseTab } from './ChaseTab';
 import { CompareTab } from './CompareTab';
 import { FuelTab } from './FuelTab';
 import { OverviewTab } from './OverviewTab';
@@ -38,6 +39,7 @@ const TABS = [
   { id: 'strategy', label: 'Strategy', ready: true },
   { id: 'fuel', label: 'Fuel', ready: true },
   { id: 'compare', label: 'Compare', ready: true },
+  { id: 'chase', label: 'Chase', ready: true },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -294,6 +296,7 @@ function Dashboard({ onSource, status }: { onSource: (s: Source) => void; status
         {tab === 'strategy' && <StrategyTab seriesId={seriesId} />}
         {tab === 'fuel' && <FuelTab seriesId={seriesId} />}
         {tab === 'compare' && <CompareTab seriesId={seriesId} key={seriesId} />}
+        {tab === 'chase' && <ChaseTab seriesId={seriesId} key={seriesId} />}
       </main>
     </div>
   );

@@ -1,4 +1,5 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { endLabels, useWidth } from './chart';
 import type { LapsView } from '../cards/tabs.model';
 import { lapTime } from '../format/format';
 import { lineSeries, MAX_LINES } from '../tokens/tokens';
@@ -26,26 +27,6 @@ function cleanLaps(car: Car, flags: LapsView['lapFlags']): (number | null)[] {
   const vals = green.filter((t): t is number => t !== null).sort((a, b) => a - b);
   const median = vals[Math.floor(vals.length / 2)] ?? 0;
   return green.map((t) => (t !== null && t <= median * SLOW_FACTOR ? t : null));
-}
-
-/** Spreads right-end labels so lines that finish close together don't overprint. */
-function endLabels<T extends { y: number }>(labels: T[], gap = 15): T[] {
-  const out = [...labels].sort((a, b) => a.y - b.y).map((l) => ({ ...l }));
-  for (let i = 1; i < out.length; i++) out[i]!.y = Math.max(out[i]!.y, out[i - 1]!.y + gap);
-  return out;
-}
-
-function useWidth() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(0);
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    setW(ref.current.clientWidth); // measure now; the observer only reports later changes
-    const ro = new ResizeObserver(([e]) => e && setW(e.contentRect.width));
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  }, []);
-  return { ref, w };
 }
 
 function LapChart({ data, picked, window }: { data: LapsView; picked: Picked[]; window: number }) {

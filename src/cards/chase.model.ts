@@ -56,7 +56,7 @@ function withGaps<R extends { points: string }>(rows: R[]): (R & { gap: string; 
 
 export function buildChaseView(entries: ChaseEntry[], profile: SeriesProfile, stagesComplete: number): ChaseView {
   return {
-    title: 'Chase standings',
+    title: 'Live Chase Standings',
     mode: 'live',
     hints: { change: 'Move from where they entered this race', running: 'Current running position', points: 'Points as they run', gap: 'Points behind the leader as they run', gain: 'Points gained so far as they run (stages plus current position)' },
     columns: { rank: 'Pos', change: '±', car: 'Car', name: 'Driver', running: 'Current', points: 'Pts', gap: 'Gap', gain: 'Gain' },

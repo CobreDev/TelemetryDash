@@ -20,6 +20,11 @@ export interface FeedLivePoints {
   stage_1_points: number;
   stage_2_points: number;
   stage_3_points: number;
+  /** Season totals so far. */
+  wins?: number;
+  top_5?: number;
+  top_10?: number;
+  poles?: number;
   stage_1_winner?: boolean;
   stage_2_winner?: boolean;
   stage_3_winner?: boolean;

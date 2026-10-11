@@ -69,6 +69,8 @@ export interface FeedRace {
   stage_4_laps?: number | null;
   /** The weekend's events; on-track sessions have run_type 1 practice, 2 qualifying, 3 race. */
   schedule?: FeedScheduleEvent[];
+  /** Non-zero for races in the Chase (playoffs). */
+  playoff_round?: number | null;
 }
 
 export interface FeedScheduleEvent {
