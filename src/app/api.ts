@@ -30,6 +30,8 @@ export interface LiveStatus {
   /** Server's last successful check of NASCAR's feed. */
   polledAt: number;
   active: boolean;
+  /** Last change to anything the views show (ms epoch); views refresh when it moves. */
+  dataAt?: number;
 }
 
 export interface UpcomingRace {

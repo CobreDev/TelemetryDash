@@ -7,7 +7,7 @@ import { seriesList } from '../series/profiles';
 import { api, isNoLive, type LiveStatus, type Source } from './api';
 import { UpcomingHeader } from './UpcomingHeader';
 import { DataError } from './NoLive';
-import { LIVE_REFRESH_MS, SourceContext, useSeriesApi } from './useApi';
+import { SourceContext, useSeriesApi } from './useApi';
 import { CompareTab } from './CompareTab';
 import { FuelTab } from './FuelTab';
 import { OverviewTab } from './OverviewTab';
@@ -26,6 +26,8 @@ const SOURCE_KEY = 'td.source';
 const STALE_MS = 30_000;
 /** How often to check what's live when nothing is (the server checks NASCAR once a minute then). */
 const STATUS_IDLE_MS = 15_000;
+/** During a session: a cheap check of the server's in-memory status; views refresh on new data. */
+const STATUS_LIVE_MS = 2_000;
 /** Longest the first paint waits for the server's choice of series. */
 const HOME_WAIT_MS = 1_000;
 
@@ -73,7 +75,7 @@ export function App() {
   const status = useLiveStatus(source);
   const liveSeriesId = status.live?.active ? status.live.seriesId : null;
   return (
-    <SourceContext.Provider value={{ source, liveSeriesId }}>
+    <SourceContext.Provider value={{ source, liveSeriesId, liveDataAt: status.live?.dataAt }}>
       <Dashboard onSource={choose} status={status} />
     </SourceContext.Provider>
   );
@@ -106,7 +108,7 @@ function useLiveStatus(source: Source) {
       );
     void load();
     // Fast while anything is running; otherwise slow enough to just notice a session starting.
-    const poll = setInterval(load, active ? LIVE_REFRESH_MS : STATUS_IDLE_MS);
+    const poll = setInterval(load, active ? STATUS_LIVE_MS : STATUS_IDLE_MS);
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => {
       clearInterval(poll);

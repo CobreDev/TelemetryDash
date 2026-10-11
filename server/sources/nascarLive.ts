@@ -13,6 +13,13 @@ import { BASE, FEED_SERIES, raceById, trackInfo, UA, type ReplayBundle } from '.
 // restart mid-race loses nothing. Rates stay at or below what nascar.com itself uses.
 const FEED_URL = 'https://cf.nascar.com/live/feeds/live-feed.json';
 const ACTIVE_MS = 5_000; // DESIGN.md: poll every 5-10 s during a session
+/**
+ * NASCAR's CDN refreshes the live feed every 30 s (`Age` counts up to 30, then a new copy).
+ * During a session the next poll is timed to land just after the next copy instead of on a
+ * blind timer, then retries every ACTIVE_RETRY_MS until it changes.
+ */
+const FEED_CYCLE_S = 30;
+const ACTIVE_RETRY_MS = 2_000;
 const IDLE_MS = 60_000; // feed unchanged for a while: check once a minute
 const IDLE_AFTER_MS = 10 * 60_000;
 /** An unfinished race counts as live from this long before its scheduled start... */
@@ -35,6 +42,8 @@ let lastFeedChange = 0;
 let scheduled: { raceId: number; startsAt: number } | undefined;
 /** Last time NASCAR answered (a fresh copy, or 304 = unchanged). */
 let lastPolledOk = 0;
+/** Last time anything served changed: laps, flags, car status, pits, points or notes. */
+let dataAt = 0;
 let started = false;
 const seenStatus = new Set<number>([1]);
 
@@ -89,9 +98,11 @@ async function refreshExtras(s: LiveState) {
     ),
     fetchJson<FeedLapNotes>(`${BASE}/${year}/${s.seriesId}/${s.raceId}/lap-notes.json`).catch(() => null),
   ]);
+  const before = JSON.stringify([pits, points, notes?.data]);
   if (p) pits = p;
   if (lp) points = lp;
   if (ln?.laps) notes = { raceId: s.raceId, data: ln };
+  if (JSON.stringify([pits, points, notes?.data]) !== before) dataAt = Date.now();
   // After a restart (or joining late), swap estimated laps for NASCAR's official ones.
   if (isRaceState(s) && needsBackfill(s) && Date.now() - backfillAt > BACKFILL_MS) {
     backfillAt = Date.now();
@@ -104,6 +115,7 @@ async function poll(): Promise<number> {
   const headers: Record<string, string> = { ...UA };
   if (lastModified) headers['If-Modified-Since'] = lastModified;
   const res = await fetch(FEED_URL, { headers });
+  const age = Number(res.headers.get('age'));
   if (res.status === 200 || res.status === 304) lastPolledOk = Date.now();
   if (res.status === 200) {
     lastModified = res.headers.get('last-modified');
@@ -119,7 +131,7 @@ async function poll(): Promise<number> {
       }
     }
     const next = applySnapshot(state, snap, Date.now());
-    if (next !== state && next.updatedAt !== state?.updatedAt) lastFeedChange = Date.now();
+    if (next !== state && next.updatedAt !== state?.updatedAt) lastFeedChange = dataAt = Date.now();
     state = next;
     if (Date.now() - extrasAt > EXTRAS_MS) {
       extrasAt = Date.now();
@@ -134,7 +146,10 @@ async function poll(): Promise<number> {
     const race = await raceById(state.seriesId, state.raceId).catch(() => undefined);
     if (race) scheduled = { raceId: race.race_id, startsAt: easternToEpoch(race.race_date) };
   }
-  return isActive() ? ACTIVE_MS : IDLE_MS;
+  if (!isActive()) return IDLE_MS;
+  // Just after the CDN's next copy (age 30), or the plain rate if it doesn't say.
+  if (!res.headers.has('age') || !Number.isFinite(age)) return ACTIVE_MS;
+  return Math.min(15_000, Math.max(ACTIVE_RETRY_MS, (FEED_CYCLE_S - age + 1) * 1000));
 }
 
 /**
@@ -180,6 +195,8 @@ export interface LiveStatus {
   polledAt: number;
   /** True while the feed is still changing (not idle). */
   active: boolean;
+  /** ms epoch of the last change to anything the views show; clients refresh when it moves. */
+  dataAt: number;
 }
 
 /**
@@ -206,6 +223,7 @@ export function liveStatus(): LiveStatus | null {
     updatedAt: state.updatedAt,
     polledAt: lastPolledOk,
     active: isActive(),
+    dataAt: Math.max(dataAt, state.updatedAt),
   };
 }
 
