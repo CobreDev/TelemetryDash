@@ -14,7 +14,7 @@ const STINT_COLOR: Record<Stint['start'], string> = {
 };
 const STINT_LABEL: Record<Stint['start'], string> = { start: 'Start', four: '4 tires', two: '2 tires', fuel: 'Fuel only' };
 
-function StintBar({ stints, totalLaps, stageEnds }: { stints: Stint[]; totalLaps: number; stageEnds: number[] }) {
+function StintBar({ stints, totalLaps, stageEnds, atLap }: { stints: Stint[]; totalLaps: number; stageEnds: number[]; atLap: number }) {
   const pct = (lap: number) => `${(lap / totalLaps) * 100}%`;
   return (
     <div className="stint-bar">
@@ -29,6 +29,8 @@ function StintBar({ stints, totalLaps, stageEnds }: { stints: Stint[]; totalLaps
       {stageEnds.map((lap) => (
         <span key={lap} className="stint-notch" style={{ left: pct(lap) }} title={`Stage end, lap ${lap}`} />
       ))}
+      {/* Where the race is now (laps completed); not needed once it's over. */}
+      {atLap > 0 && atLap < totalLaps && <span className="stint-now" style={{ left: pct(atLap) }} title={`Lap ${atLap}: now`} />}
     </div>
   );
 }
@@ -75,7 +77,7 @@ export function StrategyTab({ seriesId }: { seriesId: string }) {
                   <CarCell who={r} />
                   <NameCell who={r} />
                   <td className="stint-cell">
-                    <StintBar stints={r.stints} totalLaps={data.totalLaps} stageEnds={data.stageEnds} />
+                    <StintBar stints={r.stints} totalLaps={data.totalLaps} stageEnds={data.stageEnds} atLap={data.atLap} />
                   </td>
                   <td className="num">{r.stops}</td>
                   <td className="num">{r.laneTotal}</td>
