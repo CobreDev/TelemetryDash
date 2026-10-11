@@ -1,3 +1,4 @@
+import { useLayoutEffect, useState, type RefObject } from 'react';
 import type { Stint } from '../data/nascar/stops';
 import { strategy } from '../tokens/tokens';
 import { api } from './api';
@@ -14,7 +15,7 @@ const STINT_COLOR: Record<Stint['start'], string> = {
 };
 const STINT_LABEL: Record<Stint['start'], string> = { start: 'Start', four: '4 tires', two: '2 tires', fuel: 'Fuel only' };
 
-function StintBar({ stints, totalLaps, stageEnds, atLap }: { stints: Stint[]; totalLaps: number; stageEnds: number[]; atLap: number }) {
+function StintBar({ stints, totalLaps, stageEnds }: { stints: Stint[]; totalLaps: number; stageEnds: number[] }) {
   const pct = (lap: number) => `${(lap / totalLaps) * 100}%`;
   return (
     <div className="stint-bar">
@@ -29,16 +30,44 @@ function StintBar({ stints, totalLaps, stageEnds, atLap }: { stints: Stint[]; to
       {stageEnds.map((lap) => (
         <span key={lap} className="stint-notch" style={{ left: pct(lap) }} title={`Stage end, lap ${lap}`} />
       ))}
-      {/* Where the race is now (laps completed); not needed once it's over. */}
-      {atLap > 0 && atLap < totalLaps && <span className="stint-now" style={{ left: pct(atLap) }} title={`Lap ${atLap}: now`} />}
     </div>
   );
+}
+
+/**
+ * One red line at the current lap down the whole stint column, placed from the bars' measured
+ * position (so it follows resizes and name wrapping). Null once the race is over.
+ */
+function useNowLine(tableRef: RefObject<HTMLTableElement | null>, atLap: number, totalLaps: number, deps: unknown[]) {
+  const [line, setLine] = useState<{ left: number; top: number; height: number } | null>(null);
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    const box = table?.parentElement;
+    if (!table || !box || atLap <= 0 || atLap >= totalLaps) return setLine(null);
+    const measure = () => {
+      const bars = table.querySelectorAll<HTMLElement>('.stint-bar');
+      const first = bars[0];
+      const last = bars[bars.length - 1];
+      if (!first || !last) return setLine(null);
+      const o = box.getBoundingClientRect();
+      const a = first.getBoundingClientRect();
+      const b = last.getBoundingClientRect();
+      setLine({ left: a.left - o.left + box.scrollLeft + (a.width * atLap) / totalLaps, top: a.top - o.top - 6, height: b.bottom - a.top + 12 });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(table);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atLap, totalLaps, ...deps]);
+  return line;
 }
 
 export function StrategyTab({ seriesId }: { seriesId: string }) {
   const { data, error } = useSeriesApi(api.strategy, seriesId);
   // Full names; the whole table switches to two-line names together when they don't fit.
   const { tableRef, wrapped } = useUniformNameWrap([data]);
+  const now = useNowLine(tableRef, data?.atLap ?? 0, data?.totalLaps ?? 0, [data, wrapped]);
   if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
@@ -55,7 +84,8 @@ export function StrategyTab({ seriesId }: { seriesId: string }) {
             ))}
           </div>
         </div>
-        <div className="table-scroll">
+        <div className="table-scroll strategy-scroll">
+          {now && <div className="stint-now" style={{ left: now.left, top: now.top, height: now.height }} title={`Lap ${data.atLap}: now`} />}
           <table ref={tableRef} className={`dash-table strategy-table${wrapped ? ' names-wrapped' : ''}`}>
             <thead>
               <tr>
@@ -77,7 +107,7 @@ export function StrategyTab({ seriesId }: { seriesId: string }) {
                   <CarCell who={r} />
                   <NameCell who={r} />
                   <td className="stint-cell">
-                    <StintBar stints={r.stints} totalLaps={data.totalLaps} stageEnds={data.stageEnds} atLap={data.atLap} />
+                    <StintBar stints={r.stints} totalLaps={data.totalLaps} stageEnds={data.stageEnds} />
                   </td>
                   <td className="num">{r.stops}</td>
                   <td className="num">{r.laneTotal}</td>
