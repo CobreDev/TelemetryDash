@@ -92,7 +92,6 @@ export function PitRoadTab({ seriesId }: { seriesId: string }) {
   if (!data) return null;
   return (
     <div className="tab-grid pit-grid">
-      <OnPitRoad rows={data.onPitRoad} />
       <section className="panel">
         <div className="panel-head">
           <h2>Latest stops</h2>
@@ -130,6 +129,7 @@ export function PitRoadTab({ seriesId }: { seriesId: string }) {
           </table>
         </div>
       </section>
+      <OnPitRoad rows={data.onPitRoad} />
       <AverageTable title="Four-tire averages" rows={data.fourTire} />
       <AverageTable title="Two-tire averages" rows={data.twoTire} />
       <ul className="dash-notes span-2">
