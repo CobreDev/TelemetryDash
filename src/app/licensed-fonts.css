@@ -1,0 +1,12 @@
+/*
+ * Stainless (purchased and licensed), committed in public/fonts and served at /fonts/. It is the
+ * dashboard's one family, as Hairline asks; if a file is missing, the system UI face stands in.
+ *
+ * Hairline's weights map onto the three faces: up to 549 Regular (body, labels), 550-849 Bold
+ * (names, titles, figures), 850 and up Black. Declaring ranges keeps the browser from faking
+ * in-between weights. font-display: block, with the preloads in index.html, so text waits a
+ * moment for the real face instead of reflowing when it swaps.
+ */
+@font-face { font-family: 'Stainless'; font-weight: 100 549; font-display: block; src: url('/fonts/Stainless-Regular.woff2') format('woff2'); }
+@font-face { font-family: 'Stainless'; font-weight: 550 849; font-display: block; src: url('/fonts/Stainless-Bold.woff2') format('woff2'); }
+@font-face { font-family: 'Stainless'; font-weight: 850 1000; font-display: block; src: url('/fonts/Stainless-Black.woff2') format('woff2'); }

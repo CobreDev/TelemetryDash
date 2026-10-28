@@ -59,9 +59,9 @@ export const lineSeries = {
 } as const;
 export const MAX_LINES = lineSeries.dark.length;
 
-/** Hairline uses one family, the platform's UI face, so pages look native and load nothing. */
+/** Hairline uses one family: here the licensed Stainless, falling back to the system UI face. */
 export const fonts = {
-  sans: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  sans: "'Stainless', system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
   mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
 } as const;
 

@@ -67,7 +67,10 @@ Product colors, the same in both themes:
 
 ### Type
 
-One family, the platform's UI face (`system-ui`). Hierarchy comes from size and weight.
+One family, Stainless (purchased and licensed, in `public/fonts`), falling back to the system UI
+face. Hierarchy comes from size and weight: Hairline's weights map onto the three files (up to 549
+Regular, 550–849 Bold, 850 and up Black), so nothing is synthesized. The fonts are preloaded with
+`font-display: block`, so text never swaps faces.
 
 | Role | Size / weight |
 | --- | --- |
@@ -81,7 +84,6 @@ One family, the platform's UI face (`system-ui`). Hierarchy comes from size and 
 
 - Sentence case everywhere, including table headers and names. No uppercase labels, no italics.
 - Every number that lines up with another uses tabular numerals.
-- The licensed Stainless files stay in `public/fonts` but aren't loaded.
 
 ### Shape
 
@@ -110,8 +112,7 @@ shadow is on tooltips.
 
 No layout shift on a fresh load (measured 0). Series profiles ship in the bundle, so the bar has
 its colors on the first paint. The header holds 76 px, the track logo has a fixed 120 × 52 slot,
-car badges reserve their box, and images fade in over 0.25 s (off with reduced motion). The system
-font needs no loading.
+car badges reserve their box, and images fade in over 0.25 s (off with reduced motion).
 
 ## Layout
 
