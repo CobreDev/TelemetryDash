@@ -1,307 +1,296 @@
-# TelemetryDash — Design Guidelines
+# TelemetryDash design
 
-Oct 9, 2026 · @Cooper
+How TelemetryDash looks and behaves, and what every number on it means. When a decision changes,
+change it here in the same commit.
 
-This is the single source of truth for how TelemetryDash looks and behaves: visual rules, the
-meaning of every number it shows, and how live data is handled. Code comments point back here.
-When a decision changes, change it here in the same commit.
+## Scope
 
-## Purpose and scope
+A live NASCAR stats dashboard (Cup, O'Reilly Auto Parts, Craftsman Truck), self-hosted as one
+Docker container and used on desktop and phone. It also serves a versioned JSON API (`/api/v1`)
+for a future app.
 
-TelemetryDash is a **live race-stats dashboard** for NASCAR, self-hosted as one Docker container
-on an Unraid server and used from a desktop or a phone. It also serves a versioned JSON API
-(`/api/v1`) so a native app can be built on the same data later.
+- Series differ only by their **series profile** (`src/series/profiles.ts`); views never branch on a
+  series id. IMSA (2027, multi-class) and IndyCar are added by writing profiles.
+- Shareable image cards were the original second output. They aren't built; see
+  [Cards](#cards-not-built).
 
-- **Primary:** Cup Series. **Launch:** O'Reilly Auto Parts Series and Craftsman Truck Series,
-  with no design changes beyond their series profile.
-- **IMSA** is the 2027 bonus. The NASCAR/IMSA switcher already exists (IMSA marked "coming soon"),
-  and the system must handle multi-class racing when IMSA profiles are written.
-- Any other series (IndyCar…) is added by writing a **series profile**, not by redesigning.
-- **Shareable cards** (static images for X) were the original second output. They are **not
-  built** (image export was removed); their guidelines are kept in [Shareable cards](#shareable-cards-not-built)
-  for when they return.
+## Principles
 
-## Design principles
+1. **Numbers first.** Times, gaps and positions are the most legible things on screen.
+2. **Always say when and from where.** Every view shows where the race is (stage, laps to go) and
+   the source (Live, Replay, Upcoming, Final).
+3. **Explain modeled numbers once.** Pace, estimated fuel, points as they run and inferred
+   penalties each carry one short footnote. Nothing else gets a footnote.
+4. **Never invent data.** Timing views show real data or say there is none. Only the Pace card
+   falls back to fictional data, and it's labeled.
+5. **No look-ahead.** Calculations use only what was known at the current lap, so a replay behaves
+   like a live race.
+6. **Same structure everywhere.** The top bar, tabs and card layout don't move between series.
+7. **Works on a phone.** Checked at 375 px: the page never scrolls sideways; wide tables scroll in
+   their card.
 
-1. **Numbers first.** Times, gaps and ranks are the most legible elements on screen. Decoration never competes with data.
-2. **Always say when.** Every live view makes the race position obvious (stage, laps to go, lap of total) and the data source obvious (Live, Replay, Upcoming).
-3. **Explain every modeled number in one line.** Pace score, estimated fuel and points as they run all carry a footnote saying how they're computed and what they assume.
-4. **Never invent data.** Live views show real timing or say there is none. Fictional sample data is only a last-resort fallback for the Pace card, and is always labeled.
-5. **No look-ahead.** Every calculation uses only what was known at the current lap, so a replay behaves exactly like a live race.
-6. **Same structure everywhere.** Top bar, tabs and panel layouts stay put across series and tabs.
-7. **Series-agnostic core.** Layout, type and data rules never assume NASCAR. Series differences live only in the series profile.
-8. **Works on a phone.** Every view is checked at 375 px wide: no page-level horizontal scroll, ever. Wide tables scroll inside their panel.
+## Visual system
 
-## Series theming system
+### Color
 
-Every series is described by one **series profile** (`src/series/profiles.ts`) that the dashboard
-and API read. Templates never branch on a series id.
+Dark theme only. Token names match a future light theme. Palettes are checked by
+`src/tokens/tokens.test.ts` or the dataviz palette validator; re-run them after any change.
 
-| Field | What it controls | Cup |
+| Token | Value | Use |
 | --- | --- | --- |
-| `id` / display name | Series switcher, headers | `cup` / "Cup Series" |
-| `body` | Sanctioning body for the top-right switcher | `nascar` |
-| `accent.dark` / `accent.light` | Rank-1 bar, buttons (dark); venue line on cards (light) | `#FFD100` / `#8F6B00` |
-| `brand.dashboard` | Top bar color, text, muted text, active underline | Black bar, white text, yellow underline |
-| `brand.stripes` | Three stripes under the top bar (and under card headers) | Yellow, red, blue |
-| Competitor unit | Rows are drivers or cars | Driver |
-| Classes | Multi-class grouping and class colors | None |
-| Markers | Feed name tokens, their label and how they render | `#` → (R), `(i)`, `(C)` → row highlight |
-| Stop types | Pit stop categories tracked | Four tire, two tire, fuel only |
-| Segment name | What a race segment is called | Stage |
-| Fuel unit | GAL or L | GAL |
-| Enabled templates | Which views/cards make sense | All NASCAR |
+| `bg` | #0F1115 | Page |
+| `surface` | #181B21 | Cards |
+| `surface-alt` | #20242C | Zebra rows, active toggle |
+| `border` | #2C313A | Dividers |
+| `text` | #EEF0F3 | Text and numbers |
+| `text-muted` | #9AA1AE | Labels, first names, footnotes |
+| `perf-good` / `perf-mid` / `perf-bad` | #3DD68C / #F2B33D / #F2645E | Judgments only, always beside a signed number or word |
 
-| Series | Status | Branding | Notes |
-| --- | --- | --- | --- |
-| Cup Series | Primary | Black bar, yellow / red / blue stripes | Stages; four/two-tire and fuel-only stops |
-| O'Reilly Auto Parts Series | Launch | Green bar `#007A38`, green / red / green stripes | Cup drivers appear as points-ineligible (i) |
-| Craftsman Truck Series | Launch | Red bar `#B81E24`, red / black / red stripes | Shorter races, fewer stops |
-| IMSA | 2027 | — | Car-based rows with driver lineups, classes, timed races |
-| IndyCar | Later | — | No stages; primary vs. alternate tires |
+- **Series accent** (`accent.dark`) is the header color (Cup's yellow, O'Reilly's green,
+  Craftsman's red). It marks the leader's row and fills the win chips in the Chase grid, but is
+  never the color of a number, because green and red read as good and bad.
+- **Series bar:** the top bar takes the series color, with three full-width stripes under it. The
+  stripe in the bar's hue uses the exact bar color, and bar text meets 4.5:1 (darken the bar,
+  never the text).
+- **Flags** (header icon, lap bar, race control): green #2BB34B, yellow #FFD100, red #E4002B,
+  white, and checkered as a pattern. Stage ends use NASCAR's stage flags (green/white checkered, or
+  yellow/white under caution). These are CSS variables in `app.css`.
+- **Chase drivers:** a faint yellow row tint, `rgba(255, 209, 0, 0.09)`, over the zebra stripe.
+- **Stint bars:** start #4A5160, four tires #2F7FE0, two tires #D07A1A, fuel only #8A5CF0.
+- **Chart lines** (Compare, Chase), in slot order: #2F7FE0, #E5484D, #12A5B8, #C48420, #8E4EC6,
+  #30A46C. A driver keeps its slot while selected; removing one never repaints the others. Compare
+  shows up to six lines, Chase up to four plus the field in gray.
 
-To add a series: copy the closest profile, change the fields, then check every tab with real data
-from one race on desktop and at 375 px.
+### Type
 
-## Color system
+| Role | Face | Size |
+| --- | --- | --- |
+| Card titles, race name, stage label | Stainless Black (licensed) | 22 / 16 / 15 px, caps |
+| Series switcher | Stainless Regular | 17 px, caps |
+| Body, labels, notes | Stainless Regular | 14–15 px |
+| Driver last name | Barlow Condensed Bold | 18 px, caps |
+| Driver first name | Stainless Regular, muted | 15 px |
+| Times, gaps, positions | JetBrains Mono Semibold, tabular | 17 px |
+| Column headers | Stainless, caps, +4% tracking | 14 px |
 
-The dashboard is **dark theme only**. Tokens share names with the (future) light card theme so views
-can switch without changes. All palettes are checked by tests (`src/tokens/tokens.test.ts`) or the
-dataviz validator; change a value only after re-running them.
+- 14 px minimum. No italics. Numbers are never in the display face and are right-aligned.
+- Stainless is purchased and committed in `public/fonts`; missing faces fall back to Saira and
+  Inter. NASCAR's logo face is proprietary, so the series dropdown uses the fallback. Never take
+  fonts from nascar.com.
+- Free fonts ship with the app, so it works offline.
 
-**Neutrals**
+### Cards and tables
 
-| Token | Dark (dashboard) | Light (cards) | Use |
-| --- | --- | --- | --- |
-| `bg` | #0F1115 | #F4F5F7 | Page background |
-| `surface` | #181B21 | #FFFFFF | Panels |
-| `surface-alt` | #20242C | #E9EBEF | Zebra rows, active toggle |
-| `border` | #2C313A | #D5D9E0 | Dividers, panel borders |
-| `text` | #EEF0F3 | #12151B | Primary text and numbers |
-| `text-muted` | #9AA1AE | #5B6270 | Labels, first names, footnotes |
+- **Columns:** `Pos`, not `#`. Pos, Car and numbers shrink to fit; Driver takes the rest. Headers
+  wrap only in a narrow card (container query at 480 px).
+- **Names:** "Chase BRISCOE" on one line. If any name in a table doesn't fit, every row switches
+  to two lines, never a mix. Narrow cards (Chase, crew averages) show last names only.
+- **Car numbers:** each team's number art (NASCAR's badge images, proxied and cached weekly), 34 px
+  tall with a light halo for dark artwork. The manufacturer logo (public-domain files in
+  `public/makes`) sits in its own column on the running order.
+- **Rows:** zebra stripes; the leader gets a 4 px accent bar; Chase drivers get the tint; out or
+  unranked cars sit at the bottom at 55% opacity.
+- **Markers:** (R) rookie and (i) points-ineligible print after the last name and are explained in
+  the card's footnote. Chase is the row tint, not "(C)".
+- **Long lists** (stops, penalties, slim last race, race control) scroll inside their card with
+  the header pinned.
+- **Card titles** are sentence case in code and uppercase on screen.
 
-**Performance colors** are only for good/middle/bad judgments, and always sit next to a signed
-number or a word, never alone: `perf-good` #3DD68C (gained, best), `perf-mid` #F2B33D, `perf-bad`
-#F2645E (lost). Light values for cards: #1E9E5A / #D98A00 / #D33A3A. Known issue: light `perf-mid`
-is 2.77:1 on white, under the 3:1 rule; the test marks it as an expected failure until it's retuned.
+### Loading
 
-**Series accent** (`accent.dark`) is exactly the dashboard header color: the bar color, or Cup's
-yellow highlight. It draws the rank-1 bar (redundant with the rank number, so exempt from 3:1)
-and buttons, whose text is black or white by contrast. O'Reilly green and Craftsman red sit close to
-the performance colors, so **the accent is never used on a number**.
+No layout shift on a fresh load (measured 0). Series profiles ship in the bundle, so the bar has
+its colors on the first paint. The header holds 76 px, the track logo has a fixed 120 × 52 slot,
+car badges reserve their box, images fade in over 0.25 s (off with reduced motion), and the
+Stainless fonts are preloaded with `font-display: block`.
 
-**Series brand.** The top bar takes the series bar color; three full-width stripes sit under it.
-Rules: every series has exactly three stripes (constant height); the stripe in the bar's hue uses
-the **exact** bar color; top-bar text meets 4.5:1 on the bar (darken the bar, never the text); an
-8 px band of bar color separates the active-tab underline from the stripes. Colors are sampled from
-the series logos (none are published).
+## Layout
 
-**Flag colors** (flag icon, lap bar): green `#2BB34B`, yellow `#FFD100`, red `#E4002B`, white
-`#FFFFFF`, checkered as a black/white pattern. Stage ends use NASCAR's stage flags: green/white
-checkered, or yellow/white checkered when the stage ended under caution. The flag icon is always outlined (white around colored
-flags, dark around white/checkered) so it reads on any series bar, including red-on-red.
-
-**Chase highlight:** rows of Chase drivers get a faint yellow tint, `rgba(255, 209, 0, 0.09)`, layered
-over the zebra stripe, explained in the footnote "Highlighted rows: Drivers in the Chase".
-
-**Strategy colors** (stint bars only): start `#4A5160`, four tires `#2F7FE0`, two tires `#D07A1A`,
-fuel only `#8A5CF0`. Two-tire orange is deepened from `#F29B1F` to pass the dataviz validator's
-lightness band on the dark surface.
-
-**Line-chart palette** (Compare), dark: `#2F7FE0`, `#E5484D`, `#12A5B8`, `#C48420`, `#8E4EC6`,
-`#30A46C`, in that slot order. Reordered and with a deeper amber versus the original light set so
-every adjacent pair stays distinct for color-blind readers on `#181B21` (validated). Six lines max.
-A driver keeps its color slot for as long as it's selected; removing one never repaints the others.
-
-## Typography
-
-**The dashboard uses no italics anywhere.**
-
-| Role | Font | Weight | Size |
-| --- | --- | --- | --- |
-| Panel titles, race name, stage label | Stainless (licensed) | Black 900 | 22 px (titles), 16 px (race), 15 px (stage) |
-| Series selectors (Cup / O'Reilly / Craftsman) | Stainless | Regular 400 | 17 px, all caps |
-| Body text, labels, notes | Stainless | Regular 400 | 14–15 px |
-| Driver last name | Barlow Condensed | Bold 700, all caps | 18 px |
-| Driver first name | Stainless | Regular, muted | 15 px |
-| Times, gaps, positions | JetBrains Mono | Semibold, tabular | 17 px |
-| Car number (no badge) | Barlow Condensed | Black 900 | 20 px |
-| Column headers | Stainless | Semibold-equivalent, caps, +4% tracking | 14 px |
-| NASCAR/IMSA switcher | NASCAR logo face slot (falls back to Saira) | 800 | 15 px |
-
-- Minimum size is 14 px. Numbers are never set in the display face; numeric columns are right-aligned.
-- Stainless (Regular, Bold, Black) is **purchased and licensed**, stored in `public/fonts` and committed (the owner keeps them in the public repo under that license). Missing faces fall back to Saira/Inter. Never download fonts from nascar.com or other sites; NASCAR's logo face ("Big Bill") is proprietary and unavailable, so its slot stays on the fallback.
-- Free fonts are bundled with the app (no CDN), so the container works offline.
-
-## Dashboard layout
-
-### Top bar (series-branded)
+### Top bar
 
 ```
 CUP SERIES  O'REILLY…  CRAFTSMAN…                       [ NASCAR ▾ ]
                                                         [Live|Sample]
-[track logo]  SOUTH POINT 400  Las Vegas, NV
-              ⚑ STAGE 2         54 | 85     (● Live)
+[track logo]  BANK OF AMERICA 400  Concord, NC          [usa]
+              ⚑ STAGE 2         54 | 85                 (● Live)
                 133 To Go     134 | 267
               ▬▬▬▬▬▬ lap bar ▬▬▬▬▬▬
-Overview  Pace  Pit road  Strategy  Fuel  Compare
-════════ three series stripes ════════
+Overview  Pace  Pit road  Strategy  Fuel  Compare  Chase
+════════ series stripes ════════
 ```
 
-- **Left:** series selectors (scroll sideways on a phone; never wrap).
-- **Top right:** NASCAR/IMSA dropdown, with the **Live | Sample** toggle under it.
-- **Race header:** track logo (JPG logos sit on a white tile; PNGs sit directly on the bar; hidden if it fails to load), race name and "City, ST". The race name sits beside the logo, not above it.
-- **Status block**, TV-style:
+| Situation | Line 1 | Line 2 |
+| --- | --- | --- |
+| Running | **Stage N** · lap in stage \| stage length | *X* To Go · lap \| total |
+| Under 10 laps left in the stage | **Stage N** · *X* To Go | |
+| Stage just ended | **Stage N** · Complete | |
+| Finished | **Final** · lap \| total | |
+| Practice / qualifying | **Session** · *N* laps | |
+| Upcoming | **Day, Mon D** · time ET | *N* laps · *M* mi, then stage lengths |
 
-  | Situation | Line 1 | Line 2 |
-  | --- | --- | --- |
-  | Normal | **Stage N** · lap in stage \| stage length | *X* To Go · lap \| total |
-  | Fewer than 10 laps left in the stage | **Stage N** · *X* To Go | — |
-  | Stage just ended | **Stage N** · Complete | — |
-  | Race finished | **Final** · lap \| total | — |
-  | Practice / qualifying | **Session name** · *N* laps | — |
-  | Upcoming (not live) | **Day, Mon D** · time ET | *N* laps · *M* mi, then **Stages** a \| b \| c |
+- **Flag icon:** the current flag (not the last completed lap's); the stage-end flag on the lap a
+  stage ends.
+- **Lap bar:** completed laps in their flag color, notches at stage ends; hidden for practice and
+  upcoming races.
+- **TV network** logo on a white tile (public-domain logos from Wikimedia Commons; unknown
+  networks fall back to text).
+- **Badge:** Live (pulsing dot; amber if the server hasn't reached NASCAR for 30 s), Final,
+  Upcoming, or Replay in sample mode.
+- **Times** are US Eastern, labelled "ET", in the browser's 12- or 24-hour style.
 
-- **Flag:** a small waving-flag icon left of the status block, showing the **current** flag (not the last completed lap's). On the lap a stage ends (status "Stage N Complete") it shows the stage-end flag instead, judged by the flag on the stage's last lap, since the stage-break caution comes out right after.
-- **Lap bar:** under the status block, exactly as wide as it. Completed laps are colored by the flag they ran under, remaining laps are dim, notches mark stage ends. Hidden for practice and upcoming races.
-- **TV network** logo stacked above the source badge, on a small white tile so network colors never vanish into a series bar. Logos are public-domain files on Wikimedia Commons, hotlinked like track logos (`src/data/nascar/networks.ts`); an unknown network or a failed image falls back to the name as text.
-- **Times** are always US Eastern, labelled "ET", in the browser's own 12- or 24-hour style. The upcoming date is not uppercased.
-- **Source badge** next to the race: **Live** (pulsing red dot) on the series that's live; **Upcoming** when the series isn't live; **Replay** in sample mode. Live turns amber only if the server hasn't reached NASCAR's feed for 30 s. There is no seconds counter: quiet stretches (qualifying, red flags) are not staleness.
-- **Tabs:** active tab underlined in the series highlight color, at the same baseline-to-underline gap (8.5 px) as the active series.
+### Overview
 
-### Panels and tables
+- **During a race:** Running order on the left; on the right, a 420 px column with Race control,
+  Penalties and Live Chase standings. The column sits in the same spot live and off-week, and the
+  cards are centered.
+- **Running order:** Pos, make, Car, Driver, Last lap, To leader, To next, Since pit, Est. fuel,
+  10-lap avg. Live tags: **Pit** on pit road, **DVP** (red) on the damaged vehicle clock. In
+  practice and qualifying it becomes **Practice timing**, ranked by best lap. A finished race's is
+  titled **Results**.
+- **Race control:** NASCAR's lap notes plus flag changes, newest first, car numbers in bold. The
+  header shows cautions and caution laps (NASCAR's counts live, counted from the lap flags
+  otherwise).
+  - Flags are labelled by laps completed when they came out (white at 133 in a 134-lap race; the
+    opening green is "Start").
+  - A red flag stays in the history: Caution → Red flag → Red flag lifted: caution → Green flag:
+    restart. A red NASCAR noted but the lap flags missed is added from the note.
+  - A caution NASCAR's notes call a competition caution reads **Competition Caution**.
+  - Each finished stage gets a **Stage N winner** entry listing every point scorer.
+  - The **Checkered flag** goes on the last lap.
+  - No entry is made for a flag change right after a recording gap.
+- **Penalties:** Car, Driver, Penalty, Punishment, newest first (the lap on hover); see
+  [Penalties](#penalties).
+- **Live Chase standings:** Pos, ±, Car, Driver, Pts, Gap, Gain, ordered as they run. ± is the move
+  from where they entered the race; hovering shows the entering position and points. Off-week the
+  card is **Chase standings** after the last race, with a Finish column.
+- **Between races:** Next race (titled **Weekend schedule** once the first session has started:
+  TV and radio, then sessions in ET, done ones muted, **Cancelled** when a session never ran), Last
+  race results, and Chase standings. Wide screens show the three side by side; phones show one
+  column with Chase last. From the day after a series' race, the Next race card also sits above
+  that race's results.
+- **Qualifying mode** (nothing racing; qualifying for the next race is live, done, or replaced by a
+  rulebook lineup): the main card is **Qualifying** (Time, MPH, Gap to the pole) or **Starting
+  lineup**, and Last race moves to a slim scrolling card under Chase.
 
-- **Columns:** `Pos` (not `#`); Pos, Car and numeric columns shrink to their content; the Driver column takes the rest. Headers may wrap only when the panel is narrow (container query at 480 px).
-- **Names:** full names everywhere except the narrow Chase and crew-average tables (last name only). One line, "Chase BRISCOE" (first name muted, last name bold caps). If any name doesn't fit, **every** row wraps to two lines (first name above last); never a mix. A long name breaks only between first and last name.
-- **Car numbers:** each team's stylized number artwork (NASCAR's public badge images, proxied and cached weekly), 34 px tall with a thin light halo so dark artwork reads on dark rows. Fallback: the number in Barlow Condensed.
-- **Rows:** zebra striping; the leader gets a 4 px accent bar; Chase drivers get the yellow tint; unranked/out cars sit at the bottom at 55% opacity with dashes.
-- **Markers:** (R) rookie and (i) points-ineligible print after the last name; Chase is the row highlight instead of "(C)". Each marker that appears is explained in the panel's footnote.
-- **Footnotes** under each table explain metrics, markers and exclusions. Panels don't repeat the stage/lap stamp; the header shows it.
-- **Widths:** Pace rankings max 640 px; Overview max 980 px, or 1,640 px (≥1,360 px screens) with the 420 px right column (Race control + Chase live, Chase off-week) in the **same spot in both modes**. **The Overview cards are centered on the screen.**
-- **Phones:** wide tables scroll inside their panel; the page never scrolls sideways.
-- **Loading (no jank on a fresh load):** series profiles ship in the bundle, so the bar has its colors on first paint; the header holds a 76 px min height (also steady between series); the track logo has a fixed 120 × 52 slot; car badges reserve their 78:70 box; images fade in (0.25 s, off with reduced motion); the Stainless fonts are preloaded and use `font-display: block`, so text never swaps faces. Target: zero layout shift (measured 0 on reload).
-
-## Tabs
+### Other tabs
 
 | Tab | Contents |
 | --- | --- |
-| **Overview** | Running order: Pos, manufacturer logo (Chevrolet / Ford / Toyota, public-domain logos from Wikimedia Commons in `public/makes`, from the live feed or the results), Car, Driver (live: a **Pit** tag while on pit road and a red **DVP** tag on the damaged vehicle policy clock; a car NASCAR's feed marks as no longer running is **Out**, as is one that stops crossing the line), Last lap, To leader, To next, Since pit, Est. fuel, 10-lap avg (both gap columns always shown). In practice/qualifying it becomes **Practice timing**: ranked by best fully-timed lap with To fastest, To next and laps run. Beside it (stacked on narrow screens): the **Chase standings** card. When the series isn't live, the Overview shows **Next Race** (renamed **Weekend Schedule** once the weekend's first session has started; race and track, then TV and radio, then the on-track sessions in ET with done ones muted, reading **Cancelled** for practice or qualifying with no timed results an hour after its start), **Last race** (full results: Pos, Car, Driver, Start, Led, Status, Pts, with Chase tint and markers from the points file) and, on the right, **Chase standings** after that race (± = move in that race, Last race = finish). Wide screens: schedule \| results \| Chase; mid widths stack the schedule over the results; phones get one column with Chase last. **Qualifying mode** (no race running, and qualifying for the next race is live, done, or replaced by a rulebook lineup): the large card becomes **Qualifying** (live best laps, or the official order: Pos, Car, Driver, Time, MPH, Gap to the pole, notes like DNS, with the pole summarized on top) or **Starting lineup** (set by the rulebook, no times), and **Last Race** moves to a slim card under Chase on the right (about 10 rows tall, scrolling through the whole field with the header pinned). A finished race's running order is titled **Results**. |
-| **Pace** | Pace rankings for the **full field** (excluded cars listed unranked at the bottom), plus a **Fastest driver** card (each car's fastest single lap, top 10: lap time, its average speed in column "Avg MPH", and the lap it was run on). |
-| **Pit road** | Side by side (up to 1,360 px wide): **Latest stops** on the left and **Live pit stops** on the right (live races: every car on pit road right now, from the feed, with running position now, position on pit entry and the ± between them, most positions gained first). Latest stops: every stop so far, newest first, in a fixed-height list (~12 rows) that scrolls with a sticky header (lap with green/caution dot, service, box time, lane time, positions ±), and four-tire and two-tire crew averages (top 10). |
-| **Strategy** | Full driver names (one line on desktop: the stint bars give up width, down to 160px, before names wrap). One stint bar per car in running order, colored by the stop that started each stint, stage-end notches, stops and total lane time. One red line runs down the whole stint column at the current lap (placed from the bars' measured position, so it follows resizes); it's left off once the race is over. |
-| **Fuel** | Full driver names. Est. fuel gauge, laps of fuel left, and whether each car reaches the finish, the stage end, or is short by N laps. |
-| **Compare** | Lap-time chart for up to 6 drivers (default: top 3), Last 20 / Last 50 / All laps, plus a summary table (laps shown, avg, best, last). |
-| **Chase** | The whole Chase (playoffs) for the series, from the schedule's `playoff_round` races (Cup 10, O'Reilly 9, Trucks 7) and each finished race's final points file and results; works live and off-week. **Summary** tiles (races run or the race running, the leader and margin, races to go). **Standings** (as they run during a Chase race): Pos, ±, Car, Driver, Pts, Gap (to the leader), Next (to the driver ahead), This race / Last race points, Running (live), then **Chase** Wins, Top 5, Avg finish and **Season** Wins, Top 5, Top 10, Poles; click a row to put that driver on the chart. **Points through the Chase**: points at the reset (Start) and after each race, the live race as they run; the field in thin gray, up to four drivers in color (the top four by default; clicking a fifth drops the oldest pick), direct labels at the line ends, legend chips to remove, crosshair tooltip. **Race by race**: each driver's finish in every Chase race, shaded in the series accent (solid for a win, then top 5 and top 10 lighter), the live race showing the running position dashed and in italics, points on hover. Before the first Chase race it says where and when the Chase starts. |
+| **Pace** | Pace rankings for the full field (excluded cars unranked at the bottom), and **Fastest driver**: each car's best lap, its average mph and the lap it ran it. |
+| **Pit road** | **Latest stops** (every stop, newest first: lap with green/caution dot, service, box, lane, ±) beside **Live pit stops** (cars on pit road now: position now, on entry, ±, most gained first), then four-tire and two-tire crew averages. |
+| **Strategy** | One stint bar per car in running order, colored by the stop that started it, with stage notches and one red line down the column at the current lap. Stops and total lane time. |
+| **Fuel** | Est. fuel gauge, laps left, and whether each car reaches the finish or stage end, or is short. |
+| **Compare** | Lap times for up to six drivers (top three by default), last 20, last 50 or all laps, and a summary table. Green-flag laps only; cautions shaded; faster plots lower. |
+| **Chase** | The whole Chase for the series, from the schedule's playoff races (Cup 10, O'Reilly 9, Trucks 7), live and off-week: summary tiles, full standings (gap to the leader and to the next driver, Chase and season stats; click a row to chart it), points after each race, and each driver's finish in every race (the live race shows the running position). |
 
-**Right column (420px, same spot live and off-week):** during a race, **Race control** sits above
-the Chase card: NASCAR's lap notes (`lap-notes.json`: passes, incidents, pit cycles, stage results;
-"Stat" for info notes) plus flag changes built from the lap flags (Caution, Red flag, Green flag:
-restart, White, Checkered), newest first, car numbers in bold, a fixed 360px list that scrolls.
-Flag changes right after a recording gap are skipped (the change could be anywhere in the gap). A red flag sticks to its lap in the recorder (the caution that resumes on the same lap can't erase it), the next caution reads "Red flag lifted: caution", and a note NASCAR marks red adds the Red flag entry (plus the "Red flag lifted: caution" entry on the next caution lap) if the lap flags missed it. Every flag stays in the history: Caution → Red flag → Red flag lifted: caution → Green flag: restart. Flag entries are labelled like the header's lap counter, by **laps completed when the flag came out** (white at 133 and checkered at 134 in a 134-lap race; the opening green is "Start"), so a flag can read one lap earlier than NASCAR's note about it. When the leader completes the last lap, a **Checkered flag** entry goes on that lap (the feed can keep sending white after the finish, so the header shows checkered and "Final" from the race length, not the feed's flag). Live races use the feed's `laps_in_race` for the race length (the schedule can be wrong, and overtime adds laps); the final stage absorbs the difference.
-The header shows the caution count and caution laps ("1 caution · 3 laps"): NASCAR's own counts live, counted from the lap flags otherwise (a red inside a caution is the same caution). A caution NASCAR's notes call a competition caution (within two laps) reads **Competition Caution**. When a stage ends, a **Stage N winner** entry (green-and-white checkered marker) goes on its last lap with every stage point scorer and their points, from the points file (live as NASCAR fills them in; replays only for stages already ended).
-Replays show only notes up to the replay lap. Hidden in practice/qualifying.
-
-**Penalties card** (between Race control and Chase, races only): Car, Driver, Penalty, Punishment, newest first (hover a row for the lap), about six rows then it scrolls. NASCAR publishes no penalty feed (the results file's `infractions` is always empty), so penalties are read from the race notes: speeding / too fast entering or exiting, uncontrolled tire, commitment line, vehicle interference, crew over the wall too soon, removing equipment, pitting outside the box, blend line, restart violations, safety violation, with every car named before the infraction ("#42, #66 and #3 speeding"). Mentions of a penalty already served ("restarted at the rear following his commitment line violation") are skipped. The punishment is the note's when it says one (pass-through, stop-and-go, tail of the field, laps, black flag); otherwise NASCAR's standard for pit road penalties by the note's flag: **Pass-through** under green, **Tail of the field** under caution, with a footnote saying so.
-
-**Chase card:** columns Pos, ±, Car, Driver, Pts, Gap, Gain (live; the running position is in Running order and the API's `running`). Gap is points behind the leader (hover: behind the driver just ahead). Live, the card is titled **Live Chase Standings** and ordered **as
-they run**: Pos and Pts are the standings if the race ended now; ± is the move from where they
-entered the race (green up, red down, dash for none); Gain
-is the points picked up so far (stage points plus what the running position pays). Hovering ± or
-Pts shows the position or points entering the race. It hides in practice and when a race has no Chase data. Off-week the same columns read Pos,
-±, Car, Driver, Finish, Pts, Gap, Gain for the last race. Cell padding is 5px so eight columns fit 420px.
-
-**Compare chart rules** (from the dataviz guidance): 2 px lines; faster laps plot lower (the axis reads as lap time, the user's choice); a legend
-always, plus right-end name labels for up to 4 drivers, spread so they never overprint; cautions
-shaded; crosshair + tooltip on hover; shows green-flag laps only (pit, restart and laps over 7%
-slower than the car's median are hidden, so one pit lap can't flatten the scale).
-
-## Metrics and data rules
+## Numbers
 
 ### Formats
 
 | Value | Format | Example |
 | --- | --- | --- |
-| Lap time | Seconds, 3 decimals; minutes only above 99.999 s | 31.340s, 1:58.219 |
-| Pit stop time | Seconds, 2 decimals | 8.30s |
-| Gap (time) | Signed, 3 decimals; laps down as "+1 Lap" / "+2 Laps" | +0.212s |
-| Gap to best (percent) | 2 decimals; leader 0.00% in `perf-good` | 0.69% |
-| Position change | Signed integer; zero is an en dash | +3, −1, – |
-| Fuel (modeled) | Percent of a full tank | 64% |
+| Lap time | 3 decimals; minutes above 99.999 s | 31.340s, 1:58.219 |
+| Pit time | 2 decimals | 8.30s |
+| Gap | Signed, 3 decimals; laps down as "+1 Lap" | +0.212s |
+| Gap to best | 2 decimals | 0.69% |
+| Position or points change | Signed; zero is an en dash | +3, −1, – |
+| Points behind | Minus sign; none is an en dash | −74 |
+| Fuel (modeled) | % of a full tank | 64% |
 | Speed | mph, 3 decimals | 182.605 |
-| Schedule times | US Eastern, as published | Sun, Oct 11 · 3:00 PM ET |
 
-Ties share a rank and are ordered by car number. (NASCAR's official Chase tie-break starts with wins; not yet applied.)
+Ties share a rank and order by car number. (NASCAR's Chase tie-break, starting with wins, isn't
+applied yet.)
 
 ### Definitions
 
-- **Running order and gaps:** "now" is the moment the first car completes the current lap. Cars are ordered by laps completed, then by line-crossing time. Gaps are measured at the last start/finish line both cars crossed; if a car was passed after that line (negative difference), the gap falls back to the progress difference at the car's pace. A car is on the lead lap if its progress (laps plus fraction of the current lap, from its last lap time) is within one lap. A car that hasn't crossed the line for 4 of its normal laps is **out**.
-- **Pace score** (tire-age adjusted): each car's mean green-flag lap with tire falloff removed, i.e. its expected lap on fresh tires. Clean laps: green flag, not a restart lap, not a pit-in or pit-out lap, within 7% of the car's own median. Tire age counts laps since the last stop that changed any tire (fuel-only doesn't reset it). One field-wide falloff rate is fitted within stints of at least 5 laps. Cars need at least max(10, half the typical clean-lap count) laps to be ranked; others are listed as excluded. (A median-lap variant was requested as "both"; not built yet.)
-- **Fastest driver:** each car's fastest single-lap average speed (mph). NASCAR publishes no speed-trap data, so true top speed isn't available, and the footnote says so.
-- **10-lap avg:** mean lap time over the car's last 10 laps, **including** caution and pit laps.
-- **Est. fuel (modeled; NASCAR publishes no fuel data):** every stop fills the tank; a caution lap burns 35% of a green lap; the field's longest run between stops so far equals one full tank. "Laps left" and "Reaches" assume green-flag running from now.
-- **Crew averages:** box times only; stops with no time are skipped, and stops over 1.5× the field median for that service (repairs, penalties) are left out.
-- **Points as they run:** live races use NASCAR's live points file as-is. Replays rebuild it: points entering the race, plus stages already completed, plus what the current running position pays. The payout per position is read from the race's actual results (2026: 55 for a win, 35 for 2nd, then one less per position), so rule changes need no code. Fastest-lap and bonus points are only added at the finish.
-- **Markers:** NASCAR feed tokens `#` (rookie → shown as "(R)"), `(i)` (ineligible for points in this series), `(C)` (in the Chase). The name text over-marks `(C)` (it tags drivers outside this series' Chase, even some with `(i)`), so the server rewrites it from NASCAR's `is_in_chase` flag: the points file in a race, the live snapshot in practice. With no flag data, nobody is highlighted.
-- **Estimated laps:** when the server joins a session late or misses polls, the missed time is split evenly across the missed laps; elapsed time stays exact, but those laps are marked and never count toward pace, top speed, best laps or the Compare chart. During a race they are then **backfilled** from NASCAR's official `lap-times.json` (published live during races), which also supplies flags for laps the server never saw. Laps with no flag seen and no backfill read as unknown unless the flags on both sides match, so a gap never looks like a caution or restart.
-- **Practice best lap:** only fully-timed laps within 1.5× the field's fastest count (laps that include garage time don't).
+- **Running order and gaps:** cars are ordered by laps completed, then line-crossing time. Live,
+  "now" is the latest crossing seen; replays stop at the leader's crossing. Gaps are taken at the
+  last line both cars crossed. A car that misses the line for four of its normal laps, or that the
+  feed marks as not running, is **out**. Before the green, the order is the starting lineup.
+- **Pace score:** each car's mean clean green-flag lap with tire falloff removed (its expected lap
+  on fresh tires). Clean means green, not a restart or pit lap, and within 7% of the car's median.
+  Cars need max(10, half the typical clean-lap count) clean laps to be ranked.
+- **10-lap avg:** mean of the car's last 10 laps, including caution and pit laps.
+- **Est. fuel:** modeled, as NASCAR publishes no fuel data. Every stop fills the tank, a caution
+  lap burns 35% of a green lap, and a tank lasts as long as the field's longest run so far.
+- **Crew averages:** box times, leaving out stops over 1.5× the field median (repairs, penalties).
+- **Points as they run:** live, NASCAR's live points file as is, which counts finished stages but
+  not the stage in progress (so it can differ from TV). Replays rebuild it from the race's actual
+  payout. Fastest-lap and bonus points come at the finish.
+- **Markers:** NASCAR's name tokens `#` (rookie, shown as "(R)") and `(i)`. Its `(C)` token
+  over-marks, so the Chase field comes from the `is_in_chase` flag.
+- **Estimated laps:** laps the server missed are split evenly and marked. They never count toward
+  pace, best laps or charts, and are replaced by NASCAR's official lap times (races) or each car's
+  feed-reported best lap.
 
-## Data sources and live behavior
+### Penalties
 
-- **Live (default):** the server polls NASCAR's live feed every 5 s during a session (once a minute when idle, using If-Modified-Since), records each lap from the car's session clock, and saves the session to `/data/live/current.json` so restarts lose nothing already recorded (laps run while it's down are backfilled, see Estimated laps). A finished race's saved copy is deleted when its race weekend ends (Monday 00:00 ET), and a race that's already over when the server starts isn't recorded (the replay files cover it). A race that hasn't finished counts as live from 90 minutes before its scheduled start to 6 hours after, even while the feed sits unchanged (pre-race, pace laps, a long delay); before the green the running order is the starting order (the feed's `starting_position`). Live races take laps to go from the feed (`laps_to_go`) rather than working it out. The feed's per-car status codes aren't documented: 1 is running and anything else is treated as out; the server logs each new code the first time it sees one. Restart recovery: the saved session reloads; laps missed while down are estimated, then replaced by NASCAR's official lap times within a minute (races), and each car's feed-reported best lap replaces an estimated one right away (any session, so practice and qualifying keep a best lap run during the gap); pit detail, points and notes are re-fetched whole. Cached NASCAR files (schedule, race files) fall back to the last copy on disk when NASCAR can't be reached. In the browser, a failed refresh keeps the last data on screen. Pit detail and live points refresh every 15 s. Request rates stay at or below what nascar.com itself uses. NASCAR's CDN refreshes the live feed every 30 s (its `Age` header counts to 30), so during a session the server times each poll from `Age` to land just after the next copy (retrying every 2 s until it changes) instead of polling blindly; new data reaches the server about a second after NASCAR publishes it. `/live` reports `dataAt`, the last change to anything the views show (laps, flags, car status, pits, points, notes). The browser checks `/live` every 2 s during a session and refreshes the live series' views when `dataAt` moves (plus a 30 s fallback when nothing has loaded for that long); other series refresh once a minute, and with nothing live it checks every 15 s, so an idle dashboard doesn't keep the server asking NASCAR. The server remembers a failed NASCAR fetch (a file not published yet answers 403) for 2 minutes instead of retrying it on every request, and a missing static file is a 404, not the app page.
-- **Sample:** the Live/Sample toggle (remembered per browser) or `?source=sample` replays each series' last completed race at its halfway lap. Completed-race files are cached in `/data` and fetched once.
-- **Views refresh every 5 s** in live mode without flicker or losing selections (series, tab, Compare picks).
-- **Opening series** (live mode, once per load; picks after that stick; days in US Eastern): a live race's series; otherwise **Friday–Sunday** the series whose next race starts soonest (a race past its scheduled start that isn't over still counts), and **Monday–Thursday** Cup. The server decides (`GET /api/v1/home`) and the page waits up to 1 s for it before drawing, so it never shows one series and jumps to another.
-- **Finished races:** a race that's over stays on screen (header **Final** with the checkered flag, a **Final** badge, final running order, race control and Chase) until **Monday 00:00 ET** after it (end of the day for a Monday race), built from NASCAR's official files, per series, so Friday's Truck race is still there after Saturday's sessions start. The collector keeps its saved copy until then too. After that the series shows **Upcoming**. From the day after the race (ET dates), the finished-race Overview also puts the **Next Race** card above Running order. "Next race" never means a race that's already over, even within 6 hours of its start.
-- **Nothing live for a series:** the header shows the **Upcoming** race; the Overview shows the schedule and last results; other tabs say "No live session for this series", name what is live now and give the next race. The API answers `409 { error: "no-live-session", live, next }`.
-- **No fictional fallback for timing:** if data can't be fetched, timing views say so. Only the Pace card falls back to labeled fictional data.
-- **Schedule quirks:** `race_date` is US Eastern wall-clock time with no offset (converted with daylight saving), and `actual_laps` is pre-filled for future races, so "finished" is decided by start time.
-- **No live GPS or timing-loop data is public**, so a future track map must estimate positions from line crossings and gaps.
+NASCAR publishes no penalty data (the results file's `infractions` is always empty), so penalties
+are read from the race notes: speeding, uncontrolled tire, commitment line, vehicle interference,
+crew over the wall, removing equipment, pitting outside the box, blend line, restart violations
+and safety violations. Every car named before the infraction counts ("#42, #66 and #3
+speeding"); mentions of one already served are skipped. The punishment is the note's when it
+gives one; otherwise it's the standard: pass-through under green, tail of the field under
+caution.
 
-## Shareable cards (not built)
+## Live data
 
-Image export was removed; these rules apply when cards return.
-
-- **Principles:** one graphic, one finding; the post text states it and the card proves it. Light theme (stands out in a dark timeline). Same header/body/footer zones on every card. Readable at 375 px.
-- **Layout:** 8 px grid, 56 px margins. Header: title, venue in the light accent, "race · series · year", one-line metric definition, then the series stripe band (6 px each). Body rows 56–64 px with zebra striping; rank 1 gets an accent bar. Footer: metric footnote and lap range left, "Generated by \<handle>" right.
-- **Card type** (at 1080 px wide): title Barlow Condensed 64–72 px caps; venue 28 px; metric line Inter 18 px caps; last name 30 px over first name 14 px; car number 34 px; numbers JetBrains Mono 28 px; column labels 14 px; footer 13 px.
-- **Formats:** 4:5 1080×1350 (rankings ≤10 rows), 16:9 1600×900 (charts), 1:1 1080×1080 (single driver), 9:16 1080×1920 (keep 80 px clear at the bottom). Export PNG at 2×.
-- **Template catalog:** Top 10 Pit Stops, Four Tire Averages, Strategy Report, Lap Time Comparison (launch set); Stage Pace Rankings, Lap Time Distribution, Fuel Save, Pit Crew Summary, Pit Lane Time Ranking, Spots Gained, Predicted Pace (later). Top 10 Pace Rankings is dashboard/API only. IMSA versions add class grouping and driver lineups.
-- **Card branding:** no team artwork or series logos on posted cards; series colors only in the stripe band; plain-text series and race names; attribution to your own handle.
-- **Pre-posting checklist:** correct race/venue/series; lap stamp on live cards; metric definition; markers and exclusions explained; formats per this doc; readable at 375 px; 2× PNG at the right size; one-sentence alt text.
+- **Polling:** NASCAR's CDN refreshes the live feed every 30 s. During a session the server times
+  each poll from the `Age` header to land just after a new copy (retrying every 2 s); idle, once a
+  minute. Pit detail, points and notes refresh every 15 s. Rates stay at or below nascar.com's own.
+- **What counts as live:** the feed changed in the last 10 minutes, or an unfinished race is within
+  90 minutes before to 6 hours after its scheduled start (pre-race and delays leave the feed
+  unchanged). Laps to go come from the feed.
+- **Refreshing the page:** `/live` reports `dataAt`, the last change to anything shown. The browser
+  checks it every 2 s during a session and refreshes the live series when it moves (30 s fallback).
+  Other series refresh once a minute; with nothing live it checks every 15 s. A failed refresh
+  keeps the last data on screen.
+- **Restarts:** the session is saved to `/data/live/current.json` after every poll and reloads on
+  start. Missed laps are estimated, then replaced as above; pits, points and notes are re-fetched
+  whole. It's deleted when the race weekend ends.
+- **NASCAR unreachable:** cached files fall back to the last copy on disk, and a failed fetch is
+  remembered for 2 minutes rather than retried every request.
+- **Finished races** stay on screen (Final) until Monday 00:00 ET, built from the official files,
+  then the series shows Upcoming.
+- **Opening series** (once per load, US Eastern days): the live race's; Friday–Sunday the next
+  race's; Monday–Thursday Cup. The page waits up to 1 s for the server's choice.
+- **Nothing live:** timing tabs say so and name what is live and the next race; the API answers
+  `409 { error: "no-live-session", live, next }`.
+- **Sample mode** replays each series' last race at halfway, from files cached in `/data`.
+- **Feed quirks:** `race_date` is Eastern wall-clock time with no offset; `actual_laps` is pre-filled
+  for future races; per-car status codes are undocumented (1 is running; the server logs others);
+  `is_on_track: false` means on pit road. No GPS or timing-loop data is public.
 
 ## Branding and legal
 
-- The dashboard runs on your own server for personal use, so it uses team number artwork and track logos (loaded from NASCAR, which blocks server-side logo fetches; the browser loads them). Posted cards must not.
-- No series, sponsor or manufacturer logos in the UI chrome; series identity comes from bar color and stripes.
-- Data: unofficial use of NASCAR's public feeds. Keep request rates low, check terms of use, and credit "Timing data from public NASCAR feeds; unofficial" wherever it's published.
-- Fonts: only licensed or open-licensed fonts (see Typography).
-- **App icon** (`public/icon.svg`, plus `icon.png` 512 px and `apple-touch-icon.png` 180 px): an original drawing, a dark rounded tile with a speedometer arc in the Cup stripe colors (blue, yellow, red), ticks and a white needle. Used as the favicon, the phone home-screen icon and the Unraid Docker icon (from the repo's raw GitHub URL). Don't use SF Symbols or look-alikes for icons or logos: Apple's license forbids it (a draft built from `gauge.with.dots.needle.50percent` was rejected for this).
-- Borrow structure from other creators and broadcasters, not their exact look. (An AmberConsole terminal-style variant was tried and rejected.)
+- Personal use on your own server, so team number art, track logos and manufacturer logos appear
+  in the data. Track logos load in the browser (NASCAR blocks server fetches). Series identity
+  comes from bar color and stripes; no series or sponsor logos in the chrome.
+- Unofficial use of NASCAR's public feeds. Keep request rates low and credit "Timing data from
+  public NASCAR feeds; unofficial" wherever it's published.
+- **App icon** (`public/icon.svg`, `icon.png`, `apple-touch-icon.png`): an original speedometer
+  drawing in the Cup stripe colors, used as favicon, home-screen and Unraid icon. Don't use SF
+  Symbols or look-alikes; Apple's license forbids it.
 
 ## Accessibility
 
-- Text meets 4.5:1 on its background; large numbers and non-text indicators meet 3:1 (tests enforce accents, bar text and perf colors).
-- Color never carries meaning alone: performance colors sit next to signed numbers or words; flags have outlines and tooltips; chart lines have labels and a legend; the Chase tint is explained in a footnote.
-- Motion respects `prefers-reduced-motion` (the Live dot stops pulsing).
-- Interactive controls are real buttons/selects with labels (`aria-pressed`, `aria-current`, `aria-label`).
+- Text meets 4.5:1; large numbers and indicators 3:1 (tests enforce accents, bar text and perf
+  colors).
+- Color never carries meaning alone: perf colors sit beside signed numbers, flags have outlines
+  and tooltips, chart lines have labels and a legend, and the Chase tint is explained.
+- Motion respects `prefers-reduced-motion`. Controls are real buttons and selects with labels.
 
-## Deployment
+## Cards (not built)
 
-One container (Node 22, bundled server, no `node_modules` at runtime) serves the UI and API on port
-8080, storing data in `/data`. Built for `linux/amd64` (Intel Unraid) from any machine; the Unraid
-template (`unraid/telemetrydash.xml`) maps port 8099, `/mnt/user/appdata/telemetrydash`, and runs as
-`99:100`. GitHub Actions builds the image on every push to `main` (tests run inside the build) and
-publishes it to `ghcr.io/cobredev/telemetrydash` (`:latest` and `:sha-<commit>`, public, no
-login); Unraid updates by hand or on a schedule with CA Auto Update Applications, outside race
-hours. Steps are in the README.
+Image export was removed; these rules apply if it returns. Light theme, one finding per card, the
+same header/body/footer on every card, 8 px grid with 56 px margins, readable at 375 px, PNG at 2×.
+Formats: 1080×1350 (rankings), 1600×900 (charts), 1080×1080 (one driver), 1080×1920. No team art or
+series logos on posted cards; credit your own handle.
 
 ## Backlog
 
-- **Track map** on Overview with positions interpolated between line crossings.
-- **Chase page** with full standings (beyond the Overview card) and the official tie-break.
-- **Live video** from the user's IPTV, played in the dashboard.
-- **Pace:** stage-by-stage pace and lap-time distribution; median-lap pace toggle.
-- **Live polish:** highlight changed rows for 2 s; gray out pace views under caution; Predicted Pace before a race.
-- **Phones:** pin Pos/Car/Driver when wide tables scroll.
-- **IMSA** profiles (2027) and **IndyCar** later.
-- **Cards** (see above), if image export returns.
+- Track map with positions estimated between line crossings.
+- Chase tie-break (wins first).
+- Pace by stage, lap-time distribution, a median-lap pace option.
+- Highlight changed rows for 2 s; gray out pace views under caution.
+- Pin Pos/Car/Driver when wide tables scroll on phones.
+- IMSA (2027) and IndyCar profiles.
