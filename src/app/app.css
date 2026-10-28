@@ -53,10 +53,11 @@ button { font: inherit; color: inherit; }
 .series-switch { display: flex; gap: 0 20px; flex: 1 1 auto; min-width: 0; overflow-x: auto; }
 .series-switch button,
 .tabs button {
-  background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
+  /* The active underline matches the stripes' 4px. */
+  background: none; border: 0; border-bottom: 4px solid transparent; cursor: pointer; white-space: nowrap;
   color: var(--bar-muted, var(--text-secondary));
 }
-.series-switch button { padding: 6px 0 8px; font-size: 15px; font-weight: 500; }
+.series-switch button { padding: 6px 0 4px; font-size: 15px; font-weight: 500; }
 .series-switch button:hover, .tabs button:hover { color: var(--bar-fg, var(--text-primary)); }
 .series-switch button.active,
 .tabs button.active { color: var(--bar-fg, var(--text-primary)); font-weight: 650; border-bottom-color: var(--bar-highlight, var(--accent)); }
@@ -126,7 +127,7 @@ button { font: inherit; color: inherit; }
 @keyframes live-pulse { 50% { opacity: 0.35; } }
 
 .tabs { display: flex; gap: 0 22px; margin-top: 10px; overflow-x: auto; }
-.tabs button { padding: 8px 0 10px; font-size: 15px; }
+.tabs button { padding: 8px 0 4px; font-size: 15px; }
 
 /* Live / Sample: a two-option control in the bar's colors. */
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
