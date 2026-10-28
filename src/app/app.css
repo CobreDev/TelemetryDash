@@ -41,7 +41,7 @@ button { font: inherit; color: inherit; }
 .topbar {
   /* Bottom padding, not a tab margin (which would show the page color), keeps the active-tab
      underline off the series stripes. */
-  padding: 12px 20px 0;
+  padding: 12px 20px 8px;
   background: var(--bar-bg, var(--surface-1));
   color: var(--bar-fg, var(--text-primary));
 }
@@ -362,7 +362,7 @@ span.legend-chip { background: transparent; color: var(--text-muted); }
 }
 @media (max-width: 640px) {
   main { padding: 0 16px 32px; }
-  .topbar { padding: 10px 16px 0; }
+  .topbar { padding: 10px 16px 8px; }
   .figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 16px; width: 100%; }
   .figures > div { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
   .figures dt { align-self: end; }
