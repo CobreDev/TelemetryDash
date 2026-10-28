@@ -146,7 +146,7 @@ function LapChart({ data, picked, window }: { data: LapsView; picked: Picked[]; 
           ))}
         </div>
       )}
-      <div className="chart-axis-label">Lap time in seconds (faster is lower) · lap number</div>
+      <div className="chart-axis-label">Lap time (s), faster is lower</div>
     </div>
   );
 }
@@ -249,8 +249,7 @@ export function CompareTab({ seriesId }: { seriesId: string }) {
         </table>
         </div>
         <ul className="dash-notes">
-          <li>Green-flag laps only; pit, restart and other slowed laps (over 7% off the car&apos;s median) are hidden. Shaded bands are cautions.</li>
-          <li>Up to {MAX_LINES} drivers. Each keeps its color while selected.</li>
+          <li>Green-flag laps only: pit, restart and other slow laps (7% off the car&apos;s median) are hidden. Shaded bands are cautions.</li>
         </ul>
       </section>
     </div>

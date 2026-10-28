@@ -14,7 +14,7 @@ export function PenaltiesCard({ seriesId }: { seriesId: string }) {
       {data.rows.length === 0 ? (
         <p className="muted">No penalties.</p>
       ) : (
-        <div className="table-scroll penalties-scroll">
+        <div className="table-scroll scroll-y is-short">
           <table className="dash-table">
             <thead>
               <tr>

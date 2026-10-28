@@ -29,8 +29,8 @@ describe('schedule card sessions', () => {
     expect(status(undefined, '2026-10-10T16:00:00Z')).toEqual(['Done', 'Done', 'Upcoming']);
   });
 
-  it('reads Weekend Schedule once the first session has started', () => {
-    expect(buildScheduleView('oreilly', race, Date.parse('2026-10-10T12:00:00Z')).title).toBe('Next Race');
-    expect(buildScheduleView('oreilly', race, Date.parse('2026-10-10T12:31:00Z')).title).toBe('Weekend Schedule');
+  it('reads Weekend schedule once the first session has started', () => {
+    expect(buildScheduleView('oreilly', race, Date.parse('2026-10-10T12:00:00Z')).title).toBe('Next race');
+    expect(buildScheduleView('oreilly', race, Date.parse('2026-10-10T12:31:00Z')).title).toBe('Weekend schedule');
   });
 });

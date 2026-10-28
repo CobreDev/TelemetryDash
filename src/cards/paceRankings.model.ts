@@ -1,13 +1,4 @@
-import {
-  gapPercent,
-  lapRange,
-  lapTime,
-  raceProgress,
-  raceProgressLabel,
-  raceStatusLines,
-  type RaceProgress,
-  type StatusLine,
-} from '../format/format';
+import { EN_DASH, gapPercent, lapRange, lapTime, raceProgress, raceProgressLabel, raceStatusLines, type RaceProgress, type StatusLine } from '../format/format';
 import { flagSegments, type FlagSegment } from '../data/flags';
 import { tvNetwork, type TvNetwork } from '../data/nascar/networks';
 import { compareCarNumbers, rankBy } from '../data/rank';
@@ -15,7 +6,6 @@ import type { DataSource, PaceDataset, PaceEntry, TrackFlag } from '../data/type
 import { markerHighlight, markerNotes, markerSuffixes } from '../series/markers';
 import type { SeriesProfile } from '../series/types';
 
-const EN_DASH = '\u2013';
 
 export interface CardHeader {
   title: string;

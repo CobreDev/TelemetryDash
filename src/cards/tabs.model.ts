@@ -7,11 +7,10 @@ import { parseDriverName } from '../data/nascar/names';
 import type { OverviewEntry } from '../data/nascar/overview';
 import type { CarInfo } from '../data/nascar/cars';
 import { crewAverages, stints, stopsUpTo, type Stint, type StopKind } from '../data/nascar/stops';
-import { lapTime, pitTime, positionChange } from '../format/format';
+import { type Direction, direction, EN_DASH, lapTime, pitTime, positionChange } from '../format/format';
 import { markerHighlight } from '../series/markers';
 import type { SeriesProfile } from '../series/types';
 
-const EN_DASH = '–';
 const KIND_LABEL: Record<StopKind, string> = { four: '4 tires', two: '2 tires', fuel: 'Fuel only' };
 
 interface Who {
@@ -52,8 +51,8 @@ export interface PitRoadView {
    * Live: cars on pit road right now, most positions gained first (null when not live).
    * `entered` is the running position on pit entry, `now` the position as it stands.
    */
-  onPitRoad: (Who & { now: string; entered: string; gained: string; gainedDir: 'up' | 'down' | 'same' })[] | null;
-  latest: (Who & { lap: string; kind: string; flag: TrackFlag; box: string; lane: string; gained: string; gainedDir: 'up' | 'down' | 'same' })[];
+  onPitRoad: (Who & { now: string; entered: string; gained: string; gainedDir: Direction })[] | null;
+  latest: (Who & { lap: string; kind: string; flag: TrackFlag; box: string; lane: string; gained: string; gainedDir: Direction })[];
   fourTire: (Who & { rank: number; average: string; best: string; stops: string })[];
   twoTire: (Who & { rank: number; average: string; best: string; stops: string })[];
   notes: string[];
@@ -72,7 +71,7 @@ export function buildPitRoadView({ profile, lapTimes, pits, atLap, carInfo, live
           now: String(c.position),
           entered: c.pitInRank ? String(c.pitInRank) : EN_DASH,
           gained: c.pitInRank ? positionChange(gained) : EN_DASH,
-          gainedDir: (gained > 0 ? 'up' : gained < 0 ? 'down' : 'same') as 'up' | 'down' | 'same',
+          gainedDir: direction(gained),
         }))
     : null;
   const avgRows = (kind: StopKind) =>
@@ -97,15 +96,11 @@ export function buildPitRoadView({ profile, lapTimes, pits, atLap, carInfo, live
         box: s.boxTime === null ? EN_DASH : pitTime(s.boxTime),
         lane: s.laneTime === null ? EN_DASH : pitTime(s.laneTime),
         gained: positionChange(s.positionsGained),
-        gainedDir: s.positionsGained > 0 ? 'up' : s.positionsGained < 0 ? 'down' : 'same',
+        gainedDir: direction(s.positionsGained),
       })),
     fourTire: avgRows('four'),
     twoTire: avgRows('two'),
-    notes: [
-      'Box: time stopped in the pit box. Lane: pit road entry to exit.',
-      'Averages leave out stops over 1.5× the field median (repairs, penalties).',
-      '± is positions gained or lost on that stop.',
-    ],
+    notes: ['Averages leave out stops over 1.5× the field median (repairs, penalties).'],
   };
 }
 
@@ -136,10 +131,7 @@ export function buildStrategyView({ profile, lapTimes, pits, atLap, totalLaps, s
         laneTotal: lane ? lapTime(lane) : EN_DASH,
       };
     }),
-    notes: [
-      'Each bar is one stint, colored by the stop that started it. Notches mark stage ends.',
-      'Lane: total time spent on pit road.',
-    ],
+    notes: [],
   };
 }
 
@@ -188,9 +180,8 @@ export function buildFuelView({ profile, lapTimes, pits, atLap, totalLaps, stage
       };
     }),
     notes: [
-      'Modeled, not measured: NASCAR publishes no fuel data.',
-      `Assumes every stop fills the tank, a caution lap burns ${Math.round(CAUTION_BURN * 100)}% of a green lap, and the field's longest run so far (${model.tankLaps.toFixed(0)} green-flag-equivalent laps) used one full tank.`,
-      'Laps left and Reaches assume green-flag running from here; cautions stretch fuel further.',
+      `Modeled, not measured: NASCAR publishes no fuel data. Assumes every stop fills the tank, a caution lap burns ${Math.round(CAUTION_BURN * 100)}% of a green lap, and a tank lasts ${model.tankLaps.toFixed(0)} green laps (the longest run so far).`,
+      'Laps left and Reaches assume green from here; cautions stretch fuel further.',
     ],
   };
 }
@@ -255,6 +246,6 @@ export function buildTopSpeedView({ profile, lapTimes, atLap, order }: Inputs, l
       lap: String(b.top.lap),
       time: lapTime(b.top.time),
     })),
-    notes: ['Each car\'s fastest single lap: its time and average speed in mph. NASCAR publishes no speed-trap data, so true top speed isn\'t available.'],
+    notes: ['Each car\'s fastest lap. NASCAR publishes no speed-trap data, so this isn\'t top speed.'],
   };
 }

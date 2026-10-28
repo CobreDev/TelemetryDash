@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fuel, raceStatusLines, gapPercent, gapTime, lapRange, lapTime, pitTime, positionChange, raceProgress, raceProgressLabel, soFar } from './format';
+import { fuel, raceStatusLines, gapPercent, gapTime, lapRange, lapTime, pitTime, positionChange, raceProgress, raceProgressLabel } from './format';
 
 describe('display formats (DESIGN.md examples)', () => {
   it('lap time', () => {
@@ -29,7 +29,6 @@ describe('display formats (DESIGN.md examples)', () => {
   });
   it('lap range', () => {
     expect(lapRange(221, 240)).toBe('Laps 221–240');
-    expect(soFar(167)).toBe('so far, lap 167');
   });
 });
 

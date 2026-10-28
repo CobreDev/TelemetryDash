@@ -55,7 +55,7 @@ function OnPitRoad({ rows }: { rows: PitRoadView['onPitRoad'] }) {
       ) : rows.length === 0 ? (
         <p className="muted">No one on pit road.</p>
       ) : (
-        <div className="table-scroll stops-scroll">
+        <div className="table-scroll scroll-y is-tall">
           <table className="dash-table">
             <thead>
               <tr>
@@ -91,13 +91,13 @@ export function PitRoadTab({ seriesId }: { seriesId: string }) {
   if (error) return <DataError error={error} />;
   if (!data) return null;
   return (
-    <div className="tab-grid pit-grid">
+    <div className="tab-grid is-wide">
       <section className="panel">
         <div className="panel-head">
           <h2>Latest stops</h2>
         </div>
         {/* Every stop so far, newest first; the panel stays the same height and scrolls. */}
-        <div className="table-scroll stops-scroll">
+        <div className="table-scroll scroll-y is-tall">
           <table ref={tableRef} className={`dash-table${wrapped ? ' names-wrapped' : ''}`}>
             <thead>
               <tr>

@@ -1,123 +1,50 @@
 import { useContext, useEffect, useState, type CSSProperties } from 'react';
-import { SeriesStripes } from './SeriesStripes';
-import type { SeriesProfile } from '../series/types';
-import { neutrals, themeVars } from '../tokens/tokens';
 import { BODIES, type BodyId } from '../series/bodies';
 import { seriesList } from '../series/profiles';
-import { api, isNoLive, type LiveStatus, type Source } from './api';
-import { UpcomingHeader } from './UpcomingHeader';
-import { DataError } from './NoLive';
-import { SourceContext, useSeriesApi } from './useApi';
+import { neutrals, themeVars } from '../tokens/tokens';
+import { api, type Source } from './api';
 import { ChaseTab } from './ChaseTab';
 import { CompareTab } from './CompareTab';
 import { FuelTab } from './FuelTab';
+import { DataError } from './NoLive';
 import { OverviewTab } from './OverviewTab';
-import { PitRoadTab } from './PitRoadTab';
-import { StrategyTab } from './StrategyTab';
 import { PaceView } from './PaceView';
-import { LapBar } from './LapBar';
-import { RaceStatus } from './RaceStatus';
-import { TrackLogo } from './TrackLogo';
-import { TvLogo } from './TvLogo';
+import { PitRoadTab } from './PitRoadTab';
+import { RaceHeader } from './RaceHeader';
+import { SeriesStripes } from './SeriesStripes';
+import { load, store } from './storage';
+import { StrategyTab } from './StrategyTab';
+import { SourceContext, useSeriesApi } from './useApi';
+import { useLiveStatus, type LiveState } from './useLiveStatus';
 
-const SERIES_KEY = 'td.series';
-const TAB_KEY = 'td.tab';
-const SOURCE_KEY = 'td.source';
-/** The badge turns amber when the server hasn't reached NASCAR's feed for this long. */
-const STALE_MS = 30_000;
-/** How often to check what's live when nothing is (the server checks NASCAR once a minute then). */
-const STATUS_IDLE_MS = 15_000;
-/** During a session: a cheap check of the server's in-memory status; views refresh on new data. */
-const STATUS_LIVE_MS = 2_000;
+const KEYS = { series: 'td.series', tab: 'td.tab', source: 'td.source' };
 /** Longest the first paint waits for the server's choice of series. */
 const HOME_WAIT_MS = 1_000;
 
 const TABS = [
-  { id: 'overview', label: 'Overview', ready: true },
-  { id: 'pace', label: 'Pace', ready: true },
-  { id: 'pit', label: 'Pit road', ready: true },
-  { id: 'strategy', label: 'Strategy', ready: true },
-  { id: 'fuel', label: 'Fuel', ready: true },
-  { id: 'compare', label: 'Compare', ready: true },
-  { id: 'chase', label: 'Chase', ready: true },
+  { id: 'overview', label: 'Overview' },
+  { id: 'pace', label: 'Pace' },
+  { id: 'pit', label: 'Pit road' },
+  { id: 'strategy', label: 'Strategy' },
+  { id: 'fuel', label: 'Fuel' },
+  { id: 'compare', label: 'Compare' },
+  { id: 'chase', label: 'Chase' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
-function savedTab(): TabId {
-  try {
-    const t = localStorage.getItem(TAB_KEY);
-    return TABS.find((x) => x.id === t && x.ready)?.id ?? 'overview';
-  } catch {
-    return 'overview';
-  }
-}
-
-function saved(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-function remember(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* private mode */
-  }
-}
-
-/** Owns the Live/Sample choice and provides it (with the refresh rate) to every view. */
+/** Owns the Live/Sample choice and what's live, and shares both with every view. */
 export function App() {
-  const [source, setSource] = useState<Source>(saved(SOURCE_KEY) === 'sample' ? 'sample' : 'live');
+  const [source, setSource] = useState<Source>(load(KEYS.source) === 'sample' ? 'sample' : 'live');
+  const status = useLiveStatus(source);
   const choose = (s: Source) => {
     setSource(s);
-    remember(SOURCE_KEY, s);
+    store(KEYS.source, s);
   };
-  const status = useLiveStatus(source);
-  const liveSeriesId = status.live?.active ? status.live.seriesId : null;
   return (
-    <SourceContext.Provider value={{ source, liveSeriesId, liveDataAt: status.live?.dataAt }}>
+    <SourceContext.Provider value={{ source, liveSeriesId: status.live?.active ? status.live.seriesId : null, liveDataAt: status.live?.dataAt }}>
       <Dashboard onSource={choose} status={status} />
     </SourceContext.Provider>
   );
-}
-
-/**
- * Polls what's live (any series). `stale` means the server hasn't reached NASCAR's feed for
- * STALE_MS: about the connection, not laps (qualifying or a red flag can go a long time
- * without a lap completing while the data is current).
- */
-function useLiveStatus(source: Source) {
-  const [live, setLive] = useState<LiveStatus | null>(null);
-  const [loaded, setLoaded] = useState(false);
-  const [skew, setSkew] = useState(0); // server clock minus ours
-  const [now, setNow] = useState(Date.now());
-  const active = !!live?.active;
-  useEffect(() => {
-    if (source !== 'live') return;
-    const load = () =>
-      api.live().then(
-        (r) => {
-          setLive(r.live);
-          setSkew(r.now - Date.now());
-          setLoaded(true);
-        },
-        () => {
-          setLive(null);
-          setLoaded(true);
-        },
-      );
-    void load();
-    // Fast while anything is running; otherwise slow enough to just notice a session starting.
-    const poll = setInterval(load, active ? STATUS_LIVE_MS : STATUS_IDLE_MS);
-    const tick = setInterval(() => setNow(Date.now()), 1000);
-    return () => {
-      clearInterval(poll);
-      clearInterval(tick);
-    };
-  }, [source, active]);
-  return { live, loaded, stale: live ? now + skew - live.polledAt > STALE_MS : false };
 }
 
 function SourceToggle({ onSource }: { onSource: (s: Source) => void }) {
@@ -133,155 +60,82 @@ function SourceToggle({ onSource }: { onSource: (s: Source) => void }) {
   );
 }
 
-function LiveBadge({ live, stale, seriesId, final }: { live: LiveStatus | null; stale: boolean; seriesId: string; final?: boolean }) {
-  const { source } = useContext(SourceContext);
-  if (source === 'sample') return <span className="chip">Replay</span>;
-  // A race that's over, shown until its weekend ends.
-  if (final) return <span className="chip final-chip" title="This race is over; shown until Monday 00:00 ET">Final</span>;
-  if (!live?.active || live.seriesId !== seriesId) return null;
-  return (
-    <span
-      className={`chip live-chip${stale ? ' is-stale' : ''}`}
-      title={stale ? "Can't reach NASCAR's live feed; data may be out of date" : 'Live feed connected'}
-    >
-      <i aria-hidden /> Live
-    </span>
-  );
-}
-
-function savedSeries() {
-  try {
-    return localStorage.getItem(SERIES_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function Dashboard({ onSource, status }: { onSource: (s: Source) => void; status: ReturnType<typeof useLiveStatus> }) {
-  // Profiles ship in the bundle (same module the API serves), so the bar has its series colors
-  // on the first paint instead of flashing the default and then switching.
-  const series: SeriesProfile[] = seriesList;
-  const [seriesId, setSeriesId] = useState<string>(savedSeries() ?? 'cup');
-  const { source } = useContext(SourceContext);
-  const { live, stale } = status;
-  // On page load in live mode, open to the series the server picks (the live race; Fri-Sun the
-  // series racing next; Mon-Thu Cup). Once only, so it never overrides a later pick. The page
-  // waits for the answer (up to HOME_WAIT_MS) so it doesn't draw one series and jump to another.
-  const [homeReady, setHomeReady] = useState(source !== 'live');
+/**
+ * On a live page load, the series the server picks (the live race's; Friday-Sunday the next
+ * race's; else Cup), once. The page waits for it (up to HOME_WAIT_MS) rather than drawing one
+ * series and jumping to another.
+ */
+function useHomeSeries(source: Source, setSeriesId: (id: string) => void) {
+  const [ready, setReady] = useState(source !== 'live');
   useEffect(() => {
-    if (homeReady) return;
+    if (ready) return;
     let done = false;
     const finish = (id?: string) => {
       if (done) return;
       done = true;
       if (id && seriesList.some((s) => s.id === id)) setSeriesId(id);
-      setHomeReady(true);
+      setReady(true);
     };
     api.home().then((r) => finish(r.seriesId), () => finish());
     const t = setTimeout(() => finish(), HOME_WAIT_MS);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  return ready;
+}
+
+function Dashboard({ onSource, status }: { onSource: (s: Source) => void; status: LiveState }) {
+  const { source } = useContext(SourceContext);
+  const [seriesId, setSeriesId] = useState(load(KEYS.series) ?? 'cup');
+  const [tab, setTab] = useState<TabId>(() => TABS.find((t) => t.id === load(KEYS.tab))?.id ?? 'overview');
   const [body, setBody] = useState<BodyId>('nascar');
-  const [tab, setTab] = useState<TabId>(savedTab);
+  const homeReady = useHomeSeries(source, setSeriesId);
+  useEffect(() => store(KEYS.series, seriesId), [seriesId]);
   const chooseTab = (t: TabId) => {
     setTab(t);
-    try {
-      localStorage.setItem(TAB_KEY, t);
-    } catch {
-      /* private mode */
-    }
+    store(KEYS.tab, t);
   };
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(SERIES_KEY, seriesId);
-    } catch {
-      /* private mode */
-    }
-  }, [seriesId]);
-  // The header (race, lap counter, flag) comes from the pace card, refreshed live.
+  // The header (race, lap counter, flag) comes from the pace card.
   const { data: card, error: cardError } = useSeriesApi(api.paceRankings, seriesId);
 
-  const profile = series.find((s) => s.id === seriesId);
-  const accent = profile?.accent.dark ?? neutrals.dark['text-muted'];
+  // Profiles ship in the bundle, so the bar has its series colors on the first paint.
+  const profile = seriesList.find((s) => s.id === seriesId);
+  const theme = themeVars('dark', profile?.accent.dark ?? neutrals.dark['text-muted']);
   const brand = profile?.brand.dashboard;
+  const barColors = brand && ({ '--bar-bg': brand.barBg, '--bar-fg': brand.barFg, '--bar-muted': brand.barMuted, '--bar-highlight': brand.highlight } as CSSProperties);
 
-  if (!homeReady) return <div className="dash" style={themeVars('dark', accent)} aria-busy />;
+  if (!homeReady) return <div className="dash" style={theme} aria-busy />;
   return (
-    <div className="dash" style={themeVars('dark', accent)}>
-      <header
-        className="topbar"
-        style={
-          brand && {
-            '--bar-bg': brand.barBg,
-            '--bar-fg': brand.barFg,
-            '--bar-muted': brand.barMuted,
-            '--bar-highlight': brand.highlight,
-          } as CSSProperties
-        }
-      >
+    <div className="dash" style={theme}>
+      <header className="topbar" style={barColors}>
         <div className="topbar-row">
           <nav className="series-switch" aria-label="Series">
-            {series.filter((s) => s.body === body).map((s) => (
-              <button key={s.id} className={s.id === seriesId ? 'active' : undefined} onClick={() => setSeriesId(s.id)}>
-                {s.displayName}
-              </button>
-            ))}
+            {seriesList
+              .filter((s) => s.body === body)
+              .map((s) => (
+                <button key={s.id} className={s.id === seriesId ? 'active' : undefined} onClick={() => setSeriesId(s.id)}>
+                  {s.displayName}
+                </button>
+              ))}
           </nav>
           <div className="topbar-right">
-          <label className="body-switch">
-            <span className="visually-hidden">Sanctioning body</span>
-            <select value={body} onChange={(e) => setBody(e.target.value as BodyId)}>
-              {BODIES.map((b) => (
-                <option key={b.id} value={b.id} disabled={!b.available}>
-                  {b.available ? b.name : `${b.name} (coming soon)`}
-                </option>
-              ))}
-            </select>
-          </label>
-          <SourceToggle onSource={onSource} />
+            <label className="body-switch">
+              <span className="visually-hidden">Sanctioning body</span>
+              <select value={body} onChange={(e) => setBody(e.target.value as BodyId)}>
+                {BODIES.map((b) => (
+                  <option key={b.id} value={b.id} disabled={!b.available}>
+                    {b.available ? b.name : `${b.name} (coming soon)`}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <SourceToggle onSource={onSource} />
           </div>
         </div>
-        {card && (
-          <div className="race-meta">
-            <div className="race-summary">
-              {card.header.logoUrl && <TrackLogo url={card.header.logoUrl} alt={card.header.venue} />}
-              <div className="race-info">
-                <div className="race-title">
-                  <span className="race-name">{card.header.raceName}</span>
-                  {card.header.location && <span className="race-location">{card.header.location}</span>}
-                </div>
-                <div className="race-progress">
-                  <RaceStatus lines={card.statusLines} flag={card.flag} />
-                  {card.progress && (
-                    <LapBar segments={card.flagSegments} totalLaps={card.progress.totalLaps} stageEnds={card.stageEnds} />
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className="race-badges">
-              {card.header.tv && <TvLogo network={card.header.tv} />}
-              <LiveBadge live={live} stale={stale} seriesId={seriesId} final={card.final} />
-            </div>
-          </div>
-        )}
-        {/* Holds the header's space while the first data loads, so the tabs don't jump down. */}
-        {!card && cardError == null && <div className="race-meta is-pending" aria-hidden />}
-        {!card && cardError != null && (
-          <div className="race-meta">
-            {isNoLive(cardError) ? <UpcomingHeader seriesId={seriesId} /> : <span className="race-location">Timing data unavailable</span>}
-          </div>
-        )}
+        <RaceHeader seriesId={seriesId} card={card} cardError={cardError} live={status.live} stale={status.stale} />
         <nav className="tabs" aria-label="Views">
           {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={t.id === tab ? 'active' : undefined}
-              aria-current={t.id === tab ? 'page' : undefined}
-              disabled={!t.ready}
-              onClick={() => chooseTab(t.id)}
-            >
+            <button key={t.id} className={t.id === tab ? 'active' : undefined} aria-current={t.id === tab ? 'page' : undefined} onClick={() => chooseTab(t.id)}>
               {t.label}
             </button>
           ))}

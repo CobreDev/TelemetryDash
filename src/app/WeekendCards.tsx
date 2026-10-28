@@ -29,7 +29,7 @@ export function ScheduleCard({ seriesId }: { seriesId: string }) {
   return (
     <section className="panel schedule-card">
       <div className="panel-head">
-        <h2>{data?.title ?? 'Next Race'}</h2>
+        <h2>{data?.title ?? 'Next race'}</h2>
       </div>
       {failed && <p className="muted">No upcoming race on the schedule.</p>}
       {data && <ScheduleBody view={data} />}
@@ -149,14 +149,14 @@ export function LastRaceMini({ seriesId }: { seriesId: string }) {
   return (
     <section className="panel last-race-mini">
       <div className="panel-head">
-        <h2>Last Race</h2>
+        <h2>Last race</h2>
       </div>
       {data && (
         <>
           <p className="card-sub">
             <strong>{data.raceName}</strong> · {data.date}
           </p>
-          <div className="scroll-box">
+          <div className="scroll-y">
             <table className="dash-table chase-table">
               <thead>
                 <tr>

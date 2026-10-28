@@ -66,7 +66,6 @@ export const craftsman: SeriesProfile = {
 };
 
 export const profiles = { cup, oreilly, craftsman } satisfies Record<string, SeriesProfile>;
-export type SeriesId = keyof typeof profiles;
 export const seriesList: SeriesProfile[] = Object.values(profiles);
 
 export function isTemplateEnabled(profile: SeriesProfile, template: TemplateId) {

@@ -1,12 +1,11 @@
-import { CAUTION_BURN, type OverviewEntry } from '../data/nascar/overview';
+import type { OverviewEntry } from '../data/nascar/overview';
 import { MAKE_NAME, makeLogo, type CarInfo } from '../data/nascar/cars';
 import type { FeedLapTimes } from '../data/nascar/feed';
 import { parseDriverName } from '../data/nascar/names';
-import { gapTime, lapTime } from '../format/format';
+import { EN_DASH, gapTime, lapTime } from '../format/format';
 import { markerHighlight, markerNotes, markerSuffixes } from '../series/markers';
 import type { SeriesProfile } from '../series/types';
 
-const EN_DASH = '–';
 
 export interface OverviewRow {
   position: number;
@@ -105,12 +104,7 @@ export function buildOverviewView(
       avgLap: '10-lap avg',
     },
     rows,
-    notes: [
-      'Gaps measured at the start/finish line.',
-      ...markerNotes(shown, profile),
-      `Est. fuel is modeled, not measured: % of a full tank, assuming every stop fills it, a caution lap burns ${Math.round(CAUTION_BURN * 100)}% of a green lap, and the field's longest run so far used one tank.`,
-      '10-lap avg: mean lap time over each car\'s last 10 laps, including caution and pit laps.',
-    ],
+    notes: [...markerNotes(shown, profile), 'Est. fuel is modeled; NASCAR publishes no fuel data (see the Fuel tab).'],
   };
 }
 
@@ -120,7 +114,7 @@ export function buildOverviewView(
  * lastLap = best lap, gapToLeader = gap to the fastest, interval = gap to the car ahead,
  * lapsSincePit = laps run. Fuel and 10-lap average don't apply and show a dash.
  */
-export function buildPracticeView(lapTimes: FeedLapTimes, profile: SeriesProfile, session: string, carInfo: Record<string, CarInfo> = {}): OverviewView {
+export function buildPracticeView(lapTimes: FeedLapTimes, profile: SeriesProfile, carInfo: Record<string, CarInfo> = {}): OverviewView {
   const shown = new Set<string>();
   // Laps that include time parked in the garage are "timed" but aren't real laps: only laps
   // within 1.5x the field's fastest count toward a best lap.
@@ -164,10 +158,6 @@ export function buildPracticeView(lapTimes: FeedLapTimes, profile: SeriesProfile
     mode: 'practice',
     columns: { pos: 'Pos', car: 'Car', name: 'Driver', lastLap: 'Best lap', gap: 'To fastest', interval: 'To next', pit: 'Laps', fuel: 'Est. fuel', avgLap: '10-lap avg' },
     rows,
-    notes: [
-      `${session}: ranked by each driver's best fully timed lap.`,
-      ...markerNotes(shown, profile),
-      'Laps recorded before the dashboard joined the session have no individual times.',
-    ],
+    notes: [...markerNotes(shown, profile), 'Laps run before the dashboard joined the session have no times.'],
   };
 }

@@ -15,7 +15,7 @@ const lapTimes: FeedLapTimes = {
 
 describe('buildPracticeView', () => {
   it('ranks by best fully timed lap and ignores estimated laps', () => {
-    const v = buildPracticeView(lapTimes, cup, 'Final Practice');
+    const v = buildPracticeView(lapTimes, cup);
     expect(v.mode).toBe('practice');
     expect(v.rows.map((r) => [r.carNumber, r.lastLap, r.gapToLeader, r.interval, r.lapsSincePit])).toEqual([
       ['2', '30.200s', 'Fastest', '–', '2'],

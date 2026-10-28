@@ -95,12 +95,12 @@ export function OverviewTab({ seriesId, showNextRace, final }: { seriesId: strin
                             {r.markers.length > 0 && <span className="dash-marker"> {r.markers.join(' ')}</span>}
                           </span>
                           {r.pit && (
-                            <span className="dash-tag tag-pit" title="On pit road">
+                            <span className="tag" title="On pit road">
                               Pit
                             </span>
                           )}
                           {r.dvp && (
-                            <span className="dash-tag tag-dvp" title="On the damaged vehicle policy clock">
+                            <span className="tag is-alert" title="On the damaged vehicle policy clock">
                               DVP
                             </span>
                           )}

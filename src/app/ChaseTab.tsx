@@ -37,7 +37,7 @@ function Standings({ view, picked, toggle }: { view: ChaseSeasonView; picked: Pi
     <section className="panel span-2">
       <div className="panel-head">
         <h2>{live ? 'Standings as they run' : 'Standings'}</h2>
-        <span className="muted chase-hint">Click a driver to show them on the chart</span>
+        <span className="panel-meta">Click a driver to show them on the chart</span>
       </div>
       <div className="table-scroll">
         <table className="dash-table chase-season-table">
@@ -253,7 +253,7 @@ function PointsChart({ view, picked, toggle }: { view: ChaseSeasonView; picked: 
           </div>
         )}
       </div>
-      <p className="chart-axis-label">Points after each race{liveIdx >= 0 ? '; the live race is as they run' : ''}. Start is the reset at the beginning of the Chase.</p>
+      <p className="chart-axis-label">Points after each race. Start is the reset when the Chase began.</p>
     </section>
   );
 }
@@ -297,7 +297,7 @@ export function ChaseTab({ seriesId }: { seriesId: string }) {
     );
   }
   return (
-    <div className="tab-grid chase-tab">
+    <div className="tab-grid is-wide">
       <Summary view={view} />
       <Standings view={view} picked={picked} toggle={toggle} />
       <PointsChart view={view} picked={picked} toggle={toggle} />

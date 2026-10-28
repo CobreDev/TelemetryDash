@@ -8,6 +8,7 @@ import type { FeedLivePoints } from '../data/nascar/points';
 import { markerHighlight, markerNotes, markerSuffixes } from '../series/markers';
 import type { SeriesProfile } from '../series/types';
 import { runHasTimes, type FeedWeekendRun } from './qualifying.model';
+import { plural } from '../format/format';
 
 export type SessionKind = 'practice' | 'qualifying' | 'race';
 const KIND: Record<number, SessionKind> = { 1: 'practice', 2: 'qualifying', 3: 'race' };
@@ -16,7 +17,7 @@ const RUNS_FOR_MS: Record<SessionKind, number> = { practice: 3_600_000, qualifyi
 
 export interface ScheduleView {
   seriesId: string;
-  /** "Next Race", or "Weekend Schedule" once the weekend's first session has started. */
+  /** "Next race", or "Weekend schedule" once the weekend's first session has started. */
   title: string;
   raceName: string;
   venue: string;
@@ -74,7 +75,7 @@ export function buildScheduleView(seriesId: string, race: FeedRace, now: number,
   }
   return {
     seriesId,
-    title: sessions.some((s) => s.startsAt <= now) ? 'Weekend Schedule' : 'Next Race',
+    title: sessions.some((s) => s.startsAt <= now) ? 'Weekend schedule' : 'Next race',
     raceName: race.race_name,
     venue: race.track_name,
     sessions,
@@ -112,7 +113,6 @@ export interface ResultsView {
   notes: string[];
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /**
  * Final results. Markers come from the points file when there is one (it knows rookies,

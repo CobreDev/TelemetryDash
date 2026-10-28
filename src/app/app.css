@@ -1,42 +1,63 @@
-/* Dashboard: dark theme, 60% of card sizes, 14 px minimum. */
+/*
+ * Dashboard styles. Theme colors and fonts come from tokens.ts (set as variables on .dash);
+ * this file only adds layout and the few fixed colors below. 14px is the smallest body text.
+ *
+ *   1. Fixed colors        5. Panels and tables     9. Pit road and Strategy
+ *   2. Base                6. Shared pieces        10. Charts
+ *   3. Top bar             7. Overview             11. Chase tab
+ *   4. Page layout         8. Race control         12. Loading and motion
+ */
+
+/* ---- 1. Fixed colors: track flags are the same in every series and theme -------------- */
+.dash {
+  --flag-green: #2BB34B;
+  --flag-yellow: #FFD100;
+  --flag-red: #E4002B;
+  --flag-white: #FFFFFF;
+  --checkered: repeating-conic-gradient(#000 0 25%, #fff 0 50%);
+  --stage-checkered: repeating-conic-gradient(var(--flag-green) 0 25%, #fff 0 50%);
+  --live: var(--flag-red);
+  /* Chase drivers: a faint yellow tint over the zebra stripe. */
+  --row-highlight: rgba(255, 209, 0, 0.09);
+}
+
+/* ---- 2. Base ------------------------------------------------------------------------ */
 * { box-sizing: border-box; }
 html, body { margin: 0; background: #0F1115; }
-.dash {
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-  font: 400 14px/1.4 var(--font-sans);
-}
-.muted { color: var(--text-muted); }
+.dash { min-height: 100vh; background: var(--bg); color: var(--text); font: 400 14px/1.4 var(--font-sans); }
+main { padding: 16px; }
 button { font: inherit; color: inherit; }
+.muted { color: var(--text-muted); }
+.nowrap { white-space: nowrap; }
+.error { color: var(--perf-bad); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Top bar takes the series brand (SeriesBrand.dashboard); falls back to neutral tokens. */
+/* ---- 3. Top bar: the series brand colors (SeriesBrand.dashboard), else neutral tokens --- */
 .topbar {
-  /* Bottom padding (not a tab margin, which collapses to the page color) keeps the
-     active-tab underline off the series stripes. */
+  /* Bottom padding, not a tab margin (which would show the page color), keeps the active-tab
+     underline off the series stripes. */
   padding: 12px 16px 8px;
   background: var(--bar-bg, var(--surface));
   color: var(--bar-fg, var(--text));
-  /* Headers use Stainless Black (falls back to Saira ExtraBold), same for every series. */
   --bar-font: var(--font-heading);
   --bar-weight: 900;
 }
-/* One row: series names scroll sideways on narrow screens so the body switcher stays top-right. */
+.topbar-stripes > span { height: 4px; }
+/* One row: series names scroll sideways on narrow screens; the right column stays put. */
 .topbar-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px 16px; }
-.body-switch { flex: none; }
-.series-switch { display: flex; gap: 4px; overflow-x: auto; }
-.series-switch button {
-  background: none; border: 0; border-bottom: 3px solid transparent;
-  padding: 6px 8px; white-space: nowrap; cursor: pointer;
-  font: 400 17px/1 var(--font-sans); text-transform: uppercase; /* Stainless Regular */
+.topbar-right { margin-left: auto; flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+
+.series-switch { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; }
+.series-switch button,
+.tabs button {
+  background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap;
   color: var(--bar-muted, var(--text-muted));
 }
-.series-switch button.active { color: var(--bar-fg, var(--text)); border-bottom-color: var(--bar-highlight, var(--accent)); }
-.series-switch { flex: 1 1 auto; min-width: 0; }
-/* Sanctioning-body switcher, pinned to the top-right of the bar. */
-/* Top-right column: sanctioning body, with the Live/Sample toggle under it. */
-.topbar-right { margin-left: auto; flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.body-switch { margin-left: auto; }
+.series-switch button { padding: 6px 8px; font: 400 17px/1 var(--font-sans); text-transform: uppercase; }
+.series-switch button.active,
+.tabs button.active { color: var(--bar-fg, var(--text)); border-bottom-color: var(--bar-highlight, var(--accent)); }
+
+.body-switch { flex: none; margin-left: auto; }
 .body-switch select {
   appearance: none; cursor: pointer;
   background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 8px center;
@@ -46,29 +67,20 @@ button { font: inherit; color: inherit; }
   font: 800 15px/1 var(--font-logo); text-transform: uppercase;
 }
 .body-switch select option { color: #12151B; background: #fff; }
-.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.race-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; padding: 0 8px; }
 
-/* [track logo] | race name + location / status block / lap bar (as wide as the status block). */
+/* Race header: [track logo] race name and location / status block / lap bar. Held at a fixed
+   height while data loads so the page below doesn't jump. */
+.race-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; padding: 0 8px; min-height: 76px; }
 .race-summary { display: flex; align-items: center; gap: 14px; }
-/* Fixed slot (logos vary in shape) so the race name sits still while the logo loads. */
-.track-logo { display: block; height: 52px; width: 120px; object-fit: contain; flex: none; }
+.track-logo { display: block; flex: none; width: 120px; height: 52px; object-fit: contain; }
 .track-logo.on-tile { background: #fff; border-radius: 6px; padding: 4px 6px; }
 .race-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .race-title { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; }
+.race-name { font: var(--bar-weight, 600) 16px/1.2 var(--bar-font, var(--font-display)); text-transform: uppercase; }
 .race-location { font: 400 14px/1.2 var(--font-sans); color: var(--bar-muted, var(--text-muted)); }
 .race-progress { display: grid; row-gap: 8px; align-self: flex-start; }
-.lap-bar { position: relative; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.18); }
-.lap-bar-seg { position: absolute; top: 0; bottom: 0; }
-.lap-bar-seg.flag-green { background: #2BB34B; }
-.lap-bar-seg.flag-yellow { background: #FFD100; }
-.lap-bar-seg.flag-red { background: #E4002B; }
-.lap-bar-seg.flag-white { background: #FFFFFF; }
-.lap-bar-seg.flag-checkered { background: repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 6px 6px; }
-.lap-bar-seg.flag-none { background: rgba(255, 255, 255, 0.45); }
-.lap-bar-notch { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--bar-bg, var(--surface)); }
 
-/* TV-style status block. A flag icon shows track status, like TNT's. */
+/* TV-style status block, with a flag icon for track status. */
 .race-status { display: flex; align-items: center; gap: 10px; }
 .race-status-flag-wrap { display: flex; color: var(--bar-muted, var(--text-muted)); }
 .race-status-flag { display: block; width: 24px; height: 24px; }
@@ -77,216 +89,71 @@ button { font: inherit; color: inherit; }
 .race-status-label { font: 400 14px/1.2 var(--font-sans); }
 .race-status-value { text-align: right; font: 600 14px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
 .is-primary .race-status-label { font: var(--bar-weight, 900) 15px/1.2 var(--bar-font, var(--font-heading)); text-transform: uppercase; }
-.is-primary .race-status-value { font-weight: 600; }
 .race-status-sep { margin: 0 3px; color: var(--bar-muted, var(--text-muted)); }
-.race-name { font: var(--bar-weight, 600) 16px/1.2 var(--bar-font, var(--font-display)); text-transform: uppercase; }
+/* Upcoming race: a date and times, so plain type rather than shouted labels and tabular figures. */
+.race-status.is-upcoming .is-primary .race-status-label { text-transform: none; }
+.race-status-value.upcoming-value { font-family: var(--font-sans); font-variant-numeric: normal; }
+
+.lap-bar { position: relative; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.18); }
+.lap-bar-seg { position: absolute; top: 0; bottom: 0; }
+.lap-bar-seg.flag-green { background: var(--flag-green); }
+.lap-bar-seg.flag-yellow { background: var(--flag-yellow); }
+.lap-bar-seg.flag-red { background: var(--flag-red); }
+.lap-bar-seg.flag-white { background: var(--flag-white); }
+.lap-bar-seg.flag-checkered { background: var(--checkered) 0 0 / 6px 6px; }
+.lap-bar-seg.flag-none { background: rgba(255, 255, 255, 0.45); }
+.lap-bar-notch { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--bar-bg, var(--surface)); }
+
+/* TV network above the Live / Upcoming / Replay / Final badge. */
+.race-badges { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.tv-network { font: 900 15px/1 var(--font-heading); text-transform: uppercase; letter-spacing: 0.04em; color: var(--bar-fg, var(--text)); }
+.tv-logo { display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 3px 6px; background: #fff; border-radius: 5px; }
+.tv-logo img { display: block; height: 100%; width: auto; max-width: 72px; object-fit: contain; }
 .chip {
-  font: 600 14px/1 var(--font-sans); padding: 4px 8px; border-radius: 999px;
-  border: 1px dashed currentColor; color: var(--bar-muted, var(--text-muted));
+  padding: 4px 8px; border-radius: 999px; border: 1px dashed currentColor;
+  font: 600 14px/1 var(--font-sans); color: var(--bar-muted, var(--text-muted));
 }
+.live-chip, .upcoming-chip, .final-chip, .qual-chip { border-style: solid; }
+.final-chip { color: var(--bar-fg, var(--text)); }
+.qual-chip.qual-live { color: #fff; background: var(--live); border-color: var(--live); }
+.live-chip { display: inline-flex; align-items: center; gap: 6px; }
+.live-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6); animation: live-pulse 1.6s ease-in-out infinite; }
+/* The server hasn't reached NASCAR for a while. */
+.live-chip.is-stale { color: var(--flag-yellow); border-color: var(--flag-yellow); }
+.live-chip.is-stale i { background: var(--flag-yellow); animation: none; }
+@keyframes live-pulse { 50% { opacity: 0.35; } }
 
 .tabs { display: flex; gap: 16px; margin-top: 8px; overflow-x: auto; }
-.tabs button {
-  /* Baseline-to-underline gap matches the series switcher (8.5px); Inter's shallower
-     descent needs the extra half pixel. */
-  background: none; border: 0; border-bottom: 3px solid transparent; padding: 6px 0 6.5px; line-height: 1;
-  white-space: nowrap; color: var(--bar-muted, var(--text-muted)); font-weight: 600; cursor: pointer;
-}
-.tabs button:disabled { cursor: default; }
-.tabs button.active { color: var(--bar-fg, var(--text)); border-bottom-color: var(--bar-highlight, var(--accent)); }
-.topbar-stripes > span { height: 4px; }
+/* The baseline-to-underline gap matches the series switcher. */
+.tabs button { padding: 6px 0 6.5px; line-height: 1; font-weight: 600; }
 
-main { padding: 16px; }
-.error { color: var(--perf-bad); }
-.pace-view { display: grid; gap: 16px; max-width: 640px; align-items: start; }
-/* Pace rankings and Fastest driver side by side when there's room. */
-@media (min-width: 1100px) { .pace-view { max-width: 1080px; grid-template-columns: minmax(0, 640px) minmax(0, 420px); } }
-.overview-view { display: grid; gap: 16px; max-width: 980px; align-items: start; }
-/* Overview: the running order and Chase cards sit centered on the screen. */
-.overview-view.is-overview { margin-inline: auto; }
-/* Left column during/after a race: (Next Race on the day after) above the running order. */
-.overview-main { display: grid; gap: 16px; align-content: start; min-width: 0; }
-/* Running order and Chase side by side when there's room. */
-/* Same max width live and off-week, so the 420px Chase column sits in the same spot in both. */
-@media (min-width: 1360px) { .overview-view { max-width: 1640px; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); } }
-.chase-table .dash-last { font-size: 16px; }
-/* Seven columns in the 420px card: tighter cell padding keeps it from overflowing. */
-.dash-table.chase-table th, .dash-table.chase-table td { padding-left: 5px; padding-right: 5px; }
-/* The driver column soaks up spare width; give back a little so Current, Pts and Gain sit closer to the names. */
-.dash-table.chase-table { width: calc(100% - 14px); }
-.dash-table td.change-up { color: var(--perf-good); }
-.dash-table td.change-down { color: var(--perf-bad); }
-.dash-table td.change-same { color: var(--text-muted); }
-/* Wide timing table: scrolls sideways inside its panel on phones, never the page. */
-.table-scroll { overflow-x: auto; }
-/* Pit road's stop log: about 12 rows tall, older stops scroll; the header stays put. */
-.stops-scroll { max-height: 520px; overflow-y: auto; }
-.stops-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
-/* Penalties: about six rows, then it scrolls with the header pinned. */
-.penalties-scroll { max-height: 260px; overflow-y: auto; }
-.penalties-scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
-.penalties .dash-table td.left { font-size: 14px; }
-
-.panel { container-type: inline-size; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-width: 0; }
-.panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-.panel-head h2 { margin: 0; font: 900 22px/1 var(--font-heading); text-transform: uppercase; }
-.btn {
-  background: var(--accent); color: var(--on-accent); border: 0; border-radius: 6px; padding: 8px 12px;
-  font-weight: 600; cursor: pointer;
-}
-.btn:disabled { opacity: 0.6; }
-
-.dash-table { width: 100%; border-collapse: collapse; }
-.dash-table th {
-  font: 600 14px/1 var(--font-sans); text-transform: uppercase; letter-spacing: 0.04em;
-  color: var(--text-muted); text-align: right; padding: 8px;
-}
-.dash-table td { padding: 0 8px; height: 40px; text-align: right; }
-.dash-table .left { text-align: left; }
-/* Fit-to-content columns; the driver column takes whatever width is left. */
-.dash-table th.shrink { width: 1%; white-space: nowrap; }
-/* Narrow panel (phone or small window): let "Pace score" etc. wrap. Keyed to the panel's
-   own width so it stays in step with useUniformNameWrap, which also measures the panel. */
-@container (max-width: 480px) { .dash-table th.shrink { white-space: normal; } }
-.dash-table tbody tr:nth-child(odd) { background: var(--surface-alt); }
-.dash-table tr.is-leader td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
-.dash-table .num { font: 600 17px/1 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.dash-table .car { font: 900 20px/1 var(--font-display); }
-/* Badges are 78×70 PNGs; 34px tall keeps rows at 40px. */
-.car-badge {
-  display: block; height: 34px; width: auto; margin-left: auto;
-  /* Some team artwork is dark (navy, maroon); a thin light halo keeps it legible on dark rows. */
-  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
-}
-/* "Chase BRISCOE" on one line. useUniformNameWrap switches the whole table to two-line
-   names (.names-wrapped) when the longest name doesn't fit, so rows never mix. */
-.dash-first, .dash-last { display: inline-block; white-space: nowrap; }
-.dash-table td.left { white-space: nowrap; }
-.dash-table.names-wrapped td.left { white-space: normal; }
-.dash-table.names-wrapped .dash-first, .dash-table.names-wrapped .dash-last { display: block; }
-.dash-first { font-size: 15px; line-height: 1.1; color: var(--text-muted); margin-right: 6px; }
-.dash-last { font: 700 18px/1 var(--font-display); text-transform: uppercase; }
-.dash-marker { font: 400 14px/1 var(--font-sans); color: var(--text-muted); text-transform: none; }
-/* Manufacturer logo, in its own narrow column before the car number. */
-.dash-table .make { width: 26px; padding-right: 0; }
-.make-logo { display: block; width: 24px; height: 16px; object-fit: contain; margin: 0 auto; }
-/* Live per-car status after the name: on pit road, on the DVP clock. */
-.dash-tag {
-  display: inline-block; margin-left: 6px; padding: 1px 5px; border-radius: 4px; vertical-align: 2px;
-  font: 700 10px/1.3 var(--font-sans); letter-spacing: 0.05em; text-transform: uppercase;
-  border: 1px solid var(--border); color: var(--text-muted);
-}
-.dash-tag.tag-dvp { border-color: #E4002B; color: #E4002B; }
-.good { color: var(--perf-good); }
-.dash-table tr.is-excluded td { opacity: 0.55; }
-/* Chase drivers: a faint yellow tint layered over the zebra stripe. */
-.dash-table tbody tr.is-highlight td { background-image: linear-gradient(rgba(255, 209, 0, 0.09), rgba(255, 209, 0, 0.09)); }
-.dash-notes { margin: 12px 0 0; padding: 0; list-style: none; color: var(--text-muted); }
-
-
-@media (max-width: 480px) {
-  main { padding: 12px 8px; }
-  .panel { padding: 12px 8px; }
-  .dash-table th, .dash-table td { padding-left: 4px; padding-right: 4px; }
-}
-
-/* ---- Data tabs ---------------------------------------------------------------------- */
-.tab-grid { display: grid; gap: 16px; max-width: 980px; align-items: start; }
-/* Pit road: Live pit stops and Latest stops side by side need the room. */
-.tab-grid.pit-grid { max-width: 1360px; }
-@media (min-width: 900px) { .tab-grid { grid-template-columns: 1fr 1fr; } .tab-grid .span-2 { grid-column: 1 / -1; } }
-.nowrap { white-space: nowrap; }
-.flag-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-.flag-dot.flag-green { background: #2BB34B; }
-.flag-dot.flag-yellow { background: #FFD100; }
-
+/* Live / Sample toggle, in the bar's colors. */
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .seg button { background: none; border: 0; padding: 5px 10px; font: 600 14px/1 var(--font-sans); color: var(--text-muted); cursor: pointer; }
 .seg button.active { background: var(--surface-alt); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
-
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--text-muted); font-size: 14px; }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend i, .legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
-.legend-swatch { margin-right: 8px; vertical-align: -1px; }
-
-/* Fuel gauge: one neutral hue for magnitude; status words carry the judgment. */
-.gauge { display: inline-block; width: 72px; height: 8px; border-radius: 4px; background: var(--surface-alt); overflow: hidden; vertical-align: middle; margin-right: 8px; }
-.gauge span { display: block; height: 100%; background: var(--text-muted); border-radius: 4px; }
-.gauge-label { font: 600 15px/1 var(--font-mono); }
-.status-good { color: var(--perf-good); }
-.status-mid { color: var(--perf-mid); }
-.status-bad { color: var(--perf-bad); }
-
-/* Stint bars: 2px surface gap between segments, notches at stage ends. */
-/* Names keep one line; the stint bars take whatever width is left (down to 160px). */
-.strategy-table th.fit { width: 1%; }
-.strategy-table .stint-cell { min-width: 160px; padding-right: 12px; }
-.stint-bar { position: relative; height: 14px; border-radius: 4px; background: rgba(255, 255, 255, 0.05); }
-.stint { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
-.stint-notch { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text-muted); opacity: 0.6; }
-/* The current lap: one red line down the whole stint column (placed by StrategyTab). */
-.strategy-scroll { position: relative; }
-.stint-now { position: absolute; width: 2px; margin-left: -1px; background: #E4002B; border-radius: 1px; z-index: 2; pointer-events: none; }
-
-/* Compare chart */
-.compare-picker { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-.chip-driver { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px; border: 1px solid var(--border); border-radius: 999px; font: 700 15px/1 var(--font-display); text-transform: uppercase; }
-.chip-driver i { width: 10px; height: 10px; border-radius: 50%; }
-.chip-driver .car-badge { height: 20px; }
-.chip-driver button { background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 0 4px; }
-.compare-picker select { background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font: 400 14px/1 var(--font-sans); }
-.chart { position: relative; overflow: hidden; min-width: 0; }
-.chart svg { display: block; touch-action: pan-y; }
-.chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-tick { fill: var(--text-muted); font: 400 12px var(--font-mono); }
-.chart-label { fill: var(--text); font: 700 13px var(--font-display); text-transform: uppercase; }
-.chart-caution { fill: rgba(255, 209, 0, 0.08); }
-.chart-crosshair { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; }
-.chart-tip { position: absolute; top: 8px; min-width: 170px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 14px; pointer-events: none; }
-.chart-tip div { display: flex; align-items: center; gap: 6px; }
-.chart-tip i { width: 8px; height: 8px; border-radius: 50%; }
-.chart-tip .num { margin-left: auto; font: 600 14px var(--font-mono); }
-.chart-axis-label { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
-.compare-table { margin-top: 12px; }
-
-/* ---- Live / Sample ------------------------------------------------------------------ */
-.source-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-/* On the series bar, the toggle takes the bar's colors rather than the panel's. */
 .seg.seg-bar { border-color: var(--bar-muted, var(--border)); }
-.seg.seg-bar button { color: var(--bar-muted, var(--text-muted)); padding: 4px 10px; }
+.seg.seg-bar button { padding: 4px 10px; color: var(--bar-muted, var(--text-muted)); }
 .seg.seg-bar button.active { background: rgba(0, 0, 0, 0.25); color: var(--bar-fg, var(--text)); box-shadow: inset 0 -2px 0 var(--bar-highlight, var(--accent)); }
-.live-chip { display: inline-flex; align-items: center; gap: 6px; border-style: solid; }
-.live-chip i { width: 8px; height: 8px; border-radius: 50%; background: #E4002B; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6); animation: live-pulse 1.6s ease-in-out infinite; }
-.live-chip.is-stale { color: #FFD100; border-color: #FFD100; }
-.live-chip.is-stale i { background: #FFD100; animation: none; }
-@keyframes live-pulse { 50% { opacity: 0.35; } }
-@media (prefers-reduced-motion: reduce) { .live-chip i { animation: none; } }
-.no-live { max-width: 560px; }
-.no-live h2 { margin: 0 0 8px; font: 900 22px/1 var(--font-heading); text-transform: uppercase; }
-.no-live p { margin: 6px 0; color: var(--text-muted); }
-.no-live p strong { color: var(--text); }
-.no-live .btn { margin-top: 10px; }
 
-/* Upcoming race: times and names, not tabular numbers, so the value column uses the body face. */
-.race-status-value.upcoming-value { font-family: var(--font-sans); font-variant-numeric: normal; }
-/* The race date reads as a date ("Sun, Oct 11"), not a shouted label. */
-.race-status.is-upcoming .is-primary .race-status-label { text-transform: none; }
-.upcoming-chip { border-style: solid; }
-.final-chip { border-style: solid; color: var(--bar-fg, var(--text)); }
+/* ---- 4. Page layout ------------------------------------------------------------------ */
+.pace-view { display: grid; gap: 16px; max-width: 640px; align-items: start; }
+.overview-view { display: grid; gap: 16px; max-width: 980px; align-items: start; }
+.overview-view.is-overview { margin-inline: auto; }
+.overview-main, .overview-side, .offweek-side { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.offweek-side:empty { display: none; }
+.tab-grid { display: grid; gap: 16px; max-width: 980px; align-items: start; }
+.tab-grid.is-wide { max-width: 1360px; }
 
-/* TV network stacked above the Live / Upcoming / Replay badge. */
-.race-badges { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.tv-network { font: 900 15px/1 var(--font-heading); text-transform: uppercase; letter-spacing: 0.04em; color: var(--bar-fg, var(--text)); }
-.tv-logo { display: inline-flex; align-items: center; justify-content: center; background: #fff; border-radius: 5px; padding: 3px 6px; height: 26px; box-sizing: border-box; }
-.tv-logo img { display: block; height: 100%; width: auto; max-width: 72px; object-fit: contain; }
-.schedule-broadcast { display: flex; align-items: center; gap: 12px; margin: -4px 0 12px; font-size: 14px; }
-
-/* Off-week Overview: next weekend's schedule beside last race's results. */
-/* Off-week Overview: schedule | last race | Chase standings. The Chase card keeps the same
-   420px column on the right as during a race; narrower screens stack the schedule over the
-   results beside it, and phones get one column with Chase last (as in a race). */
+/* Pace rankings beside Fastest driver. */
+@media (min-width: 1100px) { .pace-view { max-width: 1080px; grid-template-columns: minmax(0, 640px) minmax(0, 420px); } }
+@media (min-width: 900px) {
+  .tab-grid { grid-template-columns: 1fr 1fr; }
+  .tab-grid .span-2 { grid-column: 1 / -1; }
+}
+/* Overview: the main column beside a 420px right column, in the same spot live and off-week.
+   Off-week on wide screens: schedule | last race | Chase. */
 @media (min-width: 1360px) {
-  .overview-view.is-offweek { grid-template-columns: minmax(0, 1fr) minmax(0, 420px); }
+  .overview-view { max-width: 1640px; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); }
   .overview-view.is-offweek > .offweek-side { grid-column: 2; grid-row: 1 / span 2; }
 }
 @media (min-width: 1720px) {
@@ -294,103 +161,220 @@ main { padding: 16px; }
   .overview-view.is-offweek > .offweek-side { grid-column: 3; grid-row: 1; }
 }
 
+/* ---- 5. Panels and tables ------------------------------------------------------------ */
+.panel { container-type: inline-size; min-width: 0; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.panel-head h2 { margin: 0; font: 900 22px/1 var(--font-heading); text-transform: uppercase; }
+/* Small text on the right of a card header ("2 cautions · 14 laps", hints). */
+.panel-meta { margin-left: auto; font-size: 12px; color: var(--text-muted); }
 .card-sub { margin: -4px 0 12px; color: var(--text-muted); line-height: 1.4; }
 .card-sub strong { color: var(--text); font-weight: 600; }
+.dash-notes { margin: 12px 0 0; padding: 0; list-style: none; color: var(--text-muted); }
+.dash-notes:empty { display: none; }
+
+.dash-table { width: 100%; border-collapse: collapse; }
+.dash-table th { padding: 8px; text-align: right; font: 600 14px/1 var(--font-sans); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.dash-table td { height: 40px; padding: 0 8px; text-align: right; }
+.dash-table .left { text-align: left; }
+/* Columns fit their content; the driver column takes what's left. */
+.dash-table th.shrink { width: 1%; white-space: nowrap; }
+/* A narrow card lets headers like "Pace score" wrap (keyed to the card, as useUniformNameWrap is). */
+@container (max-width: 480px) { .dash-table th.shrink { white-space: normal; } }
+.dash-table tbody tr:nth-child(odd) { background: var(--surface-alt); }
+.dash-table tbody tr.is-highlight td { background-image: linear-gradient(var(--row-highlight), var(--row-highlight)); }
+.dash-table tr.is-leader td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+.dash-table tr.is-excluded td { opacity: 0.55; }
+.dash-table tr.clickable { cursor: pointer; }
+.dash-table tr.clickable:hover td { background-image: linear-gradient(rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04)); }
+.dash-table .num { font: 600 17px/1 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dash-table .car { font: 900 20px/1 var(--font-display); }
+.dash-table td.change-up { color: var(--perf-good); }
+.dash-table td.change-down { color: var(--perf-bad); }
+.dash-table td.change-same { color: var(--text-muted); }
+
+/* Team number art is 78x70; 34px tall keeps rows at 40px. Dark artwork (navy, maroon) gets a
+   thin light halo to stay legible on dark rows. */
+.car-badge {
+  display: block; height: 34px; width: auto; aspect-ratio: 78 / 70; margin-left: auto;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+}
+.dash-table .make { width: 26px; padding-right: 0; }
+.make-logo { display: block; width: 24px; height: 16px; margin: 0 auto; object-fit: contain; }
+
+/* "Chase BRISCOE" on one line. useUniformNameWrap switches a whole table to two-line names
+   (.names-wrapped) when the longest doesn't fit, so rows never mix. */
+.dash-first, .dash-last { display: inline-block; white-space: nowrap; }
+.dash-first { margin-right: 6px; font-size: 15px; line-height: 1.1; color: var(--text-muted); }
+.dash-last { font: 700 18px/1 var(--font-display); text-transform: uppercase; }
+.dash-marker { font: 400 14px/1 var(--font-sans); color: var(--text-muted); text-transform: none; }
+.dash-table td.left { white-space: nowrap; }
+.dash-table.names-wrapped td.left { white-space: normal; }
+.dash-table.names-wrapped .dash-first,
+.dash-table.names-wrapped .dash-last { display: block; }
+
+/* ---- 6. Shared pieces ---------------------------------------------------------------- */
+/* A list that scrolls inside its card with the table header pinned. */
+.scroll-y { max-height: 440px; overflow-y: auto; }
+.scroll-y.is-short { max-height: 260px; }
+.scroll-y.is-tall { max-height: 520px; }
+.scroll-y thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.table-scroll { overflow-x: auto; }
+
+/* Small outlined labels: "Pit" / "DVP" after a name, "Stat" in race control. */
+.tag {
+  display: inline-block; padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; vertical-align: 2px;
+  font: 700 10px/1.3 var(--font-sans); letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);
+}
+.dash-table .tag { margin-left: 6px; }
+.tag.is-alert { border-color: var(--flag-red); color: var(--flag-red); }
+
+.flag-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: middle; }
+.flag-dot.flag-green { background: var(--flag-green); }
+.flag-dot.flag-yellow { background: var(--flag-yellow); }
+.flag-dot.flag-red { background: var(--flag-red); }
+.flag-dot.flag-white { background: var(--flag-white); }
+.flag-dot.flag-checkered { background: var(--checkered) 0 0 / 4px 4px; }
+.flag-dot.flag-stage { background: var(--stage-checkered) 0 0 / 4px 4px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--text-muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i, .legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+.legend-swatch { margin-right: 8px; vertical-align: -1px; }
+
+/* Stat tiles (Chase summary). */
+.stat-tile { padding: 14px 16px; }
+.stat-label { font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.stat-value { margin-top: 4px; font: 900 26px/1.15 var(--font-heading); text-transform: uppercase; }
+.stat-detail { margin-top: 2px; font-size: 13px; color: var(--text-muted); }
+
+/* Nothing live for this series. */
+.no-live { max-width: 560px; }
+.no-live h2 { margin: 0 0 8px; font: 900 22px/1 var(--font-heading); text-transform: uppercase; }
+.no-live p { margin: 6px 0; color: var(--text-muted); }
+.no-live p strong { color: var(--text); }
+
+/* ---- 7. Overview --------------------------------------------------------------------- */
+/* Live Chase standings: seven columns in the 420px card. */
+.dash-table.chase-table { width: calc(100% - 14px); }
+.dash-table.chase-table th, .dash-table.chase-table td { padding-left: 5px; padding-right: 5px; }
+.chase-table .dash-last { font-size: 16px; }
+.chase-card.is-pending { min-height: 240px; }
+.penalties .dash-table td.left { font-size: 14px; }
+
+/* Weekend schedule and broadcasters. */
+.schedule-broadcast { display: flex; align-items: center; gap: 12px; margin: -4px 0 12px; font-size: 14px; }
 .schedule-table td { height: 36px; }
-.schedule-table .schedule-day { color: var(--text-muted); width: 1%; padding-right: 16px; }
+.schedule-table .schedule-day { width: 1%; padding-right: 16px; color: var(--text-muted); }
 .schedule-table tr.is-race td:not(.schedule-day) { font-weight: 700; }
 .schedule-table tr.is-done td:not(.schedule-day) { color: var(--text-muted); }
+.qual-pole { font-weight: 600; color: var(--text); }
 
-/* --- Smooth first paint ------------------------------------------------------------------ */
-/* Images fade in once loaded instead of popping; their boxes are sized up front. */
-.fade-img { opacity: 0; transition: opacity 0.25s ease-out; }
-.fade-img.is-loaded { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .fade-img { transition: none; } }
-/* Badges are 78×70: reserve the width before the image arrives so names don't shift. */
-.car-badge { aspect-ratio: 78 / 70; }
-/* Header height held steady (logo row + two status lines) while data loads and between series. */
-.race-meta { min-height: 76px; }
-.chase-card.is-pending { min-height: 240px; }
-
-/* --- Race control (Overview, right column above Chase) ----------------------------------- */
-.overview-side { display: grid; gap: 16px; align-content: start; min-width: 0; }
+/* ---- 8. Race control ----------------------------------------------------------------- */
 .rc-list { list-style: none; margin: 0; padding: 0 4px 0 0; max-height: 360px; overflow-y: auto; }
 .rc-entry { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; line-height: 1.4; }
 .rc-entry:first-child { border-top: 0; padding-top: 0; }
-.rc-lap { color: var(--text-muted); font: 600 13px/1.6 var(--font-mono); white-space: nowrap; }
+.rc-lap { font: 600 13px/1.6 var(--font-mono); color: var(--text-muted); white-space: nowrap; }
 .rc-text strong { font-weight: 700; color: var(--text); }
-.rc-note .rc-text { color: var(--text); }
 .rc-info .rc-text { color: var(--text-muted); }
-.rc-tag { display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
-/* Flag changes stand out: bold, with a colored rule on the left. */
-.rc-flag .rc-text { font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
-.rc-flag { box-shadow: inset 3px 0 0 var(--rc-flag, var(--border)); padding-left: 10px; }
-.rc-flag.rc-flag-yellow { --rc-flag: #FFD100; }
-.rc-flag.rc-flag-red { --rc-flag: #E4002B; }
-.rc-flag.rc-flag-green { --rc-flag: #2BB34B; }
-.rc-flag.rc-flag-white { --rc-flag: #FFFFFF; }
-.rc-flag.rc-flag-checkered { --rc-flag: #FFFFFF; }
-.flag-dot.flag-red { background: #E4002B; }
-.flag-dot.flag-white { background: #FFFFFF; }
-.flag-dot.flag-checkered { background: repeating-conic-gradient(#000 0 25%, #fff 0 50%) 0 0 / 4px 4px; }
-/* Stage end: the green-and-white checkered flag. */
-.flag-dot.flag-stage { background: repeating-conic-gradient(#2BB34B 0 25%, #fff 0 50%) 0 0 / 4px 4px; }
-.rc-entry.rc-stage { box-shadow: inset 3px 0 0 #2BB34B; padding-left: 10px; }
+.rc-text .tag { margin-right: 6px; vertical-align: 1px; }
+/* Flag changes and stage results: bold, with a colored rule on the left. */
+.rc-flag, .rc-stage { padding-left: 10px; box-shadow: inset 3px 0 0 var(--rc-rule, var(--border)); }
+.rc-flag .rc-text { font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
 .rc-stage .rc-text { font-weight: 700; }
-/* The stage's point scorers, as compact chips under the winner. */
-.rc-stage-list { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-weight: 400; font-size: 12px; }
+.rc-flag-green, .rc-stage { --rc-rule: var(--flag-green); }
+.rc-flag-yellow { --rc-rule: var(--flag-yellow); }
+.rc-flag-red { --rc-rule: var(--flag-red); }
+.rc-flag-white, .rc-flag-checkered { --rc-rule: var(--flag-white); }
+.rc-stage-list { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-size: 12px; font-weight: 400; }
 .rc-stage-pts { white-space: nowrap; }
-.rc-cautions { font-size: 12px; margin-left: auto; }
 
-/* Off-week right column: Chase standings, then (qualifying mode) the slim Last Race card. */
-.offweek-side { display: grid; gap: 16px; align-content: start; min-width: 0; }
-.offweek-side:empty { display: none; }
-.qual-chip { border-style: solid; }
-/* Slim Last Race: same height as its old top-10 list (~10 rows), the rest scrolls; header pinned. */
-.scroll-box { max-height: 440px; overflow-y: auto; }
-.scroll-box thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
-.qual-chip.qual-live { color: #fff; background: #E4002B; border-color: #E4002B; }
-.qual-pole { font-weight: 600; color: var(--text); }
+/* ---- 9. Pit road and Strategy -------------------------------------------------------- */
+/* Fuel gauge: one neutral hue for the amount; the status word carries the judgment. */
+.gauge { display: inline-block; width: 72px; height: 8px; margin-right: 8px; border-radius: 4px; background: var(--surface-alt); overflow: hidden; vertical-align: middle; }
+.gauge span { display: block; height: 100%; border-radius: 4px; background: var(--text-muted); }
+.gauge-label { font: 600 15px/1 var(--font-mono); }
+.status-good { color: var(--perf-good); }
+.status-mid { color: var(--perf-mid); }
+.status-bad { color: var(--perf-bad); }
 
-/* ---- Chase tab ------------------------------------------------------------------------ */
-.tab-grid.chase-tab { max-width: 1360px; }
+/* Stint bars: names keep one line and the bars take the rest (down to 160px), with notches at
+   stage ends and one red line down the column at the current lap (placed by StrategyTab). */
+.strategy-table th.fit { width: 1%; }
+.strategy-table .stint-cell { min-width: 160px; padding-right: 12px; }
+.stint-bar { position: relative; height: 14px; border-radius: 4px; background: rgba(255, 255, 255, 0.05); }
+.stint { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.stint-notch { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text-muted); opacity: 0.6; }
+.strategy-scroll { position: relative; }
+.stint-now { position: absolute; z-index: 2; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--live); pointer-events: none; }
+
+/* ---- 10. Charts (Compare, Chase) ----------------------------------------------------- */
+.chart { position: relative; min-width: 0; overflow: hidden; }
+.chart svg { display: block; touch-action: pan-y; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-tick { fill: var(--text-muted); font: 400 12px var(--font-mono); }
+.chart-label { fill: var(--text); font: 700 13px var(--font-display); text-transform: uppercase; }
+.chart-caution { fill: rgba(255, 209, 0, 0.08); }
+.chart-crosshair { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart-tip { position: absolute; top: 8px; min-width: 170px; padding: 8px 10px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; font-size: 14px; pointer-events: none; }
+.chart-tip div { display: flex; align-items: center; gap: 6px; }
+.chart-tip i { width: 8px; height: 8px; border-radius: 50%; }
+.chart-tip .num { margin-left: auto; font: 600 14px var(--font-mono); }
+.chart-axis-label { margin-top: 2px; font-size: 13px; color: var(--text-muted); }
+
+/* Driver chips: Compare's picker and the Chase chart legend. */
+.compare-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.compare-picker select { padding: 5px 8px; background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font: 400 14px/1 var(--font-sans); }
+.compare-table { margin-top: 12px; }
+.chip-driver { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px; border: 1px solid var(--border); border-radius: 999px; font: 700 15px/1 var(--font-display); text-transform: uppercase; }
+.chip-driver i { width: 10px; height: 10px; border-radius: 50%; }
+.chip-driver .car-badge { height: 20px; }
+.chip-driver button { padding: 0 4px; background: none; border: 0; color: var(--text-muted); font-size: 16px; cursor: pointer; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.legend-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; background: none; border: 1px solid var(--border); border-radius: 999px; color: var(--text); font-size: 13px; cursor: pointer; }
+span.legend-chip { cursor: default; color: var(--text-muted); }
+.legend-chip i { width: 10px; height: 3px; border-radius: 2px; }
+.legend-chip .legend-gray { background: var(--text-muted); opacity: 0.5; }
+
+/* ---- 11. Chase tab ------------------------------------------------------------------- */
 .chase-summary { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-@media (max-width: 600px) {
-  .chase-summary { gap: 8px; }
-  .chase-summary .stat-tile { padding: 10px; }
-  .chase-summary .stat-value { font-size: 18px; }
-  .chase-summary .stat-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-}
-.stat-tile { padding: 14px 16px; }
-.stat-label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-.stat-value { font: 900 26px/1.15 var(--font-heading); text-transform: uppercase; margin-top: 4px; }
-.stat-detail { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
-.chase-hint { font-size: 12px; }
-/* Column groups (Chase / Season) with a rule at the start of each group. */
+.pick-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: middle; }
+/* Column groups (Chase / Season), each opened by a rule. */
 .chase-season-table .group-row th { padding-bottom: 0; }
-.chase-season-table th.group { text-align: center; color: var(--text-muted); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.chase-season-table th.group { text-align: center; font-size: 11px; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
 .chase-season-table .group-start { border-left: 1px solid var(--border); }
-.dash-table tr.clickable { cursor: pointer; }
-.dash-table tr.clickable:hover td { background-image: linear-gradient(rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04)); }
-.pick-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
-/* Race-by-race results: one hue (the series accent), stronger for better finishes. */
+/* Race by race: one hue (the series accent), stronger for better finishes. */
 .chase-grid .race-col { text-align: center; line-height: 1.1; }
-.chase-grid .race-date { color: var(--text-muted); font: 400 11px var(--font-sans); text-transform: none; }
-.chase-grid th.state-live .race-date { color: var(--accent); font-weight: 700; }
+.chase-grid .race-date { font: 400 11px var(--font-sans); text-transform: none; color: var(--text-muted); }
+.chase-grid th.state-live .race-date { font-weight: 700; color: var(--accent); }
 .chase-grid th.state-upcoming, .chase-grid th.state-next { opacity: 0.6; }
 .chase-grid .race-cell { text-align: center; }
 .res { display: inline-block; min-width: 30px; padding: 2px 6px; border-radius: 4px; font: 600 14px var(--font-mono); text-align: center; }
 .res-win { background: var(--accent); color: var(--on-accent); }
 .res-top5 { background: color-mix(in srgb, var(--accent) 45%, transparent); }
 .res-top10 { background: color-mix(in srgb, var(--accent) 20%, transparent); }
-.res-live { outline: 1px dashed var(--accent); outline-offset: -1px; font-style: italic; }
-.legend-keys { font-size: 12px; display: flex; align-items: center; gap: 6px; }
-.legend-keys .res { min-width: 22px; font-size: 11px; padding: 1px 4px; }
-/* Points chart: the field in thin gray, picked drivers in color. */
+.res-live { outline: 1px dashed var(--accent); outline-offset: -1px; }
+.legend-keys { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.legend-keys .res { min-width: 22px; padding: 1px 4px; font-size: 11px; }
+/* Points chart: the field in thin gray; picked drivers in color. */
 .chase-line-rest { stroke: var(--text-muted); stroke-opacity: 0.35; stroke-width: 1.5; cursor: pointer; }
 .chase-line-rest:hover { stroke-opacity: 0.8; }
-.chart-legend { display: flex; flex-wrap: wrap; gap: 6px 10px; }
-.legend-chip { display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; color: var(--text); font-size: 13px; cursor: pointer; }
-span.legend-chip { cursor: default; }
-.legend-chip i { width: 10px; height: 3px; border-radius: 2px; }
-.legend-chip .legend-gray { background: var(--text-muted); opacity: 0.5; }
+
+/* ---- 12. Loading, motion and small screens ------------------------------------------- */
+/* Images fade in once loaded (their boxes are sized up front, so nothing shifts). */
+.fade-img { opacity: 0; transition: opacity 0.25s ease-out; }
+.fade-img.is-loaded { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .fade-img { transition: none; }
+  .live-chip i { animation: none; }
+}
+@media (max-width: 600px) {
+  .chase-summary { gap: 8px; }
+  .chase-summary .stat-tile { padding: 10px; }
+  .chase-summary .stat-value { font-size: 18px; }
+  .chase-summary .stat-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (max-width: 480px) {
+  main { padding: 12px 8px; }
+  .panel { padding: 12px 8px; }
+  .dash-table th, .dash-table td { padding-left: 4px; padding-right: 4px; }
+}

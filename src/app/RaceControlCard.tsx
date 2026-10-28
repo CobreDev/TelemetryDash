@@ -17,7 +17,7 @@ function Entry({ e }: { e: RaceControlEntry }) {
       <span className="rc-lap">{e.lapLabel}</span>
       <span className="rc-text">
         {e.kind === 'flag' && <i className={`flag-dot flag-${e.flag}`} aria-hidden />}
-        {e.kind === 'info' && <span className="rc-tag">Stat</span>}
+        {e.kind === 'info' && <span className="tag">Stat</span>}
         {e.kind === 'stage' && <i className="flag-dot flag-stage" aria-hidden />}
         <NoteText text={e.text} />
         {e.stage && (
@@ -45,7 +45,7 @@ export function RaceControlCard({ seriesId }: { seriesId: string }) {
     <section className="panel race-control">
       <div className="panel-head">
         <h2>{view.title}</h2>
-        <span className="muted rc-cautions">{view.cautions}</span>
+        <span className="panel-meta">{view.cautions}</span>
       </div>
       {view.entries.length === 0 ? (
         <p className="muted">No notes yet.</p>

@@ -5,11 +5,9 @@
 import type { FeedRaceResult } from '../data/nascar/feed';
 import { parseDriverName } from '../data/nascar/names';
 import type { ChaseEntry, FeedLivePoints } from '../data/nascar/points';
-import { positionChange } from '../format/format';
+import { type Direction, direction, EN_DASH, plural, pointsBehind, positionChange } from '../format/format';
 import type { SeriesProfile } from '../series/types';
 
-const EN_DASH = '–';
-const MINUS = '−';
 
 /** A Chase race from the schedule, with its final files once it has been run. */
 export interface ChaseRaceInput {
@@ -37,7 +35,7 @@ export interface ChaseSeasonDriver {
   rank: number;
   /** Move in the latest (or running) race: "+2", "−1", "–". */
   change: string;
-  changeDir: 'up' | 'down' | 'same';
+  changeDir: Direction;
   points: string;
   /** Behind the leader / the driver just ahead: "−74", or "–". */
   gap: string;
@@ -87,8 +85,6 @@ function shortDate(raceDate: string): string {
 }
 
 const tone = (finish: number): ResultTone => (finish === 1 ? 'win' : finish <= 5 ? 'top5' : finish <= 10 ? 'top10' : 'other');
-const behind = (n: number) => (n > 0 ? `${MINUS}${n}` : EN_DASH);
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export function buildChaseSeasonView(profile: SeriesProfile, races: ChaseRaceInput[], live?: ChaseLiveInput): ChaseSeasonView {
   const done = races.filter((r) => r.livePoints?.some((d) => d.is_in_chase) && r.results?.length && r.race.race_id !== live?.raceId);
@@ -174,10 +170,10 @@ export function buildChaseSeasonView(profile: SeriesProfile, races: ChaseRaceInp
       lastName: name.lastName,
       rank: rankNow.get(car)!,
       change: positionChange(delta),
-      changeDir: delta > 0 ? 'up' : delta < 0 ? 'down' : 'same',
+      changeDir: direction(delta),
       points: String(n.points),
-      gap: i === 0 ? EN_DASH : behind(leadPts - n.points),
-      gapAhead: i === 0 ? EN_DASH : behind(now.get(order[i - 1]!)!.points - n.points),
+      gap: i === 0 ? EN_DASH : pointsBehind(leadPts - n.points),
+      gapAhead: i === 0 ? EN_DASH : pointsBehind(now.get(order[i - 1]!)!.points - n.points),
       earned: `+${n.points - n.before}`,
       running: n.running ? `P${n.running}` : EN_DASH,
       chaseWins: String(myFinishes.filter((f) => f === 1).length),
@@ -205,11 +201,6 @@ export function buildChaseSeasonView(profile: SeriesProfile, races: ChaseRaceInp
       { label: 'To go', value: plural(left, 'race'), detail: left > 0 ? raceRows.filter((r) => r.state === 'next' || r.state === 'upcoming').map((r) => r.short).join(', ') : undefined },
     ],
     drivers,
-    notes: [
-      live
-        ? 'As they run: points, gaps and Pos are the standings if the race ended now (finishing points for the running position plus stage points). ± is the move from where they entered this race.'
-        : `Standings after the ${latest!.race.race_name}. ± is the move in that race.`,
-      'Chase columns count the Chase races run; Season columns are the whole season (NASCAR’s points file).',
-    ],
+    notes: [live ? 'Standings if the race ended now; ± is the move from where they started it.' : `After the ${latest!.race.race_name}.`],
   };
 }

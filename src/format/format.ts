@@ -1,9 +1,13 @@
 // Number formats from DESIGN.md "Data display rules". Followers compare cards across
 // weeks, so every card must go through these and never format numbers inline.
 
-const MINUS = '−';
-const EN_DASH = '–';
-const MIDDOT = '·';
+export const MINUS = '\u2212';
+/** Shown for "none" in every table cell. */
+export const EN_DASH = '\u2013';
+const MIDDOT = '\u00b7';
+
+/** 1 lap, 2 laps */
+export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** 31.340s; minutes only above 99.999 s: 1:58.219 */
 export function lapTime(seconds: number): string {
@@ -40,6 +44,13 @@ export function positionChange(delta: number): string {
   if (delta === 0) return EN_DASH;
   return delta > 0 ? `+${delta}` : `${MINUS}${Math.abs(delta)}`;
 }
+
+/** Which way a position or points change went; colors the ± cells. */
+export type Direction = 'up' | 'down' | 'same';
+export const direction = (delta: number): Direction => (delta > 0 ? 'up' : delta < 0 ? 'down' : 'same');
+
+/** Points behind: −74, or – when level or ahead. */
+export const pointsBehind = (n: number) => (n > 0 ? `${MINUS}${n}` : EN_DASH);
 
 /** Laps 221–240 */
 export function lapRange(from: number, to: number): string {
@@ -121,9 +132,4 @@ export function raceStatusLines(p: RaceProgress, segmentName: string | null): St
   if (p.stageLapsRemaining === 0) return [{ label: stage, value: 'Complete' }];
   if (p.stageLapsRemaining < COUNTDOWN_LAPS) return [{ label: stage, value: `${p.stageLapsRemaining} To Go` }];
   return [{ label: stage, value: `${p.stageLap}|${p.stageLength}` }, race];
-}
-
-/** so far, lap 167 */
-export function soFar(lap: number): string {
-  return `so far, lap ${lap}`;
 }

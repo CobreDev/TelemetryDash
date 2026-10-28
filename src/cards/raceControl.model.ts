@@ -3,6 +3,7 @@
 // UI and API clients match.
 import type { TrackFlag } from '../data/types';
 import { flagFromFeed, NOTE_INFO, type FeedLapNotes } from '../data/nascar/feed';
+import { plural } from '../format/format';
 
 export type RaceControlKind = 'note' | 'info' | 'flag' | 'stage';
 
@@ -49,7 +50,6 @@ export function countCautions(lapFlags: TrackFlag[]): { count: number; laps: num
   return { count, laps };
 }
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** NASCAR's notes call it out: "competition caution" / "competition yellow". */
 const COMPETITION = /competition (caution|yellow)/i;
 
@@ -93,20 +93,15 @@ export function buildRaceControlView(
     }
   }
 
-  // A flag entry where the flag changes, on the lap it was first shown. Green only counts as
-  // a restart after a caution or red; the opening green is "Green flag" on lap 1. Unknown
-  // laps ('none') come from recording gaps.
+  // An entry wherever the flag changes, labelled like the header's lap counter: laps completed
+  // when it came out (white at 133 in a 134-lap race; the opening green is "Start"). After an
+  // unknown stretch (a recording gap) the change could be anywhere in it, so it's left to the notes.
   let prev: TrackFlag | undefined;
-  lapFlags.forEach((flag, i) => {
-    // Labelled like the header's lap counter: the laps completed when the flag came out (the
-    // white flag for a 134-lap race shows at 133). The opening green is the start.
-    const lap = i;
-    // After an unknown stretch (a recording gap) the change could have happened anywhere in
-    // it, so no entry: the notes still cover it.
+  lapFlags.forEach((flag, lap) => {
     if (flag !== prev && FLAG_TEXT[flag] && prev !== 'none') {
       const restart = flag === 'green' && (prev === 'yellow' || prev === 'red');
       const lifted = flag === 'yellow' && prev === 'red';
-      // A caution NASCAR planned (after rain, or early to check tires) is called out as such.
+      // A planned caution (after rain, or early to check tires).
       const competition =
         flag === 'yellow' && !lifted && [lap, lap + 1, lap + 2].some((l) => notes?.laps[l]?.some((n) => COMPETITION.test(n.Note)));
       const text = restart ? 'Green flag: restart' : lifted ? 'Red flag lifted: caution' : competition ? 'Competition Caution' : FLAG_TEXT[flag]!;
@@ -118,9 +113,8 @@ export function buildRaceControlView(
   // The checkered waves as the leader completes the last lap (newest entry of that lap).
   if (finishedAt) entries.push({ id: `z${finishedAt}`, lap: finishedAt, lapLabel: label(finishedAt), kind: 'flag', flag: 'checkered', text: FLAG_TEXT.checkered! });
 
-  // A red flag can come and go within a lap, and older recordings may have missed it; NASCAR's
-  // notes mark it (FlagState 3), so add the red flag entry from the first note of each red
-  // stretch unless the lap flags already have one nearby.
+  // A red flag can come and go within a lap. NASCAR's notes mark it (FlagState 3), so the first
+  // note of each red stretch adds the entry unless the lap flags already have one nearby.
   const redLaps = new Set(entries.filter((e) => e.kind === 'flag' && e.flag === 'red').map((e) => e.lap));
   let lastRedNote = -Infinity;
   const redNoteLaps = new Set(entries.filter((x) => x.kind === 'note' && x.flag === 'red').map((x) => x.lap));
@@ -129,11 +123,10 @@ export function buildRaceControlView(
     const nearFlag = [e.lap - 2, e.lap - 1, e.lap, e.lap + 1].some((l) => redLaps.has(l));
     if (!nearFlag && e.lap - lastRedNote > 1) {
       entries.push({ id: `r${e.lap}`, lap: e.lap, lapLabel: e.lapLabel, kind: 'flag', flag: 'red', text: FLAG_TEXT.red! });
-      // Then back to yellow: the next lap after the red stretch still under caution.
+      // Then back to yellow on the first lap after the red stretch, if it's still a caution.
       let after = e.lap + 1;
       while (redNoteLaps.has(after)) after++;
       if (lapFlags[after - 1] === 'yellow') {
-        // Laps completed when it was lifted, like the other flags; sorts above the red.
         entries.push({ id: `s${after - 1}`, lap: after - 1, lapLabel: label(after - 1), kind: 'flag', flag: 'yellow', text: 'Red flag lifted: caution' });
       }
     }
@@ -146,10 +139,8 @@ export function buildRaceControlView(
     entries.push({ id: `t${st.stage}`, lap: st.lap, lapLabel: label(st.lap), kind: 'stage', flag: 'none', text: `Stage ${st.stage} winner: #${winner.carNumber} ${winner.name}`, stage: st });
   }
 
-  // Newest first; within a lap the flag change is the oldest entry (shown at the start of the
-  // lap), so it sorts below that lap's notes, and a stage result is the newest (the stage ends
-  // as the leader crosses the line).
-  // The start (lap 0) is the exception: the green flag comes after the pre-race notes.
+  // Newest first. Within a lap the flag change came first (it sorts below the lap's notes) and a
+  // stage result last; at the start, the green flag follows the pre-race notes.
   const order = (e: RaceControlEntry) => (e.kind === 'flag' ? (e.lap === 0 ? -1 : 1) : e.kind === 'stage' ? -0.5 : 0);
   entries.sort((a, b) => b.lap - a.lap || order(a) - order(b) || b.id.localeCompare(a.id, undefined, { numeric: true }));
   const c = extras.cautions ?? countCautions(lapFlags);

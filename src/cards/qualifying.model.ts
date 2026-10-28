@@ -3,11 +3,10 @@
 // web UI and API clients match.
 import type { FeedLapTimes } from '../data/nascar/feed';
 import { parseDriverName } from '../data/nascar/names';
-import { gapTime, lapTime } from '../format/format';
+import { EN_DASH, gapTime, lapTime } from '../format/format';
 import { markerHighlight, markerNotes, markerSuffixes } from '../series/markers';
 import type { SeriesProfile } from '../series/types';
 
-const EN_DASH = '–';
 
 /** One result of weekend-feed.json's qualifying run (`weekend_runs[].results`). */
 export interface FeedRunResult {

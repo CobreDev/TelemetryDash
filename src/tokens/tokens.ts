@@ -63,34 +63,12 @@ export const fonts = {
   mono: "'JetBrains Mono', ui-monospace, monospace",
 } as const;
 
-/** Card type scale in px at 1080 px wide. */
-export const cardType = {
-  title: 68,
-  venue: 28,
-  subtitle: 18,
-  lastName: 30,
-  firstName: 14,
-  carNumber: 34,
-  numeric: 28,
-  columnLabel: 14,
-  footer: 13,
-} as const;
-
-/** Dashboard uses 60% of card sizes, never below 14 px. */
-export const dashboardSize = (cardPx: number) => Math.max(14, Math.round(cardPx * 0.6));
-
-export const space = (n: number) => n * 8;
-export const CARD_MARGIN = 56;
-export const ACCENT_RULE = 4;
-
 export const formats = {
   portrait: { width: 1080, height: 1350 },
   landscape: { width: 1600, height: 900 },
   square: { width: 1080, height: 1080 },
   tall: { width: 1080, height: 1920, bottomSafe: 80 },
 } as const;
-export type CardFormat = keyof typeof formats;
-export const EXPORT_PIXEL_RATIO = 2;
 
 /** Black or white, whichever reads better on `bg` (Cup yellow needs black, the others white). */
 export function onColor(bg: string): string {

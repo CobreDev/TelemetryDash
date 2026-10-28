@@ -33,45 +33,47 @@ function ChasePanel({ view }: { view: ChaseView }) {
       <div className="panel-head">
         <h2>{view.title}</h2>
       </div>
-      <table className="dash-table chase-table">
-        <thead>
-          <tr>
-            <th className="shrink">{view.columns.rank}</th>
-            <th className="shrink" title={view.hints.change}>{view.columns.change}</th>
-            <th className="shrink">{view.columns.car}</th>
-            <th className="left">{view.columns.name}</th>
-            {/* Live, the running position is in Running order; off-week this is the last race's finish. */}
-            {view.mode !== 'live' && <th className="shrink" title={view.hints.running}>{view.columns.running}</th>}
-            <th className="shrink" title={view.hints.points}>{view.columns.points}</th>
-            <th className="shrink" title={view.hints.gap}>{view.columns.gap}</th>
-            <th className="shrink" title={view.hints.gain}>{view.columns.gain}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {view.rows.map((r) => (
-            <tr key={r.carNumber}>
-              <td className="num">{r.rank}</td>
-              <td className={`num change-${r.changeDir}`} title={`P${r.rankBefore} ${view.mode === 'live' ? 'entering this race' : 'before the last race'}`}>
-                {r.change}
-              </td>
-              <td className="car">
-                <CarNumber number={r.carNumber} badge={r.carBadge} />
-              </td>
-              <td className="left">
-                <span className="dash-last">{r.lastName}</span>
-              </td>
-              {view.mode !== 'live' && <td className="num muted">{r.running}</td>}
-              <td className="num" title={`${r.pointsBefore} ${view.mode === 'live' ? 'entering this race' : 'before the last race'}`}>
-                {r.points}
-              </td>
-              <td className="num muted" title={r.gapAhead === '–' ? undefined : `${r.gapAhead} to the driver ahead`}>
-                {r.gap}
-              </td>
-              <td className="num chase-gain">{r.earned}</td>
+      <div className="table-scroll">
+        <table className="dash-table chase-table">
+          <thead>
+            <tr>
+              <th className="shrink">{view.columns.rank}</th>
+              <th className="shrink" title={view.hints.change}>{view.columns.change}</th>
+              <th className="shrink">{view.columns.car}</th>
+              <th className="left">{view.columns.name}</th>
+              {/* Live, the running position is in Running order; off-week this is the last race's finish. */}
+              {view.mode !== 'live' && <th className="shrink" title={view.hints.running}>{view.columns.running}</th>}
+              <th className="shrink" title={view.hints.points}>{view.columns.points}</th>
+              <th className="shrink" title={view.hints.gap}>{view.columns.gap}</th>
+              <th className="shrink" title={view.hints.gain}>{view.columns.gain}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {view.rows.map((r) => (
+              <tr key={r.carNumber}>
+                <td className="num">{r.rank}</td>
+                <td className={`num change-${r.changeDir}`} title={`P${r.rankBefore} ${view.mode === 'live' ? 'entering this race' : 'before the last race'}`}>
+                  {r.change}
+                </td>
+                <td className="car">
+                  <CarNumber number={r.carNumber} badge={r.carBadge} />
+                </td>
+                <td className="left">
+                  <span className="dash-last">{r.lastName}</span>
+                </td>
+                {view.mode !== 'live' && <td className="num muted">{r.running}</td>}
+                <td className="num" title={`${r.pointsBefore} ${view.mode === 'live' ? 'entering this race' : 'before the last race'}`}>
+                  {r.points}
+                </td>
+                <td className="num muted" title={r.gapAhead === '–' ? undefined : `${r.gapAhead} to the driver ahead`}>
+                  {r.gap}
+                </td>
+                <td className="num chase-gain">{r.earned}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <ul className="dash-notes">
         {view.notes.map((n) => (
           <li key={n}>{n}</li>

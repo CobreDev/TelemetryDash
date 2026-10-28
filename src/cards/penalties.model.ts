@@ -110,7 +110,7 @@ export function buildPenaltiesView(
     title: 'Penalties',
     rows,
     notes: rows.some((r) => !r.punishmentStated)
-      ? ['From NASCAR\'s race notes. Unless a note says otherwise, the punishment is NASCAR\'s standard for pit road penalties: a pass-through under green, the tail of the field under caution.']
+      ? ['Read from NASCAR\'s race notes. Where a note doesn\'t say, the punishment is the standard one: pass-through under green, tail of the field under caution.']
       : [],
   };
 }
