@@ -31,77 +31,87 @@ for a future app.
 
 ## Visual system
 
+The interface follows the **Hairline** design system (https://claude.ai/artifact/8Vx2vTRG3Na2EPrMnW6sX9):
+ink on warm paper, sections separated by a single rule instead of boxes, sentence case, tabular
+figures, one system font, light and dark following the system setting. Color beyond ink and paper
+is this product's identity and status colors below, which Hairline leaves to the product.
+
 ### Color
 
-Dark theme only. Token names match a future light theme. Palettes are checked by
-`src/tokens/tokens.test.ts` or the dataviz palette validator; re-run them after any change.
+Hairline tokens (`src/tokens/tokens.ts`, checked by `tokens.test.ts`):
 
-| Token | Value | Use |
-| --- | --- | --- |
-| `bg` | #0F1115 | Page |
-| `surface` | #181B21 | Cards |
-| `surface-alt` | #20242C | Zebra rows, active toggle |
-| `border` | #2C313A | Dividers |
-| `text` | #EEF0F3 | Text and numbers |
-| `text-muted` | #9AA1AE | Labels, first names, footnotes |
-| `perf-good` / `perf-mid` / `perf-bad` | #3DD68C / #F2B33D / #F2645E | Judgments only, always beside a signed number or word |
+| Token | Light | Dark | Use |
+| --- | --- | --- | --- |
+| `bg` | #f6f5f1 | #0f0f0e | The page; sections sit directly on it |
+| `surface-1` | #ffffff | #181817 | Controls, chips, tooltips |
+| `surface-2` | #efeee9 | #222220 | Hover and picked rows, bar tracks |
+| `border` | #dcdad2 | #2f2e2b | Section rules, header rules, control borders |
+| `grid` | #e9e7e0 | #262624 | Row rules, chart gridlines |
+| `text-primary` / `text-secondary` / `text-muted` | #161614 / #55534d / #6d6b64 | #ecebe6 / #bdbbb2 / #8f8d85 | Ink in three strengths (all 4.5:1 on every surface) |
+| `good` / `danger` | #17773a / #b8322a | #4cbf6b / #e66767 | Gains and best values / losses, errors, short on fuel |
+| `focus` | #2a78d6 | #5598e7 | Keyboard focus only |
 
-- **Series accent** (`accent.dark`) is the header color (Cup's yellow, O'Reilly's green,
-  Craftsman's red). It marks the leader's row and fills the win chips in the Chase grid, but is
-  never the color of a number, because green and red read as good and bad.
-- **Series bar:** the top bar takes the series color, with three full-width stripes under it. The
-  stripe in the bar's hue uses the exact bar color, and bar text meets 4.5:1 (darken the bar,
-  never the text).
-- **Flags** (header icon, lap bar, race control): green #2BB34B, yellow #FFD100, red #E4002B,
-  white, and checkered as a pattern. Stage ends use NASCAR's stage flags (green/white checkered, or
-  yellow/white under caution). These are CSS variables in `app.css`.
-- **Chase drivers:** a faint yellow row tint, `rgba(255, 209, 0, 0.09)`, over the zebra stripe.
+Product colors, the same in both themes:
+
+- **Series branding:** the top bar takes the series color (`brand.dashboard`), with three
+  stripes under it; the stripe in the bar's hue uses the exact bar color, and bar text meets 4.5:1.
+  The series color (`--series`, `accent.light` or `accent.dark` by theme) fills the Chase grid's
+  win chips and is never the color of a number.
+- **Flags** (header icon, lap bar, race control dots): green #2BB34B, yellow #FFD100, red #E4002B,
+  white, and checkered as a pattern; stage ends use NASCAR's stage flags. The live dot and the
+  Strategy current-lap line use the flag red.
+- **Chase drivers:** a faint yellow row tint, `rgba(255, 209, 0, 0.09)`.
 - **Stint bars:** start #4A5160, four tires #2F7FE0, two tires #D07A1A, fuel only #8A5CF0.
-- **Chart lines** (Compare, Chase), in slot order: #2F7FE0, #E5484D, #12A5B8, #C48420, #8E4EC6,
-  #30A46C. A driver keeps its slot while selected; removing one never repaints the others. Compare
-  shows up to six lines, Chase up to four plus the field in gray.
+- **Chart lines** (Compare, Chase), one per driver in slot order, from the light or dark set in
+  `tokens.ts`. A driver keeps its slot while selected.
 
 ### Type
 
-| Role | Face | Size |
-| --- | --- | --- |
-| Card titles, race name, stage label | Stainless Black (licensed) | 22 / 16 / 15 px, caps |
-| Series switcher | Stainless Regular | 17 px, caps |
-| Body, labels, notes | Stainless Regular | 14–15 px |
-| Driver last name | Barlow Condensed Bold | 18 px, caps |
-| Driver first name | Stainless Regular, muted | 15 px |
-| Times, gaps, positions | JetBrains Mono Semibold, tabular | 17 px |
-| Column headers | Stainless, caps, +4% tracking | 14 px |
+One family, the platform's UI face (`system-ui`). Hierarchy comes from size and weight.
 
-- 14 px minimum. No italics. Numbers are never in the display face and are right-aligned.
-- Stainless is purchased and committed in `public/fonts`; missing faces fall back to Saira and
-  Inter. NASCAR's logo face is proprietary, so the series dropdown uses the fallback. Never take
-  fonts from nascar.com.
-- Free fonts ship with the app, so it works offline.
+| Role | Size / weight |
+| --- | --- |
+| Section titles | 19 / 700 |
+| Race name in the bar | 19 / 700 |
+| Headline figures (Chase summary) | 30 / 650, tabular (22 on phones) |
+| Body, table cells | 15, tables 14 |
+| Driver name | first name in `text-secondary`, last name 600 |
+| Labels, notes | 13 / 500 |
+| Table headers, chart axes, legends | 12 / 500, `text-muted` |
+
+- Sentence case everywhere, including table headers and names. No uppercase labels, no italics.
+- Every number that lines up with another uses tabular numerals.
+- The licensed Stainless files stay in `public/fonts` but aren't loaded.
+
+### Shape
+
+Radii 3 px (tags, swatches), 6 px (controls, chips, tooltips); no pills, no rounded cards. The only
+shadow is on tooltips.
 
 ### Cards and tables
 
+- **Sections:** every card is a Hairline section: a rule, a 19 px title (with an optional note on
+  the right), then content on the page. No background, border box or shadow.
 - **Columns:** `Pos`, not `#`. Pos, Car and numbers shrink to fit; Driver takes the rest. Headers
   wrap only in a narrow card (container query at 480 px).
 - **Names:** "Chase BRISCOE" on one line. If any name in a table doesn't fit, every row switches
   to two lines, never a mix. Narrow cards (Chase, crew averages) show last names only.
-- **Car numbers:** each team's number art (NASCAR's badge images, proxied and cached weekly), 34 px
-  tall with a light halo for dark artwork. The manufacturer logo (public-domain files in
+- **Car numbers:** each team's number art (NASCAR's badge images, proxied and cached weekly), 30 px
+  tall with a thin halo (dark in light mode, light in dark mode) so artwork in the page's color reads. The manufacturer logo (public-domain files in
   `public/makes`) sits in its own column on the running order.
-- **Rows:** zebra stripes; the leader gets a 4 px accent bar; Chase drivers get the tint; out or
-  unranked cars sit at the bottom at 55% opacity.
+- **Rows:** a single header rule and light row rules, no zebra stripes; Chase drivers get the
+  tint; hover and picked rows use `surface-2`; out or unranked cars sit at the bottom at 55% opacity.
 - **Markers:** (R) rookie and (i) points-ineligible print after the last name and are explained in
   the card's footnote. Chase is the row tint, not "(C)".
 - **Long lists** (stops, penalties, slim last race, race control) scroll inside their card with
   the header pinned.
-- **Card titles** are sentence case in code and uppercase on screen.
 
 ### Loading
 
 No layout shift on a fresh load (measured 0). Series profiles ship in the bundle, so the bar has
 its colors on the first paint. The header holds 76 px, the track logo has a fixed 120 × 52 slot,
-car badges reserve their box, images fade in over 0.25 s (off with reduced motion), and the
-Stainless fonts are preloaded with `font-display: block`.
+car badges reserve their box, and images fade in over 0.25 s (off with reduced motion). The system
+font needs no loading.
 
 ## Layout
 
@@ -273,8 +283,8 @@ caution.
 
 ## Accessibility
 
-- Text meets 4.5:1; large numbers and indicators 3:1 (tests enforce accents, bar text and perf
-  colors).
+- Text meets 4.5:1 on every surface in both themes; large numbers and indicators 3:1 (tests
+  enforce the text tokens, good and danger, series colors and bar text).
 - Color never carries meaning alone: perf colors sit beside signed numbers, flags have outlines
   and tooltips, chart lines have labels and a legend, and the Chase tint is explained.
 - Motion respects `prefers-reduced-motion`. Controls are real buttons and selects with labels.

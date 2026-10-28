@@ -6,7 +6,6 @@ import '@fontsource/inter/600.css';
 import '@fontsource/jetbrains-mono/600.css';
 // Dashboard top bar face, shared by every series.
 import '@fontsource/saira/800.css';
-import './app/licensed-fonts.css';
 import './app/app.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

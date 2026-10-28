@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { endLabels, useWidth } from './chart';
 import type { LapsView } from '../cards/tabs.model';
 import { lapTime } from '../format/format';
-import { lineSeries, MAX_LINES } from '../tokens/tokens';
+import { MAX_LINES } from '../tokens/tokens';
 import { api } from './api';
 import { CarNumber } from './CarNumber';
 import { DataError } from './NoLive';
@@ -39,7 +39,7 @@ function LapChart({ data, picked, window }: { data: LapsView; picked: Picked[]; 
 
   const series = picked.map((p) => {
     const car = data.cars.find((c) => c.carNumber === p.carNumber)!;
-    return { p, car, laps: cleanLaps(car, data.lapFlags), color: lineSeries.dark[p.slot]! };
+    return { p, car, laps: cleanLaps(car, data.lapFlags), color: `var(--line-${p.slot})` };
   });
   const shown = series.flatMap((s) => s.laps.slice(from - 1, to).filter((t): t is number => t !== null));
   const lo = shown.length ? Math.min(...shown) : 0;
@@ -111,7 +111,7 @@ function LapChart({ data, picked, window }: { data: LapsView; picked: Picked[]; 
           </text>
         ))}
         {series.map((s) => (
-          <path key={s.p.carNumber} d={path(s.laps)} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+          <path key={s.p.carNumber} d={path(s.laps)} fill="none" style={{ stroke: s.color }} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
         ))}
         {picked.length <= 4 &&
           endLabels(series.flatMap((s) => {
@@ -127,7 +127,7 @@ function LapChart({ data, picked, window }: { data: LapsView; picked: Picked[]; 
             <line className="chart-crosshair" x1={x(hover)} x2={x(hover)} y1={pad.t} y2={H - pad.b} />
             {series.map((s) => {
               const t = s.laps[hover - 1];
-              return t != null ? <circle key={s.p.carNumber} cx={x(hover)} cy={y(t)} r={4} fill={s.color} stroke="var(--surface)" strokeWidth={2} /> : null;
+              return t != null ? <circle key={s.p.carNumber} cx={x(hover)} cy={y(t)} r={4} style={{ fill: s.color }} stroke="var(--bg)" strokeWidth={2} /> : null;
             })}
           </g>
         )}
@@ -190,7 +190,7 @@ export function CompareTab({ seriesId }: { seriesId: string }) {
             const c = byNumber.get(p.carNumber)!;
             return (
               <span key={p.carNumber} className="chip-driver">
-                <i style={{ background: lineSeries.dark[p.slot] }} />
+                <i style={{ background: `var(--line-${p.slot})` }} />
                 <CarNumber number={c.carNumber} badge={c.carBadge} />
                 {c.lastName}
                 <button aria-label={`Remove ${c.lastName}`} onClick={() => remove(p.carNumber)} disabled={selection.length <= 1}>
@@ -235,7 +235,7 @@ export function CompareTab({ seriesId }: { seriesId: string }) {
               return (
                 <tr key={p.carNumber}>
                   <td className="left">
-                    <span className="legend-swatch" style={{ background: lineSeries.dark[p.slot] }} />
+                    <span className="legend-swatch" style={{ background: `var(--line-${p.slot})` }} />
                     <span className="dash-last">{c.lastName}</span>
                   </td>
                   <td className="num">{laps.length}</td>

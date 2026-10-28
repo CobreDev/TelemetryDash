@@ -16,6 +16,7 @@ import { load, store } from './storage';
 import { StrategyTab } from './StrategyTab';
 import { SourceContext, useSeriesApi } from './useApi';
 import { useLiveStatus, type LiveState } from './useLiveStatus';
+import { useTheme } from './useTheme';
 
 const KEYS = { series: 'td.series', tab: 'td.tab', source: 'td.source' };
 /** Longest the first paint waits for the server's choice of series. */
@@ -100,7 +101,8 @@ function Dashboard({ onSource, status }: { onSource: (s: Source) => void; status
 
   // Profiles ship in the bundle, so the bar has its series colors on the first paint.
   const profile = seriesList.find((s) => s.id === seriesId);
-  const theme = themeVars('dark', profile?.accent.dark ?? neutrals.dark['text-muted']);
+  const mode = useTheme();
+  const theme = themeVars(mode, profile?.accent[mode] ?? neutrals[mode]['text-muted']);
   const brand = profile?.brand.dashboard;
   const barColors = brand && ({ '--bar-bg': brand.barBg, '--bar-fg': brand.barFg, '--bar-muted': brand.barMuted, '--bar-highlight': brand.highlight } as CSSProperties);
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import type { ChaseSeasonView } from '../cards/chaseSeason.model';
-import { lineSeries } from '../tokens/tokens';
 import { api } from './api';
 import { CarNumber } from './CarNumber';
 import { endLabels, useWidth } from './chart';
@@ -18,15 +17,15 @@ interface Picked {
 
 function Summary({ view }: { view: ChaseSeasonView }) {
   return (
-    <div className="chase-summary">
+    <dl className="figures chase-summary">
       {view.summary.map((t) => (
-        <div key={t.label} className="panel stat-tile">
-          <div className="stat-label">{t.label}</div>
-          <div className="stat-value">{t.value}</div>
-          {t.detail && <div className="stat-detail">{t.detail}</div>}
+        <div key={t.label}>
+          <dt>{t.label}</dt>
+          <dd className="figure">{t.value}</dd>
+          {t.detail && <dd>{t.detail}</dd>}
         </div>
       ))}
-    </div>
+    </dl>
   );
 }
 
@@ -77,7 +76,7 @@ function Standings({ view, picked, toggle }: { view: ChaseSeasonView; picked: Pi
                     <CarNumber number={d.carNumber} badge={d.carBadge} />
                   </td>
                   <td className="left">
-                    {slot !== undefined && <i className="pick-dot" style={{ background: lineSeries.dark[slot] }} aria-hidden />}
+                    {slot !== undefined && <i className="pick-dot" style={{ background: `var(--line-${slot})` }} aria-hidden />}
                     <span className="dash-first">{d.firstName}</span>
                     <span className="dash-last">{d.lastName}</span>
                   </td>
@@ -190,7 +189,7 @@ function PointsChart({ view, picked, toggle }: { view: ChaseSeasonView; picked: 
         <div className="chart-legend">
           {pickedDrivers.map(({ p, d }) => (
             <button key={p.carNumber} className="legend-chip" onClick={() => toggle(p.carNumber)} title="Remove from the chart">
-              <i style={{ background: lineSeries.dark[p.slot] }} /> #{d.carNumber} {d.lastName} ×
+              <i style={{ background: `var(--line-${p.slot})` }} /> #{d.carNumber} {d.lastName} ×
             </button>
           ))}
           <span className="legend-chip muted">
@@ -220,7 +219,7 @@ function PointsChart({ view, picked, toggle }: { view: ChaseSeasonView; picked: 
                 <path key={d.carNumber} className="chase-line-rest" d={path(d.trail)} fill="none" onClick={() => toggle(d.carNumber)} />
               ))}
             {pickedDrivers.map(({ p, d }) => (
-              <path key={p.carNumber} d={path(d.trail)} fill="none" stroke={lineSeries.dark[p.slot]} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+              <path key={p.carNumber} d={path(d.trail)} fill="none" style={{ stroke: `var(--line-${p.slot})` }} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
             ))}
             {endLabels(
               pickedDrivers.flatMap(({ p, d }) => {
@@ -236,7 +235,7 @@ function PointsChart({ view, picked, toggle }: { view: ChaseSeasonView; picked: 
             {hover !== null &&
               pickedDrivers.map(({ p, d }) => {
                 const v = d.trail[hover];
-                return v != null ? <circle key={p.carNumber} cx={x(hover)} cy={y(v)} r={4} fill={lineSeries.dark[p.slot]} stroke="var(--surface)" strokeWidth={2} /> : null;
+                return v != null ? <circle key={p.carNumber} cx={x(hover)} cy={y(v)} r={4} style={{ fill: `var(--line-${p.slot})` }} stroke="var(--bg)" strokeWidth={2} /> : null;
               })}
           </svg>
         )}
@@ -247,7 +246,7 @@ function PointsChart({ view, picked, toggle }: { view: ChaseSeasonView; picked: 
               .sort((a, b) => (b.d.trail[hover] ?? 0) - (a.d.trail[hover] ?? 0))
               .map(({ p, d }) => (
                 <div key={p.carNumber}>
-                  <i style={{ background: lineSeries.dark[p.slot] }} /> {d.lastName} <span className="num">{d.trail[hover] ?? '–'}</span>
+                  <i style={{ background: `var(--line-${p.slot})` }} /> {d.lastName} <span className="num">{d.trail[hover] ?? '–'}</span>
                 </div>
               ))}
           </div>

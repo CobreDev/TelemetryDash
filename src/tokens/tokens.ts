@@ -1,33 +1,40 @@
-// Shared design tokens from docs/DESIGN.md. These never change per series;
-// the only per-series colors (accent, brand) come from the series profile.
+// Design tokens: the Hairline design system's neutrals and signals, plus this product's own
+// identity colors (series branding comes from the series profiles). See docs/DESIGN.md.
 import { contrast } from './contrast';
 
 export type ThemeName = 'light' | 'dark';
 
+/** Hairline: warm paper and ink. The interface itself uses only these. */
 export const neutrals = {
   light: {
-    bg: '#F4F5F7',
-    surface: '#FFFFFF',
-    'surface-alt': '#E9EBEF',
-    border: '#D5D9E0',
-    text: '#12151B',
-    'text-muted': '#5B6270',
+    bg: '#f6f5f1',
+    'surface-1': '#ffffff',
+    'surface-2': '#efeee9',
+    border: '#dcdad2',
+    grid: '#e9e7e0',
+    'text-primary': '#161614',
+    'text-secondary': '#55534d',
+    'text-muted': '#6d6b64',
   },
   dark: {
-    bg: '#0F1115',
-    surface: '#181B21',
-    'surface-alt': '#20242C',
-    border: '#2C313A',
-    text: '#EEF0F3',
-    'text-muted': '#9AA1AE',
+    bg: '#0f0f0e',
+    'surface-1': '#181817',
+    'surface-2': '#222220',
+    border: '#2f2e2b',
+    grid: '#262624',
+    'text-primary': '#ecebe6',
+    'text-secondary': '#bdbbb2',
+    'text-muted': '#8f8d85',
   },
 } as const;
 
-/** Good/middle/bad judgments only, never decoration. */
-export const perf = {
-  light: { 'perf-good': '#1E9E5A', 'perf-mid': '#D98A00', 'perf-bad': '#D33A3A' },
-  dark: { 'perf-good': '#3DD68C', 'perf-mid': '#F2B33D', 'perf-bad': '#F2645E' },
+/** Hairline signals: best values, errors, focus, and status bars (always with a word). */
+export const signals = {
+  light: { good: '#17773a', danger: '#b8322a', focus: '#2a78d6', 'status-good': '#1b9a3e', 'status-warn': '#b89400', 'status-crit': '#c0302f' },
+  dark: { good: '#4cbf6b', danger: '#e66767', focus: '#5598e7', 'status-good': '#2fa24a', 'status-warn': '#a8920a', 'status-crit': '#b3261e' },
 } as const;
+
+export const shadowFloat = { light: '0 4px 16px rgba(0, 0, 0, 0.10)', dark: '0 4px 16px rgba(0, 0, 0, 0.45)' } as const;
 
 /**
  * Stint bars only. Two-tire orange is deepened from DESIGN.md's #F29B1F so the hued set
@@ -52,15 +59,10 @@ export const lineSeries = {
 } as const;
 export const MAX_LINES = lineSeries.dark.length;
 
+/** Hairline uses one family, the platform's UI face, so pages look native and load nothing. */
 export const fonts = {
-  display: "'Barlow Condensed', 'Arial Narrow', sans-serif",
-  /** Body text: Stainless Regular when its licensed file is installed, else Inter. */
-  sans: "'Stainless', 'Inter', system-ui, sans-serif",
-  /** Headers: Stainless Black when installed, else Saira. */
-  heading: "'Stainless', 'Saira', 'Barlow Condensed', sans-serif",
-  /** NASCAR logo face for the body switcher, when installed. */
-  logo: "'NASCAR Logo', 'Saira', sans-serif",
-  mono: "'JetBrains Mono', ui-monospace, monospace",
+  sans: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
 } as const;
 
 export const formats = {
@@ -75,14 +77,22 @@ export function onColor(bg: string): string {
   return contrast('#000000', bg) >= contrast('#FFFFFF', bg) ? '#000000' : '#FFFFFF';
 }
 
-/** CSS custom properties for a theme plus the series accent. Token names match DESIGN.md. */
-export function themeVars(theme: ThemeName, accent: string): Record<string, string> {
-  const vars: Record<string, string> = { '--accent': accent, '--on-accent': onColor(accent) };
-  for (const [k, v] of Object.entries({ ...neutrals[theme], ...perf[theme] })) vars[`--${k}`] = v;
-  vars['--font-display'] = fonts.display;
-  vars['--font-sans'] = fonts.sans;
-  vars['--font-heading'] = fonts.heading;
-  vars['--font-logo'] = fonts.logo;
-  vars['--font-mono'] = fonts.mono;
+/**
+ * CSS custom properties for a theme, the series color (`--series`, this product's identity
+ * color for the series) and its text color. Hairline's `--accent` is ink, not a brand hue.
+ */
+export function themeVars(theme: ThemeName, series: string): Record<string, string> {
+  const vars: Record<string, string> = {
+    '--series': series,
+    '--on-series': onColor(series),
+    '--accent': neutrals[theme]['text-primary'],
+    '--shadow-float': shadowFloat[theme],
+    // A thin halo around team number art: white artwork needs a dark edge on paper, dark artwork a light one at night.
+    '--badge-halo': theme === 'light' ? 'rgba(0, 0, 0, 0.55)' : 'rgba(255, 255, 255, 0.7)',
+    '--font-sans': fonts.sans,
+    '--font-mono': fonts.mono,
+  };
+  for (const [k, v] of Object.entries({ ...neutrals[theme], ...signals[theme] })) vars[`--${k}`] = v;
+  lineSeries[theme].forEach((c, i) => (vars[`--line-${i}`] = c));
   return vars;
 }

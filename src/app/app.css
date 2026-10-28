@@ -1,14 +1,16 @@
 /*
- * Dashboard styles. Theme colors and fonts come from tokens.ts (set as variables on .dash);
- * this file only adds layout and the few fixed colors below. 14px is the smallest body text.
+ * Dashboard styles, on the Hairline design system: ink on warm paper, sections separated by a
+ * single rule instead of boxes, sentence case, tabular figures, one system font. Theme tokens
+ * (light and dark) come from tokens.ts as variables on .dash. Color beyond ink and paper is
+ * identity (series branding, chart lines, stint types) or status (flags, good, danger).
  *
- *   1. Fixed colors        5. Panels and tables     9. Pit road and Strategy
+ *   1. Product colors      5. Sections and tables   9. Pit road and Strategy
  *   2. Base                6. Shared pieces        10. Charts
  *   3. Top bar             7. Overview             11. Chase tab
- *   4. Page layout         8. Race control         12. Loading and motion
+ *   4. Page layout         8. Race control         12. Loading, motion, phones
  */
 
-/* ---- 1. Fixed colors: track flags are the same in every series and theme -------------- */
+/* ---- 1. Product colors: flags, live and the Chase tint, the same in both themes -------- */
 .dash {
   --flag-green: #2BB34B;
   --flag-yellow: #FFD100;
@@ -17,84 +19,83 @@
   --checkered: repeating-conic-gradient(#000 0 25%, #fff 0 50%);
   --stage-checkered: repeating-conic-gradient(var(--flag-green) 0 25%, #fff 0 50%);
   --live: var(--flag-red);
-  /* Chase drivers: a faint yellow tint over the zebra stripe. */
+  /* Chase drivers: a faint yellow tint on their rows. */
   --row-highlight: rgba(255, 209, 0, 0.09);
 }
 
 /* ---- 2. Base ------------------------------------------------------------------------ */
 * { box-sizing: border-box; }
-html, body { margin: 0; background: #0F1115; }
-.dash { min-height: 100vh; background: var(--bg); color: var(--text); font: 400 14px/1.4 var(--font-sans); }
-main { padding: 16px; }
+html, body { margin: 0; background: #f6f5f1; }
+@media (prefers-color-scheme: dark) { html, body { background: #0f0f0e; } }
+.dash { min-height: 100vh; background: var(--bg); color: var(--text-primary); font: 15px/1.45 var(--font-sans); }
+main { padding: 0 20px 40px; }
 button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .muted { color: var(--text-muted); }
+.secondary { color: var(--text-secondary); }
 .nowrap { white-space: nowrap; }
-.error { color: var(--perf-bad); }
+.error { color: var(--danger); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* ---- 3. Top bar: the series brand colors (SeriesBrand.dashboard), else neutral tokens --- */
+/* ---- 3. Top bar: the series brand colors (SeriesBrand.dashboard) ----------------------- */
 .topbar {
   /* Bottom padding, not a tab margin (which would show the page color), keeps the active-tab
      underline off the series stripes. */
-  padding: 12px 16px 8px;
-  background: var(--bar-bg, var(--surface));
-  color: var(--bar-fg, var(--text));
-  --bar-font: var(--font-heading);
-  --bar-weight: 900;
+  padding: 12px 20px 0;
+  background: var(--bar-bg, var(--surface-1));
+  color: var(--bar-fg, var(--text-primary));
 }
 .topbar-stripes > span { height: 4px; }
 /* One row: series names scroll sideways on narrow screens; the right column stays put. */
 .topbar-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px 16px; }
 .topbar-right { margin-left: auto; flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 
-.series-switch { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; }
+.series-switch { display: flex; gap: 0 20px; flex: 1 1 auto; min-width: 0; overflow-x: auto; }
 .series-switch button,
 .tabs button {
-  background: none; border: 0; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap;
-  color: var(--bar-muted, var(--text-muted));
+  background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
+  color: var(--bar-muted, var(--text-secondary));
 }
-.series-switch button { padding: 6px 8px; font: 400 17px/1 var(--font-sans); text-transform: uppercase; }
+.series-switch button { padding: 6px 0 8px; font-size: 15px; font-weight: 500; }
+.series-switch button:hover, .tabs button:hover { color: var(--bar-fg, var(--text-primary)); }
 .series-switch button.active,
-.tabs button.active { color: var(--bar-fg, var(--text)); border-bottom-color: var(--bar-highlight, var(--accent)); }
+.tabs button.active { color: var(--bar-fg, var(--text-primary)); font-weight: 650; border-bottom-color: var(--bar-highlight, var(--accent)); }
 
 .body-switch { flex: none; margin-left: auto; }
 .body-switch select {
-  appearance: none; cursor: pointer;
-  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 8px center;
-  color: var(--bar-fg, var(--text));
+  appearance: none; cursor: pointer; height: 30px;
+  background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23fff'/%3E%3C/svg%3E") no-repeat right 9px center;
+  color: var(--bar-fg, var(--text-primary));
   border: 1px solid var(--bar-muted, var(--border)); border-radius: 6px;
-  padding: 5px 26px 5px 10px;
-  font: 800 15px/1 var(--font-logo); text-transform: uppercase;
+  padding: 0 26px 0 9px; font-size: 13px; font-weight: 550;
 }
-.body-switch select option { color: #12151B; background: #fff; }
+.body-switch select option { color: #161614; background: #fff; }
 
 /* Race header: [track logo] race name and location / status block / lap bar. Held at a fixed
    height while data loads so the page below doesn't jump. */
-.race-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; padding: 0 8px; min-height: 76px; }
+.race-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 12px; min-height: 76px; }
 .race-summary { display: flex; align-items: center; gap: 14px; }
 .track-logo { display: block; flex: none; width: 120px; height: 52px; object-fit: contain; }
 .track-logo.on-tile { background: #fff; border-radius: 6px; padding: 4px 6px; }
 .race-info { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .race-title { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; }
-.race-name { font: var(--bar-weight, 600) 16px/1.2 var(--bar-font, var(--font-display)); text-transform: uppercase; }
-.race-location { font: 400 14px/1.2 var(--font-sans); color: var(--bar-muted, var(--text-muted)); }
+.race-name { font-size: 19px; font-weight: 700; letter-spacing: -0.015em; }
+.race-location { font-size: 13px; color: var(--bar-muted, var(--text-secondary)); }
 .race-progress { display: grid; row-gap: 8px; align-self: flex-start; }
 
-/* TV-style status block, with a flag icon for track status. */
+/* Status block, with a flag icon for track status. */
 .race-status { display: flex; align-items: center; gap: 10px; }
 .race-status-flag-wrap { display: flex; color: var(--bar-muted, var(--text-muted)); }
 .race-status-flag { display: block; width: 24px; height: 24px; }
 .race-status-lines { display: grid; grid-template-columns: auto auto; column-gap: 24px; row-gap: 2px; }
 .race-status-line { display: contents; }
-.race-status-label { font: 400 14px/1.2 var(--font-sans); }
-.race-status-value { text-align: right; font: 600 14px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
-.is-primary .race-status-label { font: var(--bar-weight, 900) 15px/1.2 var(--bar-font, var(--font-heading)); text-transform: uppercase; }
+.race-status-label { font-size: 13px; }
+.race-status-value { text-align: right; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.is-primary .race-status-label { font-size: 15px; font-weight: 700; }
 .race-status-sep { margin: 0 3px; color: var(--bar-muted, var(--text-muted)); }
-/* Upcoming race: a date and times, so plain type rather than shouted labels and tabular figures. */
-.race-status.is-upcoming .is-primary .race-status-label { text-transform: none; }
-.race-status-value.upcoming-value { font-family: var(--font-sans); font-variant-numeric: normal; }
+.race-status-value.upcoming-value { font-variant-numeric: normal; }
 
-.lap-bar { position: relative; height: 6px; border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, 0.18); }
+.lap-bar { position: relative; height: 4px; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, 0.18); }
 .lap-bar-seg { position: absolute; top: 0; bottom: 0; }
 .lap-bar-seg.flag-green { background: var(--flag-green); }
 .lap-bar-seg.flag-yellow { background: var(--flag-yellow); }
@@ -102,50 +103,48 @@ button { font: inherit; color: inherit; }
 .lap-bar-seg.flag-white { background: var(--flag-white); }
 .lap-bar-seg.flag-checkered { background: var(--checkered) 0 0 / 6px 6px; }
 .lap-bar-seg.flag-none { background: rgba(255, 255, 255, 0.45); }
-.lap-bar-notch { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--bar-bg, var(--surface)); }
+.lap-bar-notch { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--bar-bg, var(--surface-1)); }
 
 /* TV network above the Live / Upcoming / Replay / Final badge. */
 .race-badges { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.tv-network { font: 900 15px/1 var(--font-heading); text-transform: uppercase; letter-spacing: 0.04em; color: var(--bar-fg, var(--text)); }
-.tv-logo { display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 3px 6px; background: #fff; border-radius: 5px; }
+.tv-network { font-size: 13px; font-weight: 650; color: var(--bar-fg, var(--text-primary)); }
+.tv-logo { display: inline-flex; align-items: center; justify-content: center; height: 26px; padding: 3px 6px; background: #fff; border-radius: 6px; }
 .tv-logo img { display: block; height: 100%; width: auto; max-width: 72px; object-fit: contain; }
+/* Source badge: a tag in the bar's colors. */
 .chip {
-  padding: 4px 8px; border-radius: 999px; border: 1px dashed currentColor;
-  font: 600 14px/1 var(--font-sans); color: var(--bar-muted, var(--text-muted));
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 7px; border-radius: 3px;
+  border: 1px solid currentColor; font-size: 12px; font-weight: 600; color: var(--bar-muted, var(--text-secondary));
 }
-.live-chip, .upcoming-chip, .final-chip, .qual-chip { border-style: solid; }
-.final-chip { color: var(--bar-fg, var(--text)); }
+.final-chip { color: var(--bar-fg, var(--text-primary)); }
+.upcoming-chip { border-style: dashed; }
 .qual-chip.qual-live { color: #fff; background: var(--live); border-color: var(--live); }
-.live-chip { display: inline-flex; align-items: center; gap: 6px; }
-.live-chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6); animation: live-pulse 1.6s ease-in-out infinite; }
+.live-chip { color: var(--bar-fg, var(--text-primary)); }
+.live-chip i { width: 7px; height: 7px; border-radius: 50%; background: var(--live); animation: live-pulse 1.6s ease-in-out infinite; }
 /* The server hasn't reached NASCAR for a while. */
-.live-chip.is-stale { color: var(--flag-yellow); border-color: var(--flag-yellow); }
+.live-chip.is-stale { color: var(--flag-yellow); }
 .live-chip.is-stale i { background: var(--flag-yellow); animation: none; }
 @keyframes live-pulse { 50% { opacity: 0.35; } }
 
-.tabs { display: flex; gap: 16px; margin-top: 8px; overflow-x: auto; }
-/* The baseline-to-underline gap matches the series switcher. */
-.tabs button { padding: 6px 0 6.5px; line-height: 1; font-weight: 600; }
+.tabs { display: flex; gap: 0 22px; margin-top: 10px; overflow-x: auto; }
+.tabs button { padding: 8px 0 10px; font-size: 15px; }
 
-/* Live / Sample toggle, in the bar's colors. */
+/* Live / Sample: a two-option control in the bar's colors. */
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-.seg button { background: none; border: 0; padding: 5px 10px; font: 600 14px/1 var(--font-sans); color: var(--text-muted); cursor: pointer; }
-.seg button.active { background: var(--surface-alt); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.seg button { background: none; border: 0; padding: 0 10px; height: 28px; font-size: 13px; color: var(--text-secondary); cursor: pointer; }
+.seg button.active { background: var(--surface-2); color: var(--text-primary); font-weight: 600; }
 .seg.seg-bar { border-color: var(--bar-muted, var(--border)); }
-.seg.seg-bar button { padding: 4px 10px; color: var(--bar-muted, var(--text-muted)); }
-.seg.seg-bar button.active { background: rgba(0, 0, 0, 0.25); color: var(--bar-fg, var(--text)); box-shadow: inset 0 -2px 0 var(--bar-highlight, var(--accent)); }
+.seg.seg-bar button { color: var(--bar-muted, var(--text-secondary)); }
+.seg.seg-bar button.active { background: rgba(255, 255, 255, 0.16); color: var(--bar-fg, var(--text-primary)); }
 
 /* ---- 4. Page layout ------------------------------------------------------------------ */
-.pace-view { display: grid; gap: 16px; max-width: 640px; align-items: start; }
-.overview-view { display: grid; gap: 16px; max-width: 980px; align-items: start; }
+/* Sections stack with 40px between them; side by side, 40px apart. */
+.pace-view, .overview-view, .tab-grid { display: grid; gap: 0 40px; max-width: 980px; align-items: start; }
 .overview-view.is-overview { margin-inline: auto; }
-.overview-main, .overview-side, .offweek-side { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.overview-main, .overview-side, .offweek-side { display: grid; gap: 0; align-content: start; min-width: 0; }
 .offweek-side:empty { display: none; }
-.tab-grid { display: grid; gap: 16px; max-width: 980px; align-items: start; }
 .tab-grid.is-wide { max-width: 1360px; }
 
-/* Pace rankings beside Fastest driver. */
-@media (min-width: 1100px) { .pace-view { max-width: 1080px; grid-template-columns: minmax(0, 640px) minmax(0, 420px); } }
+@media (min-width: 1100px) { .pace-view { max-width: 1080px; grid-template-columns: minmax(0, 640px) minmax(0, 380px); } }
 @media (min-width: 900px) {
   .tab-grid { grid-template-columns: 1fr 1fr; }
   .tab-grid .span-2 { grid-column: 1 / -1; }
@@ -161,74 +160,73 @@ button { font: inherit; color: inherit; }
   .overview-view.is-offweek > .offweek-side { grid-column: 3; grid-row: 1; }
 }
 
-/* ---- 5. Panels and tables ------------------------------------------------------------ */
-.panel { container-type: inline-size; min-width: 0; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
-.panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-.panel-head h2 { margin: 0; font: 900 22px/1 var(--font-heading); text-transform: uppercase; }
-/* Small text on the right of a card header ("2 cautions · 14 laps", hints). */
-.panel-meta { margin-left: auto; font-size: 12px; color: var(--text-muted); }
-.card-sub { margin: -4px 0 12px; color: var(--text-muted); line-height: 1.4; }
-.card-sub strong { color: var(--text); font-weight: 600; }
-.dash-notes { margin: 12px 0 0; padding: 0; list-style: none; color: var(--text-muted); }
+/* ---- 5. Sections and tables ---------------------------------------------------------- */
+/* Hairline Section: a rule, a title, content. No box. (Named .panel in the components.) */
+.panel { container-type: inline-size; min-width: 0; margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--border); }
+.panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 14px; }
+.panel-head h2 { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.15; letter-spacing: -0.015em; }
+/* The note on the right of a section title. */
+.panel-meta { margin-left: auto; font-size: 13px; color: var(--text-muted); }
+.card-sub { margin: -6px 0 14px; color: var(--text-secondary); font-size: 13px; }
+.card-sub strong { color: var(--text-primary); font-weight: 600; }
+.dash-notes { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--text-muted); }
 .dash-notes:empty { display: none; }
 
-.dash-table { width: 100%; border-collapse: collapse; }
-.dash-table th { padding: 8px; text-align: right; font: 600 14px/1 var(--font-sans); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
-.dash-table td { height: 40px; padding: 0 8px; text-align: right; }
+/* Hairline DataTable: one header rule, light row rules, right-aligned tabular numbers. */
+.dash-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.dash-table th { padding: 6px 10px; text-align: right; font-size: 12px; font-weight: 500; color: var(--text-muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.dash-table td { height: 44px; padding: 4px 10px; text-align: right; border-bottom: 1px solid var(--grid); }
+.dash-table tbody tr:last-child td { border-bottom: none; }
+.dash-table th:first-child, .dash-table td:first-child { padding-left: 0; }
 .dash-table .left { text-align: left; }
 /* Columns fit their content; the driver column takes what's left. */
-.dash-table th.shrink { width: 1%; white-space: nowrap; }
-/* A narrow card lets headers like "Pace score" wrap (keyed to the card, as useUniformNameWrap is). */
+.dash-table th.shrink { width: 1%; }
 @container (max-width: 480px) { .dash-table th.shrink { white-space: normal; } }
-.dash-table tbody tr:nth-child(odd) { background: var(--surface-alt); }
 .dash-table tbody tr.is-highlight td { background-image: linear-gradient(var(--row-highlight), var(--row-highlight)); }
-.dash-table tr.is-leader td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
 .dash-table tr.is-excluded td { opacity: 0.55; }
 .dash-table tr.clickable { cursor: pointer; }
-.dash-table tr.clickable:hover td { background-image: linear-gradient(rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04)); }
-.dash-table .num { font: 600 17px/1 var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.dash-table .car { font: 900 20px/1 var(--font-display); }
-.dash-table td.change-up { color: var(--perf-good); }
-.dash-table td.change-down { color: var(--perf-bad); }
+.dash-table tr.clickable:hover td, .dash-table tr.is-picked td { background-color: var(--surface-2); }
+.dash-table .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dash-table td.change-up { color: var(--good); }
+.dash-table td.change-down { color: var(--danger); }
 .dash-table td.change-same { color: var(--text-muted); }
 
-/* Team number art is 78x70; 34px tall keeps rows at 40px. Dark artwork (navy, maroon) gets a
-   thin light halo to stay legible on dark rows. */
+/* Team number art is 78x70, with a thin halo (dark on paper, light at night) so artwork in
+   the page's own color still reads. */
 .car-badge {
-  display: block; height: 34px; width: auto; aspect-ratio: 78 / 70; margin-left: auto;
-  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.5));
+  display: block; height: 30px; width: auto; aspect-ratio: 78 / 70; margin-left: auto;
+  filter: drop-shadow(0 0 0.75px var(--badge-halo));
 }
+.dash-table .car { font-size: 17px; font-weight: 700; }
 .dash-table .make { width: 26px; padding-right: 0; }
 .make-logo { display: block; width: 24px; height: 16px; margin: 0 auto; object-fit: contain; }
 
-/* "Chase BRISCOE" on one line. useUniformNameWrap switches a whole table to two-line names
-   (.names-wrapped) when the longest doesn't fit, so rows never mix. */
+/* "Chase Briscoe": the record's name leads the row at 600. useUniformNameWrap switches a
+   whole table to two-line names (.names-wrapped) when the longest doesn't fit. */
 .dash-first, .dash-last { display: inline-block; white-space: nowrap; }
-.dash-first { margin-right: 6px; font-size: 15px; line-height: 1.1; color: var(--text-muted); }
-.dash-last { font: 700 18px/1 var(--font-display); text-transform: uppercase; }
-.dash-marker { font: 400 14px/1 var(--font-sans); color: var(--text-muted); text-transform: none; }
+.dash-first { margin-right: 5px; color: var(--text-secondary); }
+.dash-last { font-weight: 600; }
+.dash-marker { font-size: 13px; font-weight: 400; color: var(--text-muted); }
 .dash-table td.left { white-space: nowrap; }
 .dash-table.names-wrapped td.left { white-space: normal; }
 .dash-table.names-wrapped .dash-first,
 .dash-table.names-wrapped .dash-last { display: block; }
+.dash-table.names-wrapped .dash-first { font-size: 13px; }
 
 /* ---- 6. Shared pieces ---------------------------------------------------------------- */
-/* A list that scrolls inside its card with the table header pinned. */
+/* A list that scrolls inside its section with the header pinned. */
 .scroll-y { max-height: 440px; overflow-y: auto; }
 .scroll-y.is-short { max-height: 260px; }
 .scroll-y.is-tall { max-height: 520px; }
-.scroll-y thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.scroll-y thead th { position: sticky; top: 0; z-index: 1; background: var(--bg); }
 .table-scroll { overflow-x: auto; }
 
-/* Small outlined labels: "Pit" / "DVP" after a name, "Stat" in race control. */
-.tag {
-  display: inline-block; padding: 1px 5px; border: 1px solid var(--border); border-radius: 4px; vertical-align: 2px;
-  font: 700 10px/1.3 var(--font-sans); letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted);
-}
+/* Hairline Tag: a short state label. */
+.tag { display: inline-block; padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border); font-size: 11px; font-weight: 600; line-height: 1.4; color: var(--text-secondary); vertical-align: 1px; }
 .dash-table .tag { margin-left: 6px; }
-.tag.is-alert { border-color: var(--flag-red); color: var(--flag-red); }
+.tag.is-alert { border-color: currentColor; color: var(--danger); }
 
-.flag-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: middle; }
+.flag-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: middle; box-shadow: 0 0 0 1px var(--border); }
 .flag-dot.flag-green { background: var(--flag-green); }
 .flag-dot.flag-yellow { background: var(--flag-yellow); }
 .flag-dot.flag-red { background: var(--flag-red); }
@@ -236,145 +234,141 @@ button { font: inherit; color: inherit; }
 .flag-dot.flag-checkered { background: var(--checkered) 0 0 / 4px 4px; }
 .flag-dot.flag-stage { background: var(--stage-checkered) 0 0 / 4px 4px; }
 
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--text-muted); }
-.legend span { display: inline-flex; align-items: center; gap: 6px; }
-.legend i, .legend-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
-.legend-swatch { margin-right: 8px; vertical-align: -1px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--text-muted); }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.legend i, .legend-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.legend-swatch { margin-right: 6px; vertical-align: -1px; }
 
-/* Stat tiles (Chase summary). */
-.stat-tile { padding: 14px 16px; }
-.stat-label { font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
-.stat-value { margin-top: 4px; font: 900 26px/1.15 var(--font-heading); text-transform: uppercase; }
-.stat-detail { margin-top: 2px; font-size: 13px; color: var(--text-muted); }
+/* Hairline Figures: a page's headline numbers. */
+.figures { display: flex; flex-wrap: wrap; gap: 16px 40px; margin: 0; }
+.figures dt { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+.figures dd { margin: 0; font-size: 13px; color: var(--text-secondary); }
+.figures dd.figure { font-size: 30px; font-weight: 650; line-height: 1.15; letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
 /* Nothing live for this series. */
-.no-live { max-width: 560px; }
-.no-live h2 { margin: 0 0 8px; font: 900 22px/1 var(--font-heading); text-transform: uppercase; }
-.no-live p { margin: 6px 0; color: var(--text-muted); }
-.no-live p strong { color: var(--text); }
+.no-live { max-width: 560px; margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--border); }
+.no-live h2 { margin: 0 0 8px; font-size: 19px; font-weight: 700; }
+.no-live p { margin: 6px 0; color: var(--text-secondary); }
+.no-live p strong { color: var(--text-primary); }
 
 /* ---- 7. Overview --------------------------------------------------------------------- */
-/* Live Chase standings: seven columns in the 420px card. */
-.dash-table.chase-table { width: calc(100% - 14px); }
+/* Live Chase standings: seven columns in the 420px column. */
 .dash-table.chase-table th, .dash-table.chase-table td { padding-left: 5px; padding-right: 5px; }
-.chase-table .dash-last { font-size: 16px; }
+.dash-table.chase-table th:first-child, .dash-table.chase-table td:first-child { padding-left: 0; }
 .chase-card.is-pending { min-height: 240px; }
-.penalties .dash-table td.left { font-size: 14px; }
 
 /* Weekend schedule and broadcasters. */
-.schedule-broadcast { display: flex; align-items: center; gap: 12px; margin: -4px 0 12px; font-size: 14px; }
+.schedule-broadcast { display: flex; align-items: center; gap: 12px; margin: -6px 0 14px; font-size: 13px; color: var(--text-secondary); }
 .schedule-table td { height: 36px; }
 .schedule-table .schedule-day { width: 1%; padding-right: 16px; color: var(--text-muted); }
-.schedule-table tr.is-race td:not(.schedule-day) { font-weight: 700; }
+.schedule-table tr.is-race td:not(.schedule-day) { font-weight: 650; }
 .schedule-table tr.is-done td:not(.schedule-day) { color: var(--text-muted); }
-.qual-pole { font-weight: 600; color: var(--text); }
+.qual-pole { font-weight: 600; color: var(--text-primary); }
 
 /* ---- 8. Race control ----------------------------------------------------------------- */
 .rc-list { list-style: none; margin: 0; padding: 0 4px 0 0; max-height: 360px; overflow-y: auto; }
-.rc-entry { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; line-height: 1.4; }
+.rc-entry { display: grid; grid-template-columns: 64px 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--grid); font-size: 14px; line-height: 1.45; }
 .rc-entry:first-child { border-top: 0; padding-top: 0; }
-.rc-lap { font: 600 13px/1.6 var(--font-mono); color: var(--text-muted); white-space: nowrap; }
-.rc-text strong { font-weight: 700; color: var(--text); }
-.rc-info .rc-text { color: var(--text-muted); }
-.rc-text .tag { margin-right: 6px; vertical-align: 1px; }
-/* Flag changes and stage results: bold, with a colored rule on the left. */
-.rc-flag, .rc-stage { padding-left: 10px; box-shadow: inset 3px 0 0 var(--rc-rule, var(--border)); }
-.rc-flag .rc-text { font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
-.rc-stage .rc-text { font-weight: 700; }
-.rc-flag-green, .rc-stage { --rc-rule: var(--flag-green); }
-.rc-flag-yellow { --rc-rule: var(--flag-yellow); }
-.rc-flag-red { --rc-rule: var(--flag-red); }
-.rc-flag-white, .rc-flag-checkered { --rc-rule: var(--flag-white); }
-.rc-stage-list { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-size: 12px; font-weight: 400; }
+.rc-lap { font-size: 12px; font-weight: 500; line-height: 1.7; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rc-text { color: var(--text-secondary); }
+.rc-text strong { font-weight: 650; color: var(--text-primary); }
+.rc-text .tag { margin-right: 6px; }
+/* Flag changes and stage results: ink and bold, led by the flag's dot. */
+.rc-flag .rc-text, .rc-stage .rc-text { font-weight: 650; color: var(--text-primary); }
+.rc-stage-list { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-size: 12px; font-weight: 400; color: var(--text-secondary); }
 .rc-stage-pts { white-space: nowrap; }
 
 /* ---- 9. Pit road and Strategy -------------------------------------------------------- */
 /* Fuel gauge: one neutral hue for the amount; the status word carries the judgment. */
-.gauge { display: inline-block; width: 72px; height: 8px; margin-right: 8px; border-radius: 4px; background: var(--surface-alt); overflow: hidden; vertical-align: middle; }
-.gauge span { display: block; height: 100%; border-radius: 4px; background: var(--text-muted); }
-.gauge-label { font: 600 15px/1 var(--font-mono); }
-.status-good { color: var(--perf-good); }
-.status-mid { color: var(--perf-mid); }
-.status-bad { color: var(--perf-bad); }
+.gauge { display: inline-block; width: 72px; height: 6px; margin-right: 8px; border-radius: 3px; background: var(--surface-2); overflow: hidden; vertical-align: middle; }
+.gauge span { display: block; height: 100%; border-radius: 3px; background: var(--text-muted); }
+.gauge-label { font-variant-numeric: tabular-nums; }
+.status-good { color: var(--good); }
+.status-mid { color: var(--text-secondary); }
+.status-bad { color: var(--danger); }
 
 /* Stint bars: names keep one line and the bars take the rest (down to 160px), with notches at
    stage ends and one red line down the column at the current lap (placed by StrategyTab). */
 .strategy-table th.fit { width: 1%; }
 .strategy-table .stint-cell { min-width: 160px; padding-right: 12px; }
-.stint-bar { position: relative; height: 14px; border-radius: 4px; background: rgba(255, 255, 255, 0.05); }
-.stint { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
-.stint-notch { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text-muted); opacity: 0.6; }
+.stint-bar { position: relative; height: 12px; border-radius: 3px; background: var(--surface-2); }
+.stint { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.stint-notch { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--text-muted); }
 .strategy-scroll { position: relative; }
-.stint-now { position: absolute; z-index: 2; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--live); pointer-events: none; }
+.stint-now { position: absolute; z-index: 2; width: 2px; margin-left: -1px; background: var(--live); pointer-events: none; }
 
 /* ---- 10. Charts (Compare, Chase) ----------------------------------------------------- */
 .chart { position: relative; min-width: 0; overflow: hidden; }
 .chart svg { display: block; touch-action: pan-y; }
-.chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-tick { fill: var(--text-muted); font: 400 12px var(--font-mono); }
-.chart-label { fill: var(--text); font: 700 13px var(--font-display); text-transform: uppercase; }
-.chart-caution { fill: rgba(255, 209, 0, 0.08); }
+.chart-grid { stroke: var(--grid); stroke-width: 1; }
+.chart-tick { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart-label { fill: var(--text-primary); font-size: 12px; font-weight: 600; }
+.chart-caution { fill: rgba(255, 209, 0, 0.1); }
 .chart-crosshair { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 3; }
-.chart-tip { position: absolute; top: 8px; min-width: 170px; padding: 8px 10px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: 6px; font-size: 14px; pointer-events: none; }
+.chart-tip { position: absolute; top: 8px; min-width: 170px; padding: 10px 12px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-float); font-size: 13px; pointer-events: none; }
 .chart-tip div { display: flex; align-items: center; gap: 6px; }
-.chart-tip i { width: 8px; height: 8px; border-radius: 50%; }
-.chart-tip .num { margin-left: auto; font: 600 14px var(--font-mono); }
-.chart-axis-label { margin-top: 2px; font-size: 13px; color: var(--text-muted); }
+.chart-tip i { width: 10px; height: 10px; border-radius: 2px; }
+.chart-tip .num { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+.chart-axis-label { margin-top: 4px; font-size: 12px; color: var(--text-muted); }
 
-/* Driver chips: Compare's picker and the Chase chart legend. */
-.compare-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
-.compare-picker select { padding: 5px 8px; background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); border-radius: 6px; font: 400 14px/1 var(--font-sans); }
-.compare-table { margin-top: 12px; }
-.chip-driver { display: inline-flex; align-items: center; gap: 6px; padding: 3px 4px 3px 8px; border: 1px solid var(--border); border-radius: 999px; font: 700 15px/1 var(--font-display); text-transform: uppercase; }
-.chip-driver i { width: 10px; height: 10px; border-radius: 50%; }
-.chip-driver .car-badge { height: 20px; }
-.chip-driver button { padding: 0 4px; background: none; border: 0; color: var(--text-muted); font-size: 16px; cursor: pointer; }
-.chart-legend { display: flex; flex-wrap: wrap; gap: 6px 10px; }
-.legend-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; background: none; border: 1px solid var(--border); border-radius: 999px; color: var(--text); font-size: 13px; cursor: pointer; }
-span.legend-chip { cursor: default; color: var(--text-muted); }
-.legend-chip i { width: 10px; height: 3px; border-radius: 2px; }
+/* Hairline ToggleChips above a chart, doubling as its legend. */
+.compare-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 14px; }
+.compare-picker select { height: 30px; padding: 0 9px; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+.compare-table { margin-top: 14px; }
+.chip-driver, .legend-chip {
+  display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 8px; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--surface-1); color: var(--text-primary); font-size: 13px;
+}
+.chip-driver i, .legend-chip i { width: 10px; height: 10px; border-radius: 2px; }
+.chip-driver .car-badge { height: 18px; filter: none; }
+.chip-driver button { padding: 0 2px; background: none; border: 0; color: var(--text-muted); font-size: 15px; cursor: pointer; }
+.chip-driver button:hover { color: var(--text-primary); }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+button.legend-chip { cursor: pointer; }
+button.legend-chip:hover { border-color: var(--text-muted); }
+span.legend-chip { background: transparent; color: var(--text-muted); }
 .legend-chip .legend-gray { background: var(--text-muted); opacity: 0.5; }
 
 /* ---- 11. Chase tab ------------------------------------------------------------------- */
-.chase-summary { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.pick-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: middle; }
+.chase-summary { grid-column: 1 / -1; margin-top: 32px; }
+.pick-dot { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; }
 /* Column groups (Chase / Season), each opened by a rule. */
-.chase-season-table .group-row th { padding-bottom: 0; }
-.chase-season-table th.group { text-align: center; font-size: 11px; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
-.chase-season-table .group-start { border-left: 1px solid var(--border); }
-/* Race by race: one hue (the series accent), stronger for better finishes. */
-.chase-grid .race-col { text-align: center; line-height: 1.1; }
-.chase-grid .race-date { font: 400 11px var(--font-sans); text-transform: none; color: var(--text-muted); }
-.chase-grid th.state-live .race-date { font-weight: 700; color: var(--accent); }
+.chase-season-table .group-row th { padding-bottom: 2px; border-bottom: 0; }
+.chase-season-table th.group { text-align: center; border-bottom: 1px solid var(--grid); }
+.chase-season-table .group-start { border-left: 1px solid var(--grid); }
+/* Race by race: one hue (the series color), stronger for better finishes. */
+.chase-grid .race-col { text-align: center; line-height: 1.2; }
+.chase-grid .race-date { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.chase-grid th.state-live .race-date { font-weight: 650; color: var(--text-primary); }
 .chase-grid th.state-upcoming, .chase-grid th.state-next { opacity: 0.6; }
 .chase-grid .race-cell { text-align: center; }
-.res { display: inline-block; min-width: 30px; padding: 2px 6px; border-radius: 4px; font: 600 14px var(--font-mono); text-align: center; }
-.res-win { background: var(--accent); color: var(--on-accent); }
-.res-top5 { background: color-mix(in srgb, var(--accent) 45%, transparent); }
-.res-top10 { background: color-mix(in srgb, var(--accent) 20%, transparent); }
-.res-live { outline: 1px dashed var(--accent); outline-offset: -1px; }
-.legend-keys { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.res { display: inline-block; min-width: 30px; padding: 2px 6px; border-radius: 3px; font-size: 13px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+.res-win { background: var(--series); color: var(--on-series); }
+.res-top5 { background: color-mix(in srgb, var(--series) 40%, transparent); }
+.res-top10 { background: color-mix(in srgb, var(--series) 18%, transparent); }
+.res-live { outline: 1px dashed var(--text-muted); outline-offset: -1px; }
+.legend-keys { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
 .legend-keys .res { min-width: 22px; padding: 1px 4px; font-size: 11px; }
 /* Points chart: the field in thin gray; picked drivers in color. */
 .chase-line-rest { stroke: var(--text-muted); stroke-opacity: 0.35; stroke-width: 1.5; cursor: pointer; }
 .chase-line-rest:hover { stroke-opacity: 0.8; }
 
-/* ---- 12. Loading, motion and small screens ------------------------------------------- */
-/* Images fade in once loaded (their boxes are sized up front, so nothing shifts). */
+/* ---- 12. Loading, motion and phones -------------------------------------------------- */
 .fade-img { opacity: 0; transition: opacity 0.25s ease-out; }
 .fade-img.is-loaded { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   .fade-img { transition: none; }
   .live-chip i { animation: none; }
 }
-@media (max-width: 600px) {
-  .chase-summary { gap: 8px; }
-  .chase-summary .stat-tile { padding: 10px; }
-  .chase-summary .stat-value { font-size: 18px; }
-  .chase-summary .stat-detail { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 640px) {
+  main { padding: 0 16px 32px; }
+  .topbar { padding: 10px 16px 0; }
+  .figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 16px; width: 100%; }
+  .figures > div { display: grid; grid-row: span 3; grid-template-rows: subgrid; }
+  .figures dt { align-self: end; }
+  .figures dd.figure { font-size: 22px; }
+  .figures dd:not(.figure) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
 @media (max-width: 480px) {
-  main { padding: 12px 8px; }
-  .panel { padding: 12px 8px; }
-  .dash-table th, .dash-table td { padding-left: 4px; padding-right: 4px; }
+  .dash-table th, .dash-table td { padding-left: 5px; padding-right: 5px; }
 }
