@@ -23,11 +23,15 @@ const failedAt = new Map<string, { at: number; error: Error }>();
 /** How long a failed fetch is remembered, so polling clients don't re-ask NASCAR every request. */
 const RETRY_AFTER_MS = 2 * 60_000;
 
-export async function cachedJson<T>(path: string, url: string, maxAgeMs = Infinity): Promise<T> {
+/**
+ * A NASCAR file, cached under DATA_DIR/nascar. A copy is used while it's younger than
+ * `maxAgeMs`, or for good once it was saved after `finalAfter` (a race's files, once settled).
+ */
+export async function cachedJson<T>(path: string, url: string, maxAgeMs = Infinity, finalAfter = Infinity): Promise<T> {
   const file = join(config.dataDir, 'nascar', path);
   try {
     const s = await stat(file);
-    if (Date.now() - s.mtimeMs < maxAgeMs) return JSON.parse(await readFile(file, 'utf8')) as T;
+    if (Date.now() - s.mtimeMs < maxAgeMs || s.mtimeMs >= finalAfter) return JSON.parse(await readFile(file, 'utf8')) as T;
   } catch {
     /* not cached yet */
   }
@@ -130,29 +134,39 @@ export interface RaceBundle {
   atLap: number;
 }
 
-/** One race's files (lap times, pits, points, results, notes). `maxAgeMs` re-fetches stale copies. */
-async function loadRaceFiles(feedSeries: number, race: FeedRace, maxAgeMs = Infinity): Promise<Omit<RaceBundle, 'atLap'>> {
+/** Re-check a race's files this often until they've settled. */
+const FINAL_TTL_MS = 10 * 60_000;
+/** Days after a race weekend ends (Monday 00:00 ET) before its files count as final: NASCAR
+    publishes provisional results during the race and settles penalties early in the week. */
+const SETTLE_DAYS = 3;
+
+/**
+ * One of a race's files. A copy saved after the race settled is kept for good; an earlier one
+ * (provisional results, lap times from mid-race) is re-checked every FINAL_TTL_MS.
+ */
+function raceFile<T>(feedSeries: number, race: FeedRace, name: string, url?: string): Promise<T> {
   const dir = `${race.race_season}/${feedSeries}/${race.race_id}`;
-  const lapTimes = await cachedJson<FeedLapTimes>(`${dir}/lap-times.json`, `${BASE}/${dir}/lap-times.json`, maxAgeMs);
-  const pits = await cachedJson<FeedPitStop[]>(`${dir}/live-pit-data.json`, `${BASE}/${dir}/live-pit-data.json`, maxAgeMs);
+  const settled = weekendEndsAt(race.race_date) + SETTLE_DAYS * 24 * 3600_000;
+  return cachedJson<T>(`${dir}/${name}`, url ?? `${BASE}/${dir}/${name}`, FINAL_TTL_MS, settled);
+}
+const livePointsUrl = (feedSeries: number, raceId: number) => `https://cf.nascar.com/live/feeds/series_${feedSeries}/${raceId}/live_points.json`;
+
+/** One race's files (lap times, pits, points, results, notes). */
+async function loadRaceFiles(feedSeries: number, race: FeedRace): Promise<Omit<RaceBundle, 'atLap'>> {
+  const lapTimes = await raceFile<FeedLapTimes>(feedSeries, race, 'lap-times.json');
+  const pits = await raceFile<FeedPitStop[]>(feedSeries, race, 'live-pit-data.json');
   const track = await trackInfo(race.track_id);
   // Points data is optional: the timing views still work without it.
-  const livePoints = await cachedJson<FeedLivePoints[]>(
-    `${dir}/live_points.json`,
-    `https://cf.nascar.com/live/feeds/series_${feedSeries}/${race.race_id}/live_points.json`,
-    maxAgeMs,
-  ).catch(() => undefined);
-  const results = await cachedJson<{ weekend_race: { results: (FeedResult & { car_number: string; car_make?: string })[] }[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`, maxAgeMs)
+  const livePoints = await raceFile<FeedLivePoints[]>(feedSeries, race, 'live_points.json', livePointsUrl(feedSeries, race.race_id)).catch(() => undefined);
+  const results = await raceFile<{ weekend_race: { results: (FeedResult & { car_number: string; car_make?: string })[] }[] }>(feedSeries, race, 'weekend-feed.json')
     .then((w) => w.weekend_race[0]?.results)
     .catch(() => undefined);
-  const lapNotes = await cachedJson<FeedLapNotes>(`${dir}/lap-notes.json`, `${BASE}/${dir}/lap-notes.json`, maxAgeMs).catch(() => undefined);
+  const lapNotes = await raceFile<FeedLapNotes>(feedSeries, race, 'lap-notes.json').catch(() => undefined);
   const chaseCars = livePoints && new Set(livePoints.filter((d) => d.is_in_chase).map((d) => d.car_number));
   const carInfo = results && Object.fromEntries(results.map((r): [string, CarInfo] => [r.car_number, { make: makeOf(r.car_make) }]));
   return { race, lapTimes: withChaseMarkers(lapTimes, chaseCars), pits, track, livePoints, results, lapNotes, carInfo };
 }
 
-/** Re-check a just-finished race's files this often (NASCAR settles them over the first hours). */
-const FINAL_TTL_MS = 10 * 60_000;
 const finals = new Map<number, { at: number; bundle: Promise<RaceBundle | undefined> }>();
 
 /**
@@ -172,8 +186,7 @@ export async function finishedRaceBundle(seriesId: string, isFinished: (race: Fe
 
   const cached = finals.get(race.race_id);
   if (cached && now - cached.at < FINAL_TTL_MS) return cached.bundle;
-  const fresh = now - easternToEpoch(race.race_date) < 8 * 3600_000;
-  const bundle = loadRaceFiles(feedSeries, race, fresh ? FINAL_TTL_MS : Infinity)
+  const bundle = loadRaceFiles(feedSeries, race)
     .then((files) => {
       // The laps actually run (the schedule's length can be wrong; overtime adds laps).
       const laps = Math.max(0, ...files.lapTimes.laps.map((c) => c.Laps.at(-1)?.Lap ?? 0));
@@ -222,14 +235,10 @@ export async function lastRaceResults(
   if (!feedSeries) throw new Error(`no NASCAR feed for ${seriesId}`);
   const race = await latestCompletedRace(feedSeries, now);
   if (!race) throw new Error(`no completed ${seriesId} race found`);
-  const dir = `${race.race_season}/${feedSeries}/${race.race_id}`;
-  const weekend = await cachedJson<{ weekend_race: FeedWeekendRace[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`);
+  const weekend = await raceFile<{ weekend_race: FeedWeekendRace[] }>(feedSeries, race, 'weekend-feed.json');
   const result = weekend.weekend_race.find((r) => r.race_id === race.race_id) ?? weekend.weekend_race[0];
   if (!result?.results?.length) throw new Error('no results published yet');
-  const livePoints = await cachedJson<FeedLivePoints[]>(
-    `${dir}/live_points.json`,
-    `https://cf.nascar.com/live/feeds/series_${feedSeries}/${race.race_id}/live_points.json`,
-  ).catch(() => undefined);
+  const livePoints = await raceFile<FeedLivePoints[]>(feedSeries, race, 'live_points.json', livePointsUrl(feedSeries, race.race_id)).catch(() => undefined);
   return { race: result, livePoints };
 }
 
@@ -277,8 +286,7 @@ export interface ChaseRaceFiles {
 
 /**
  * The series' Chase races this season, in order (`playoff_round` set in the schedule), with
- * each finished race's final points file and results. Files of a race whose weekend is over
- * are kept for good; a race still settling is re-checked every FINAL_TTL_MS.
+ * each finished race's final points file and results (see raceFile for when they're final).
  */
 export async function chaseRaces(seriesId: string, now = Date.now()): Promise<ChaseRaceFiles[]> {
   const feedSeries = FEED_SERIES[seriesId];
@@ -289,11 +297,9 @@ export async function chaseRaces(seriesId: string, now = Date.now()): Promise<Ch
   return Promise.all(
     races.map(async (race): Promise<ChaseRaceFiles> => {
       if (easternToEpoch(race.race_date) > now) return { race };
-      const dir = `${race.race_season}/${feedSeries}/${race.race_id}`;
-      const maxAge = now < weekendEndsAt(race.race_date) ? FINAL_TTL_MS : Infinity;
       const [livePoints, results] = await Promise.all([
-        cachedJson<FeedLivePoints[]>(`${dir}/live_points.json`, `https://cf.nascar.com/live/feeds/series_${feedSeries}/${race.race_id}/live_points.json`, maxAge).catch(() => undefined),
-        cachedJson<{ weekend_race: FeedWeekendRace[] }>(`${dir}/weekend-feed.json`, `${BASE}/${dir}/weekend-feed.json`, maxAge)
+        raceFile<FeedLivePoints[]>(feedSeries, race, 'live_points.json', livePointsUrl(feedSeries, race.race_id)).catch(() => undefined),
+        raceFile<{ weekend_race: FeedWeekendRace[] }>(feedSeries, race, 'weekend-feed.json')
           .then((w) => (w.weekend_race.find((x) => x.race_id === race.race_id) ?? w.weekend_race[0])?.results)
           .catch(() => undefined),
       ]);

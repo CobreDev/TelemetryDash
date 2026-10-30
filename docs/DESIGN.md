@@ -256,6 +256,10 @@ caution.
 - **Restarts:** the session is saved to `/data/live/current.json` after every poll and reloads on
   start. Missed laps are estimated, then replaced as above; pits, points and notes are re-fetched
   whole. It's deleted when the race weekend ends.
+- **Race files** (results, points, lap times, notes) are cached in `/data`. NASCAR publishes
+  provisional files during a race and settles penalties early in the week, so a copy only counts
+  as final if it was saved after Thursday 00:00 ET following the race weekend; an earlier copy is
+  re-checked every 10 minutes.
 - **NASCAR unreachable:** cached files fall back to the last copy on disk, and a failed fetch is
   remembered for 2 minutes rather than retried every request.
 - **Finished races** stay on screen (Final) until Monday 00:00 ET, built from the official files,
