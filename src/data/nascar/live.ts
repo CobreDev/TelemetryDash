@@ -19,12 +19,14 @@ export interface FeedLiveVehicle {
   last_lap_speed: number;
   /** Seconds since the session started, as of the car's latest timing line. */
   vehicle_elapsed_time: number;
-  /** 1 while running; other values (undocumented) mean the car is out. */
+  /** Undocumented: 1 running, 2 seen briefly on pit road, 3 and up out of the race. */
   status: number;
   /** False while on pit road. */
   is_on_track?: boolean;
   /** On the damaged vehicle policy clock. */
   is_on_dvp?: boolean;
+  /** NASCAR's gap to the leader: seconds, or minus the laps down (-2 = two laps down). */
+  delta?: number;
   /** "Chv", "Frd", "Tyt" */
   vehicle_manufacturer?: string;
   /** This race's stops; the last is the one in progress while the car is on pit road. */
@@ -93,8 +95,9 @@ export interface LiveCar {
   onTrack?: boolean;
   dvp?: boolean;
   make?: string;
-  /** Running position now, and where it ran when it entered pit road for its latest stop. */
+  /** NASCAR's running position and gap to the leader now, and where it ran entering pit road. */
   pos?: number;
+  delta?: number;
   pitInRank?: number;
 }
 
@@ -171,10 +174,10 @@ export function applySnapshot(prev: LiveState | null, snap: FeedLiveSnapshot, no
     // The starting spot; before the green the running order is the same thing.
     const start = v.starting_position || (laps.length ? prevCar?.start : v.running_position || prevCar?.start);
     const car: LiveCar = { fullName: v.driver.full_name, inChase: v.driver.is_in_chase, start, laps, status: v.status, onTrack: v.is_on_track, dvp: v.is_on_dvp, make: v.vehicle_manufacturer,
-      pos: v.running_position, pitInRank: v.pit_stops?.at(-1)?.pit_in_rank || undefined };
+      pos: v.running_position, delta: v.delta, pitInRank: v.pit_stops?.at(-1)?.pit_in_rank || undefined };
     if (prevCar && prevCar.pos !== car.pos && car.onTrack === false) changed = true;
     // A car leaving pit road, going out or onto the DVP clock is news even without a lap.
-    if (prevCar && (prevCar.status !== car.status || prevCar.onTrack !== car.onTrack || prevCar.dvp !== car.dvp)) changed = true;
+    if (prevCar && (prevCar.status !== car.status || prevCar.onTrack !== car.onTrack || prevCar.dvp !== car.dvp || prevCar.pos !== car.pos)) changed = true;
     state.cars[v.vehicle_number] = car;
   }
   if (changed) state.updatedAt = now;

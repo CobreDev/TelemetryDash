@@ -276,7 +276,7 @@ export async function liveBundle(seriesId: string): Promise<LiveBundle | null> {
     carInfo: Object.fromEntries(
       Object.entries(s.cars).map(([num, c]): [string, CarInfo] => [
         num,
-        { make: makeOf(c.make), out: c.status !== undefined && c.status !== 1, dvp: !!c.dvp, pit: c.onTrack === false, position: c.pos, pitInRank: c.pitInRank },
+        { make: makeOf(c.make), out: (c.status ?? 1) >= 3, dvp: !!c.dvp, pit: c.onTrack === false, position: c.pos, gap: c.delta, pitInRank: c.pitInRank },
       ]),
     ),
     results: undefined,

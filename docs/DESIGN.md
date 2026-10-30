@@ -99,7 +99,8 @@ shadow is on tooltips.
   to two lines, never a mix. Narrow cards (Chase, crew averages) show last names only.
 - **Car numbers:** each team's number art (NASCAR's badge images, proxied and cached weekly), 30 px
   tall with a thin halo (dark in light mode, light in dark mode) so artwork in the page's color reads. The manufacturer logo (public-domain files in
-  `public/makes`) sits in its own column on the running order.
+  `public/makes`) sits in its own column on the running order; Ram, which has no public-domain mark
+  that fits, shows its name.
 - **Rows:** a single header rule and light row rules, no zebra stripes; Chase drivers get the
   tint; hover and picked rows use `surface-2`; out or unranked cars sit at the bottom at 55% opacity.
 - **Markers:** (R) rookie and (i) points-ineligible print after the last name and are explained in
@@ -211,10 +212,13 @@ applied yet.)
 
 ### Definitions
 
-- **Running order and gaps:** cars are ordered by laps completed, then line-crossing time. Live,
-  "now" is the latest crossing seen; a finished race stops at the leader's last crossing. Gaps are taken at the
-  last line both cars crossed. A car that misses the line for four of its normal laps, or that the
-  feed marks as not running, is **out**. Before the green, the order is the starting lineup.
+- **Running order and gaps:** live, they're NASCAR's as given: the feed's running position, its
+  gap to the leader (`delta`: seconds, or minus the laps down) and its out status (status 3 and
+  up; 2 is seen briefly on pit road). The interval to the car ahead is the difference between two
+  of NASCAR's gaps. A finished race, with no feed, works them out from the official lap times:
+  laps completed, then line-crossing time, gaps at the last line both cars crossed. Summed lap
+  times drift from the race clock by seconds per car, which is why live views don't use them for
+  order. Before the green, the order is the starting lineup.
 - **Pace score:** each car's mean clean green-flag lap with tire falloff removed (its expected lap
   on fresh tires). Clean means green, not a restart or pit lap, and within 7% of the car's median.
   Cars need max(10, half the typical clean-lap count) clean laps to be ranked.
@@ -269,7 +273,8 @@ caution.
 - **Nothing live:** timing tabs say so and name what is live and the next race; the API answers
   `409 { error: "no-live-session", live, next }`.
 - **Feed quirks:** `race_date` is Eastern wall-clock time with no offset; `actual_laps` is pre-filled
-  for future races; per-car status codes are undocumented (1 is running; the server logs others);
+  for future races; per-car status codes are undocumented (1 running, 2 briefly on pit road, 3 and
+  6 out; the server logs new ones);
   `is_on_track: false` means on pit road. No GPS or timing-loop data is public.
 
 ## Branding and legal

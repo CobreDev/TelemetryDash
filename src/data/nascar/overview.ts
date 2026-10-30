@@ -49,6 +49,11 @@ export function buildOverview(
   latest = false,
   /** Cars NASCAR reports as out (live feed status), whatever their line crossings say. */
   outCars: ReadonlySet<string> = new Set(),
+  /**
+   * Live: NASCAR's running position and gap to the leader (seconds, or minus the laps down),
+   * used as given. Only finished races, which have no feed, work the order out from the laps.
+   */
+  feed: ReadonlyMap<string, { position: number; gap?: number }> = new Map(),
 ): OverviewEntry[] {
   // Cumulative race time at the end of each lap, per car (index = lap).
   const cars = lapTimes.laps.map((car) => {
@@ -108,9 +113,11 @@ export function buildOverview(
   // Order as timing screens do at the line: more laps completed first, then who crossed the
   // line earlier. (Progress into the current lap only decides laps down; ordering by it could
   // put a car ahead of one that crossed the line before it, giving negative gaps.)
+  const feedPos = (n: string) => feed.get(n)?.position || Infinity;
   rows.sort(
     (a, b) =>
       Number(a.out) - Number(b.out) ||
+      (feed.size ? feedPos(a.carNumber) - feedPos(b.carNumber) : 0) ||
       b.lapsCompleted - a.lapsCompleted ||
       a.elapsed[a.lapsCompleted]! - b.elapsed[b.lapsCompleted]! ||
       a.start - b.start,
@@ -129,10 +136,27 @@ export function buildOverview(
   };
   const first = rows[0];
 
+  // NASCAR's gaps, when the feed has one for every running car.
+  const gapOf = (n: string) => feed.get(n)?.gap;
+  const feedGaps = feed.size > 0 && rows.every((r) => r.out || gapOf(r.carNumber) !== undefined);
+  if (feedGaps) for (const r of rows) if (!r.out) r.lapsDown = Math.max(0, Math.round(-gapOf(r.carNumber)!));
+
   return rows.map((row, i) => {
     const { elapsed: _e, progress: _p, start: _s, ...r } = row;
     const ahead = rows[i - 1];
     const lapsBehindAhead = ahead ? r.lapsDown - ahead.lapsDown : 0;
+    if (feedGaps) {
+      const leadLap = !r.out && r.lapsDown === 0;
+      const gap = Math.max(0, gapOf(r.carNumber)!);
+      return {
+        ...r,
+        position: i + 1,
+        gapToLeader: leadLap ? (i === 0 ? 0 : gap) : null,
+        // The one derived figure: the difference between two of NASCAR's gaps.
+        interval: ahead && leadLap && lapsBehindAhead === 0 ? Math.max(0, gap - Math.max(0, gapOf(ahead.carNumber) ?? 0)) : null,
+        lapsBehindAhead,
+      };
+    }
     return {
       ...r,
       position: i + 1,

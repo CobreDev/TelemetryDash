@@ -29,7 +29,7 @@ export interface OverviewRow {
   isLeader: boolean;
   out: boolean;
   /** Manufacturer logo and name, when known. */
-  make?: { name: string; logo: string };
+  make?: { name: string; logo?: string };
   /** Live: on the DVP clock / on pit road right now. */
   dvp?: boolean;
   pit?: boolean;

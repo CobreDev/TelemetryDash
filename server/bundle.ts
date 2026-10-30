@@ -67,9 +67,13 @@ export const withBundle =
     }
   };
 
-/** Running order at the bundle's lap. Live, NASCAR's word on who's out counts too. */
-export const orderOf = (b: Bundle) =>
-  buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b), new Set(Object.entries(b.carInfo ?? {}).filter(([, c]) => c.out).map(([n]) => n)));
+/** Running order at the bundle's lap. Live, it's NASCAR's: its order, gaps and who's out. */
+export const orderOf = (b: Bundle) => {
+  const info = Object.entries(b.carInfo ?? {});
+  const out = new Set(info.filter(([, c]) => c.out).map(([n]) => n));
+  const feed = new Map(isLive(b) ? info.filter(([, c]) => c.position).map(([n, c]) => [n, { position: c.position!, gap: c.gap }]) : []);
+  return buildOverview(b.lapTimes, b.pits, b.atLap, isLive(b), out, feed);
+};
 
 /** Running position by car number, for cars still running. */
 export const runningOrder = (b: Bundle) => new Map(orderOf(b).filter((r) => !r.out).map((r) => [r.carNumber, r.position]));

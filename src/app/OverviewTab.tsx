@@ -83,7 +83,8 @@ export function OverviewTab({ seriesId, showNextRace, final }: { seriesId: strin
                       >
                         <td className="num">{r.position}</td>
                         <td className="make">
-                          {r.make && <img className="make-logo" src={r.make.logo} alt={r.make.name} title={r.make.name} />}
+                          {r.make?.logo && <img className="make-logo" src={r.make.logo} alt={r.make.name} title={r.make.name} />}
+                          {r.make && !r.make.logo && <span className="make-name">{r.make.name}</span>}
                         </td>
                         <td className="car">
                           <CarNumber number={r.carNumber} badge={r.carBadge} />

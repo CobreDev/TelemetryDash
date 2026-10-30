@@ -62,6 +62,19 @@ describe('live collector', () => {
     expect(buildOverview(lt, [], 1, true).map((r) => [r.lapsCompleted, r.gapToLeader])).toEqual([[1, 0], [1, expect.closeTo(0.8)]]);
   });
 
+  it("live order and gaps are NASCAR's, even when summed lap times disagree", () => {
+    // Car 98's recorded laps sum to less time than 77's, but NASCAR has 77 leading.
+    const s = applySnapshot(null, snap(2, 1, [['77', 2, 61, 31], ['98', 2, 60, 30], ['4', 1, 40, 40]]), 1);
+    const feed = new Map([
+      ['77', { position: 1, gap: 0 }],
+      ['98', { position: 2, gap: 0.88 }],
+      ['4', { position: 3, gap: -1 }],
+    ]);
+    const order = buildOverview(toLapTimes(s), [], 2, true, new Set(), feed);
+    expect(order.map((r) => [r.carNumber, r.gapToLeader, r.lapsDown])).toEqual([['77', 0, 0], ['98', 0.88, 0], ['4', null, 1]]);
+    expect(order[1]!.interval).toBeCloseTo(0.88);
+  });
+
   it('keeps a red flag on its lap when the caution resumes', () => {
     let s = applySnapshot(null, snap(10, 2, [['1', 10, 400, 60]]), 1);
     s = applySnapshot(s, snap(10, 3, [['1', 10, 400, 60]]), 2); // red during lap 11
