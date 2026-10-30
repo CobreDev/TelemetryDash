@@ -10,7 +10,6 @@ import type { FuelView, LapsView, PitRoadView, StrategyView, TopSpeedView } from
 import type { SeriesProfile } from '../series/types';
 import type { TvNetwork } from '../data/nascar/networks';
 
-export type Source = 'live' | 'sample';
 
 /** The API's "nothing live for this series" answer (HTTP 409). */
 export interface NoLiveSession {
@@ -58,18 +57,16 @@ export class ApiError extends Error {
   }
 }
 
-async function get<T>(path: string, source?: Source): Promise<T> {
-  const sep = path.includes('?') ? '&' : '?';
-  const res = await fetch(`/api/v1${path}${source === 'sample' ? `${sep}source=sample` : ''}`);
+async function get<T>(path: string): Promise<T> {
+  const res = await fetch(`/api/v1${path}`);
   if (!res.ok) throw new ApiError(res.status, await res.json().catch(() => null));
   return res.json() as Promise<T>;
 }
 
-type SeriesFetch<T> = (seriesId: string, source: Source) => Promise<T>;
 const seriesGet =
-  <T,>(path: string): SeriesFetch<T> =>
-  (seriesId, source) =>
-    get<T>(`/series/${seriesId}${path}`, source);
+  <T,>(path: string) =>
+  (seriesId: string) =>
+    get<T>(`/series/${seriesId}${path}`);
 
 export const api = {
   series: () => get<SeriesProfile[]>('/series'),

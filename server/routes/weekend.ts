@@ -7,7 +7,7 @@ import { buildResultsView, buildScheduleView } from '../../src/cards/weekend.mod
 import { tvNetwork } from '../../src/data/nascar/networks';
 import { trackLocation } from '../../src/data/nascar/tracks';
 import { homeSeries } from '../../src/data/nascar/weekend';
-import { getProfile, raceIsOver, seriesOf, sourceOf } from '../bundle';
+import { getProfile, raceIsOver, seriesOf } from '../bundle';
 import { liveBundle, liveStatus } from '../sources/nascarLive';
 import { carBadge, lastRaceResults, nextRace, nextStarts, trackInfo, weekendRuns } from '../sources/nascarReplay';
 
@@ -59,7 +59,6 @@ export function weekendRoutes(api: Hono) {
   api.get('/series/:id/qualifying', async (c) => {
     const s = seriesOf(c);
     if (!s) return c.json({ error: 'unknown series' }, 404);
-    if (sourceOf(c) === 'sample') return c.json({ error: 'no-qualifying' }, 404);
     const race = await nextRace(s.feedSeries, new Date(), raceIsOver).catch(() => undefined);
     if (!race) return c.json({ error: 'no-qualifying' }, 404);
     const chaseCars = await lastRaceResults(s.profile.id)

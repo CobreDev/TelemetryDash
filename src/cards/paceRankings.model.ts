@@ -26,7 +26,7 @@ export interface PaceRow {
   /** Null for cars left out of the ranking; they follow the ranked rows. */
   rank: number | null;
   carNumber: string;
-  /** Team's stylized number image (API-relative URL); absent for fictional sample data. */
+  /** Team's stylized number image (API-relative URL). */
   carBadge?: string;
   firstName: string;
   lastName: string;
@@ -116,7 +116,7 @@ export function buildPaceRankings(
 
   const base = (item: PaceEntry) => ({
     carNumber: item.carNumber,
-    carBadge: data.source === 'sample' ? undefined : `/api/v1/series/${profile.id}/car-badges/${item.carNumber}.png`,
+    carBadge: `/api/v1/series/${profile.id}/car-badges/${item.carNumber}.png`,
     firstName: item.firstName,
     lastName: item.lastName,
     markers: markerSuffixes(item.markerTokens, profile),

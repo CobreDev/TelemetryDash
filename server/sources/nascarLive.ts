@@ -7,7 +7,7 @@ import { withChaseMarkers } from '../../src/data/nascar/names';
 import { weekendEndsAt } from '../../src/data/nascar/weekend';
 import type { FeedLivePoints } from '../../src/data/nascar/points';
 import { config } from '../config';
-import { BASE, FEED_SERIES, raceById, trackInfo, UA, type ReplayBundle } from './nascarReplay';
+import { BASE, FEED_SERIES, raceById, trackInfo, UA, type RaceBundle } from './nascarReplay';
 
 // Polls NASCAR's live feed and keeps the current session's laps on disk (DATA_DIR/live), so a
 // restart mid-race loses nothing. Rates stay at or below what nascar.com itself uses.
@@ -227,7 +227,7 @@ export function liveStatus(): LiveStatus | null {
   };
 }
 
-export interface LiveBundle extends ReplayBundle {
+export interface LiveBundle extends RaceBundle {
   live: true;
   /** Feed flag code right now (the lap in progress), not the last completed lap's. */
   currentFlag: number;

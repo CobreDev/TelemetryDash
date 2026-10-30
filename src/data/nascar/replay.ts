@@ -5,9 +5,7 @@ import { parseDriverName } from './names';
 import { trackLocation, type FeedTrack } from './tracks';
 import { computePace } from './pace';
 
-export const halfwayLap = (race: FeedRace) => Math.ceil((race.actual_laps ?? race.scheduled_laps) / 2);
-
-/** A completed race replayed as if it were live at `upToLap`. */
+/** Pace and header data for a race at `upToLap`, from its lap times (live or official files). */
 export function replayPaceDataset(
   seriesId: string,
   race: FeedRace,

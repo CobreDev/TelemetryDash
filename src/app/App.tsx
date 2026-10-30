@@ -1,8 +1,8 @@
-import { useContext, useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { BODIES, type BodyId } from '../series/bodies';
 import { seriesList } from '../series/profiles';
 import { neutrals, themeVars } from '../tokens/tokens';
-import { api, type Source } from './api';
+import { api } from './api';
 import { ChaseTab } from './ChaseTab';
 import { CompareTab } from './CompareTab';
 import { FuelTab } from './FuelTab';
@@ -14,11 +14,11 @@ import { RaceHeader } from './RaceHeader';
 import { SeriesStripes } from './SeriesStripes';
 import { load, store } from './storage';
 import { StrategyTab } from './StrategyTab';
-import { SourceContext, useSeriesApi } from './useApi';
+import { LiveContext, useSeriesApi } from './useApi';
 import { useLiveStatus, type LiveState } from './useLiveStatus';
 import { useTheme } from './useTheme';
 
-const KEYS = { series: 'td.series', tab: 'td.tab', source: 'td.source' };
+const KEYS = { series: 'td.series', tab: 'td.tab' };
 /** Longest the first paint waits for the server's choice of series. */
 const HOME_WAIT_MS = 1_000;
 
@@ -33,41 +33,23 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
-/** Owns the Live/Sample choice and what's live, and shares both with every view. */
+/** Owns what's live and shares it with every view. */
 export function App() {
-  const [source, setSource] = useState<Source>(load(KEYS.source) === 'sample' ? 'sample' : 'live');
-  const status = useLiveStatus(source);
-  const choose = (s: Source) => {
-    setSource(s);
-    store(KEYS.source, s);
-  };
+  const status = useLiveStatus();
   return (
-    <SourceContext.Provider value={{ source, liveSeriesId: status.live?.active ? status.live.seriesId : null, liveDataAt: status.live?.dataAt }}>
-      <Dashboard onSource={choose} status={status} />
-    </SourceContext.Provider>
-  );
-}
-
-function SourceToggle({ onSource }: { onSource: (s: Source) => void }) {
-  const { source } = useContext(SourceContext);
-  return (
-    <div className="seg seg-bar" role="group" aria-label="Data source">
-      {(['live', 'sample'] as const).map((s) => (
-        <button key={s} className={source === s ? 'active' : undefined} aria-pressed={source === s} onClick={() => onSource(s)}>
-          {s === 'live' ? 'Live' : 'Sample'}
-        </button>
-      ))}
-    </div>
+    <LiveContext.Provider value={{ liveSeriesId: status.live?.active ? status.live.seriesId : null, liveDataAt: status.live?.dataAt }}>
+      <Dashboard status={status} />
+    </LiveContext.Provider>
   );
 }
 
 /**
- * On a live page load, the series the server picks (the live race's; Friday-Sunday the next
+ * On page load, the series the server picks (the live race's; Friday-Sunday the next
  * race's; else Cup), once. The page waits for it (up to HOME_WAIT_MS) rather than drawing one
  * series and jumping to another.
  */
-function useHomeSeries(source: Source, setSeriesId: (id: string) => void) {
-  const [ready, setReady] = useState(source !== 'live');
+function useHomeSeries(setSeriesId: (id: string) => void) {
+  const [ready, setReady] = useState(false);
   useEffect(() => {
     if (ready) return;
     let done = false;
@@ -85,12 +67,11 @@ function useHomeSeries(source: Source, setSeriesId: (id: string) => void) {
   return ready;
 }
 
-function Dashboard({ onSource, status }: { onSource: (s: Source) => void; status: LiveState }) {
-  const { source } = useContext(SourceContext);
+function Dashboard({ status }: { status: LiveState }) {
   const [seriesId, setSeriesId] = useState(load(KEYS.series) ?? 'cup');
   const [tab, setTab] = useState<TabId>(() => TABS.find((t) => t.id === load(KEYS.tab))?.id ?? 'overview');
   const [body, setBody] = useState<BodyId>('nascar');
-  const homeReady = useHomeSeries(source, setSeriesId);
+  const homeReady = useHomeSeries(setSeriesId);
   useEffect(() => store(KEYS.series, seriesId), [seriesId]);
   const chooseTab = (t: TabId) => {
     setTab(t);
@@ -131,7 +112,6 @@ function Dashboard({ onSource, status }: { onSource: (s: Source) => void; status
                 ))}
               </select>
             </label>
-            <SourceToggle onSource={onSource} />
           </div>
         </div>
         <RaceHeader seriesId={seriesId} card={card} cardError={cardError} live={status.live} stale={status.stale} />

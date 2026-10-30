@@ -49,11 +49,9 @@ docker buildx build --platform linux/amd64 -t telemetrydash:latest --load .
 
 ## Data
 
-- **Live** (default): the server follows NASCAR's live feed during sessions, records every lap,
-  and keeps the session on disk. Between races, series views show the next race, the last results
-  and Chase standings.
-- **Sample:** the Live/Sample toggle, or `?source=sample` on any series endpoint, replays each
-  series' last race at halfway.
+Live data only. The server follows NASCAR's live feed during sessions, records every lap and
+keeps the session on disk. A finished race stays up from NASCAR's official files until Monday;
+between races, series views show the next race, the last results and Chase standings.
 
 When nothing is live for a series, timing endpoints answer `409` with
 `{ error: "no-live-session", live, next }`.

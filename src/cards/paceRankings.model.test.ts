@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { samplePace } from '../data/sample/pace';
+import { paceFixtures } from './paceRankings.fixture';
 import { cup } from '../series/profiles';
 import { raceProgress } from '../format/format';
 import { buildPaceRankings, statusFlag } from './paceRankings.model';
 
 describe('buildPaceRankings', () => {
-  const card = buildPaceRankings(samplePace.cup!, cup, '@handle');
+  const card = buildPaceRankings(paceFixtures.cup!, cup, '@handle');
 
   it('ranks the full field, then lists excluded cars unranked', () => {
     expect(card.rows).toHaveLength(12);
@@ -14,7 +14,7 @@ describe('buildPaceRankings', () => {
   });
 
   it('caps to a top-N list when asked, without excluded cars', () => {
-    const top = buildPaceRankings(samplePace.cup!, cup, '@h', { limit: 10 });
+    const top = buildPaceRankings(paceFixtures.cup!, cup, '@h', { limit: 10 });
     expect(top.rows).toHaveLength(10);
     expect(top.header.title).toBe('Top 10 Pace Rankings');
     expect(top.rows.map((r) => r.carNumber)).not.toContain('1');
@@ -39,7 +39,7 @@ describe('buildPaceRankings', () => {
   it('stamps live data with stage progress and closed ranges otherwise', () => {
     expect(card.footer.lapStamp).toBe('Stage 3: 100 laps to go \u00B7 Lap 167/267');
     expect(card.progress).toMatchObject({ stage: 3, stageLapsRemaining: 100 });
-    expect(buildPaceRankings(samplePace.craftsman!, cup, '@h').footer.lapStamp).toBe('Laps 61–134');
+    expect(buildPaceRankings(paceFixtures.craftsman!, cup, '@h').footer.lapStamp).toBe('Laps 61–134');
   });
 
   it('computes gap percent against the leader', () => {

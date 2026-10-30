@@ -12,7 +12,7 @@ export const api = new Hono();
 api.use('*', cors());
 
 api.get('/health', (c) => c.json({ ok: true }));
-api.get('/meta', (c) => c.json({ attribution: config.attributionHandle, sources: ['live', 'sample'] }));
+api.get('/meta', (c) => c.json({ attribution: config.attributionHandle, sources: ['live'] }));
 /** What's live right now (any series): the top bar's status, and when views should refresh. */
 api.get('/live', (c) => c.json({ live: liveStatus(), now: Date.now() }));
 api.get('/series', (c) => c.json(seriesList));

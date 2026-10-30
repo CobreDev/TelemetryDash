@@ -1,6 +1,6 @@
-import type { PaceDataset, PaceEntry } from '../types';
+import type { PaceDataset, PaceEntry } from '../data/types';
 
-// Fictional drivers and numbers, chosen to exercise the edge cases in DESIGN.md:
+// Test fixtures for the Pace card. Fictional drivers and numbers, chosen to exercise the edge cases in DESIGN.md:
 // suffixes (Jr.), lowercase particles (van), car 00, a tie, both markers, an exclusion.
 const field: PaceEntry[] = [
   { carNumber: '8', firstName: 'Tomas', lastName: 'Reyes', markerTokens: [], paceScore: 30.412 },
@@ -19,7 +19,7 @@ const field: PaceEntry[] = [
 
 const definition = 'Pace score: avg green-flag lap, adjusted to fresh tires';
 
-export const samplePace: Record<string, PaceDataset> = {
+export const paceFixtures: Record<string, PaceDataset> = {
   cup: {
     race: { seriesId: 'cup', raceName: 'Sample 400', venue: 'Charlotte Motor Speedway', year: 2026, totalLaps: 267, stageLaps: [80, 85, 102] },
     lapFrom: 1,
@@ -30,7 +30,7 @@ export const samplePace: Record<string, PaceDataset> = {
     lapFlags: Array.from({ length: 167 }, (_, i) => ((i >= 45 && i <= 50) || (i >= 120 && i <= 126) ? 'yellow' : 'green')),
     metricDefinition: definition,
     entries: field,
-    source: 'sample',
+    source: 'replay',
   },
   oreilly: {
     race: { seriesId: 'oreilly', raceName: 'Sample 300', venue: 'Charlotte Motor Speedway', year: 2026, totalLaps: 200, stageLaps: [45, 45, 110] },
@@ -39,7 +39,7 @@ export const samplePace: Record<string, PaceDataset> = {
     live: false,
     metricDefinition: definition,
     entries: field.map((e) => ({ ...e, paceScore: e.paceScore + 0.62 })),
-    source: 'sample',
+    source: 'replay',
   },
   craftsman: {
     race: { seriesId: 'craftsman', raceName: 'Sample 200', venue: 'Charlotte Motor Speedway', year: 2026, totalLaps: 134, stageLaps: [30, 30, 74] },
@@ -48,6 +48,6 @@ export const samplePace: Record<string, PaceDataset> = {
     live: false,
     metricDefinition: definition,
     entries: field.map((e) => ({ ...e, paceScore: e.paceScore + 1.05 })),
-    source: 'sample',
+    source: 'replay',
   },
 };

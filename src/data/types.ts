@@ -1,6 +1,6 @@
 // Source-agnostic race data. Whatever feed we pick later gets adapted into these shapes.
 
-export type DataSource = 'sample' | 'replay' | 'live';
+export type DataSource = 'replay' | 'live';
 
 /** Track status at the latest lap, for the status block's flag line. */
 export type TrackFlag = 'green' | 'yellow' | 'red' | 'white' | 'checkered' | 'none';
@@ -50,7 +50,7 @@ export interface PaceDataset {
   /** Extra footer lines about how the metric was computed for this dataset. */
   methodNotes?: string[];
   entries: PaceEntry[];
-  /** 'sample' marks fabricated data; 'replay' is a completed race played back to `lapTo`. */
+  /** 'live' while a race runs; 'replay' is a race's official files read up to `lapTo`. */
   source: DataSource;
   /** Live practice/qualifying: the session name. Absent for races. */
   session?: string;

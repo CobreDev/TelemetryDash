@@ -3,12 +3,10 @@ import { dirname, join } from 'node:path';
 import { makeOf, type CarInfo } from '../../src/data/nascar/cars';
 import { easternToEpoch, withRaceLength, type FeedLapNotes, type FeedLapTimes, type FeedPitStop, type FeedRace, type FeedRaceResult, type FeedWeekendRace } from '../../src/data/nascar/feed';
 import { withChaseMarkers } from '../../src/data/nascar/names';
-import { halfwayLap, replayPaceDataset } from '../../src/data/nascar/replay';
 import { weekendEndsAt } from '../../src/data/nascar/weekend';
 import type { FeedWeekendRun } from '../../src/cards/qualifying.model';
 import type { FeedTrack } from '../../src/data/nascar/tracks';
 import type { FeedLivePoints, FeedResult } from '../../src/data/nascar/points';
-import type { PaceDataset } from '../../src/data/types';
 import { config } from '../config';
 
 // NASCAR's public (unofficial) replay files. Completed races never change, so each file is
@@ -113,7 +111,8 @@ export async function trackInfo(trackId: number | undefined): Promise<FeedTrack 
   }
 }
 
-export interface ReplayBundle {
+/** A race's official files (or, for LiveBundle, the live recording) at lap `atLap`. */
+export interface RaceBundle {
   race: FeedRace;
   lapTimes: FeedLapTimes;
   pits: FeedPitStop[];
@@ -125,17 +124,14 @@ export interface ReplayBundle {
   finished?: boolean;
   /** Manufacturer and (live) pit road / DVP / out, by car number. */
   carInfo?: Record<string, CarInfo>;
-  /** Race notes by lap (optional); replays show only notes up to `atLap`. */
+  /** Race notes by lap (optional); only notes up to `atLap` are shown. */
   lapNotes?: FeedLapNotes;
-  /** The lap the replay is "live" at: halfway. */
+  /** The lap the views are built at (a finished race: its last lap). */
   atLap: number;
 }
 
-const bundles = new Map<string, Promise<ReplayBundle>>();
-const datasets = new Map<string, PaceDataset>();
-
 /** One race's files (lap times, pits, points, results, notes). `maxAgeMs` re-fetches stale copies. */
-async function loadRaceFiles(feedSeries: number, race: FeedRace, maxAgeMs = Infinity): Promise<Omit<ReplayBundle, 'atLap'>> {
+async function loadRaceFiles(feedSeries: number, race: FeedRace, maxAgeMs = Infinity): Promise<Omit<RaceBundle, 'atLap'>> {
   const dir = `${race.race_season}/${feedSeries}/${race.race_id}`;
   const lapTimes = await cachedJson<FeedLapTimes>(`${dir}/lap-times.json`, `${BASE}/${dir}/lap-times.json`, maxAgeMs);
   const pits = await cachedJson<FeedPitStop[]>(`${dir}/live-pit-data.json`, `${BASE}/${dir}/live-pit-data.json`, maxAgeMs);
@@ -155,33 +151,16 @@ async function loadRaceFiles(feedSeries: number, race: FeedRace, maxAgeMs = Infi
   return { race, lapTimes: withChaseMarkers(lapTimes, chaseCars), pits, track, livePoints, results, lapNotes, carInfo };
 }
 
-/** Raw files for the series' most recent completed race, replayed at its halfway lap. */
-export async function replayBundle(seriesId: string, now = new Date()): Promise<ReplayBundle> {
-  const feedSeries = FEED_SERIES[seriesId];
-  if (!feedSeries) throw new Error(`no NASCAR feed for ${seriesId}`);
-  const race = await latestCompletedRace(feedSeries, now);
-  if (!race) throw new Error(`no completed ${seriesId} race found`);
-
-  const key = `${seriesId}/${race.race_id}`;
-  let hit = bundles.get(key);
-  if (!hit) {
-    hit = loadRaceFiles(feedSeries, race).then((files) => ({ ...files, atLap: halfwayLap(race) }));
-    hit.catch(() => bundles.delete(key)); // retry on the next request after a failure
-    bundles.set(key, hit);
-  }
-  return hit;
-}
-
 /** Re-check a just-finished race's files this often (NASCAR settles them over the first hours). */
 const FINAL_TTL_MS = 10 * 60_000;
-const finals = new Map<number, { at: number; bundle: Promise<ReplayBundle | undefined> }>();
+const finals = new Map<number, { at: number; bundle: Promise<RaceBundle | undefined> }>();
 
 /**
  * The series' race from this weekend once it's over, at its final lap, until Monday 00:00 ET
  * (see weekendEndsAt). `isFinished` decides whether a race that has started is done. Built
  * from NASCAR's official files, so it survives restarts and other series' sessions.
  */
-export async function finishedRaceBundle(seriesId: string, isFinished: (race: FeedRace) => boolean, now = Date.now()): Promise<ReplayBundle | undefined> {
+export async function finishedRaceBundle(seriesId: string, isFinished: (race: FeedRace) => boolean, now = Date.now()): Promise<RaceBundle | undefined> {
   const feedSeries = FEED_SERIES[seriesId];
   if (!feedSeries) return undefined;
   const year = new Date(now).getFullYear();
@@ -252,18 +231,6 @@ export async function lastRaceResults(
     `https://cf.nascar.com/live/feeds/series_${feedSeries}/${race.race_id}/live_points.json`,
   ).catch(() => undefined);
   return { race: result, livePoints };
-}
-
-/** Pace at the halfway lap of the series' most recent completed race. */
-export async function replayPace(seriesId: string, now = new Date()): Promise<PaceDataset> {
-  const b = await replayBundle(seriesId, now);
-  const key = `${seriesId}/${b.race.race_id}`;
-  let data = datasets.get(key);
-  if (!data) {
-    data = replayPaceDataset(seriesId, b.race, b.lapTimes, b.pits, b.atLap, b.track);
-    datasets.set(key, data);
-  }
-  return data;
 }
 
 /**

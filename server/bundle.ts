@@ -1,6 +1,6 @@
-// Picks the data a series view is built from: the live session, a finished race from
-// NASCAR's official files, or (?source=sample) a replay. Plus the derived pieces several
-// routes share: running order, stage ends, stage results, lap flags.
+// Picks the data a series view is built from: the live session, or a finished race from
+// NASCAR's official files. Plus the derived pieces several routes share: running order, stage
+// ends, stage results, lap flags.
 import type { Context } from 'hono';
 import type { StageResult } from '../src/cards/raceControl.model';
 import { easternToEpoch, flagFromFeed, type FeedRace } from '../src/data/nascar/feed';
@@ -11,12 +11,9 @@ import type { TrackFlag } from '../src/data/types';
 import { profiles } from '../src/series/profiles';
 import type { SeriesProfile } from '../src/series/types';
 import { liveBundle, liveStatus, raceFinishedLive, type LiveBundle } from './sources/nascarLive';
-import { FEED_SERIES, finishedRaceBundle, nextRace, replayBundle, type ReplayBundle } from './sources/nascarReplay';
+import { FEED_SERIES, finishedRaceBundle, nextRace, type RaceBundle } from './sources/nascarReplay';
 
-export type Bundle = ReplayBundle | LiveBundle;
-export type Source = 'live' | 'sample';
-
-export const sourceOf = (c: Context): Source => (c.req.query('source') === 'sample' ? 'sample' : 'live');
+export type Bundle = RaceBundle | LiveBundle;
 export const getProfile = (id: string): SeriesProfile | undefined => (profiles as Record<string, SeriesProfile>)[id];
 
 /** The route's series and its NASCAR feed number, or undefined (answer 404). */
@@ -44,7 +41,6 @@ export function raceIsOver(race: FeedRace): boolean {
  * series races next, so clients can explain it.
  */
 async function bundleFor(c: Context, profile: SeriesProfile): Promise<Bundle | Response> {
-  if (sourceOf(c) === 'sample') return replayBundle(profile.id);
   const b = await liveBundle(profile.id);
   if (b && !(b.isRace && b.atLap >= raceLength(b))) return b;
   const fin = await finishedRaceBundle(profile.id, raceIsOver).catch(() => undefined);

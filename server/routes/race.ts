@@ -1,4 +1,4 @@
-// Views of a race (live, finished, or a sample replay): header and pace, running order, Chase,
+// Views of a race (live or finished): header and pace, running order, Chase,
 // the data tabs, race control and penalties, and the season's Chase.
 import type { Hono } from 'hono';
 import { buildChaseView } from '../../src/cards/chase.model';
@@ -12,7 +12,6 @@ import { flagFromFeed } from '../../src/data/nascar/feed';
 import { chaseStandings, finishPointsTable } from '../../src/data/nascar/points';
 import { replayPaceDataset } from '../../src/data/nascar/replay';
 import { etDateKey } from '../../src/data/nascar/weekend';
-import { samplePace } from '../../src/data/sample/pace';
 import { isTemplateEnabled } from '../../src/series/profiles';
 import {
   getProfile,
@@ -22,7 +21,6 @@ import {
   orderOf,
   raceLength,
   runningOrder,
-  sourceOf,
   stageEndsOf,
   stageResults,
   stagesComplete,
@@ -30,7 +28,7 @@ import {
 } from '../bundle';
 import { config } from '../config';
 import { liveBundle } from '../sources/nascarLive';
-import { chaseRaces, replayPace } from '../sources/nascarReplay';
+import { chaseRaces } from '../sources/nascarReplay';
 
 /** Data tabs that share one input set: Pit road, Strategy, Fuel, Compare (laps), Fastest driver. */
 const TAB_VIEWS = {
@@ -49,11 +47,6 @@ export function raceRoutes(api: Hono) {
     if (!isTemplateEnabled(profile, 'pace-rankings')) return c.json({ error: 'template disabled for series' }, 404);
     const limit = Number(c.req.query('limit'));
     const opts = limit > 0 ? { limit } : {};
-    if (sourceOf(c) === 'sample') {
-      // The replay if NASCAR is reachable, else the fictional sample, so the header always has something.
-      const data = await replayPace(profile.id).catch(() => samplePace[profile.id]!);
-      return c.json({ ...buildPaceRankings(data, profile, config.attributionHandle, opts), updatedAt: null });
-    }
     return withBundle((cc, p, b) => {
       const data = replayPaceDataset(p.id, b.race, b.lapTimes, b.pits, b.atLap, b.track, {
         source: 'live',
@@ -145,7 +138,7 @@ export function raceRoutes(api: Hono) {
     if (!profile) return c.json({ error: 'unknown series' }, 404);
     try {
       const races = await chaseRaces(profile.id);
-      const b = sourceOf(c) === 'live' ? await liveBundle(profile.id) : null;
+      const b = await liveBundle(profile.id);
       const running = b?.isRace && b.atLap < raceLength(b) && races.some((r) => r.race.race_id === b.race.race_id) && b.livePoints?.some((d) => d.is_in_chase);
       const live = running ? { raceId: b.race.race_id, livePoints: b.livePoints!, entries: liveChaseEntries(b) } : undefined;
       return c.json(buildChaseSeasonView(profile, races, live));

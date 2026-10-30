@@ -18,13 +18,12 @@ for a future app.
 
 1. **Numbers first.** Times, gaps and positions are the most legible things on screen.
 2. **Always say when and from where.** Every view shows where the race is (stage, laps to go) and
-   the source (Live, Replay, Upcoming, Final).
+   the state (Live, Upcoming, Final).
 3. **Explain modeled numbers once.** Pace, estimated fuel, points as they run and inferred
    penalties each carry one short footnote. Nothing else gets a footnote.
-4. **Never invent data.** Timing views show real data or say there is none. Only the Pace card
-   falls back to fictional data, and it's labeled.
-5. **No look-ahead.** Calculations use only what was known at the current lap, so a replay behaves
-   like a live race.
+4. **Live data only, never invented.** Views show NASCAR's data or say there is none.
+5. **No look-ahead.** Calculations use only what was known at the current lap, so a finished race
+   reads the same as it did live.
 6. **Same structure everywhere.** The top bar, tabs and card layout don't move between series.
 7. **Works on a phone.** Checked at 375 px: the page never scrolls sideways; wide tables scroll in
    their card.
@@ -120,7 +119,6 @@ car badges reserve their box, and images fade in over 0.25 s (off with reduced m
 
 ```
 CUP SERIES  O'REILLY…  CRAFTSMAN…                       [ NASCAR ▾ ]
-                                                        [Live|Sample]
 [track logo]  BANK OF AMERICA 400  Concord, NC          [usa]
               ⚑ STAGE 2         54 | 85                 (● Live)
                 133 To Go     134 | 267
@@ -145,7 +143,7 @@ Overview  Pace  Pit road  Strategy  Fuel  Compare  Chase
 - **TV network** logo on a white tile (public-domain logos from Wikimedia Commons; unknown
   networks fall back to text).
 - **Badge:** Live (pulsing dot; amber if the server hasn't reached NASCAR for 30 s), Final,
-  Upcoming, or Replay in sample mode.
+  or Upcoming.
 - **Times** are US Eastern, labelled "ET", in the browser's 12- or 24-hour style.
 
 ### Overview
@@ -214,7 +212,7 @@ applied yet.)
 ### Definitions
 
 - **Running order and gaps:** cars are ordered by laps completed, then line-crossing time. Live,
-  "now" is the latest crossing seen; replays stop at the leader's crossing. Gaps are taken at the
+  "now" is the latest crossing seen; a finished race stops at the leader's last crossing. Gaps are taken at the
   last line both cars crossed. A car that misses the line for four of its normal laps, or that the
   feed marks as not running, is **out**. Before the green, the order is the starting lineup.
 - **Pace score:** each car's mean clean green-flag lap with tire falloff removed (its expected lap
@@ -225,8 +223,8 @@ applied yet.)
   lap burns 35% of a green lap, and a tank lasts as long as the field's longest run so far.
 - **Crew averages:** box times, leaving out stops over 1.5× the field median (repairs, penalties).
 - **Points as they run:** live, NASCAR's live points file as is, which counts finished stages but
-  not the stage in progress (so it can differ from TV). Replays rebuild it from the race's actual
-  payout. Fastest-lap and bonus points come at the finish.
+  not the stage in progress (so it can differ from TV). A finished race rebuilds it from the
+  race's actual payout. Fastest-lap and bonus points come at the finish.
 - **Markers:** NASCAR's name tokens `#` (rookie, shown as "(R)") and `(i)`. Its `(C)` token
   over-marks, so the Chase field comes from the `is_in_chase` flag.
 - **Estimated laps:** laps the server missed are split evenly and marked. They never count toward
@@ -266,7 +264,6 @@ caution.
   race's; Monday–Thursday Cup. The page waits up to 1 s for the server's choice.
 - **Nothing live:** timing tabs say so and name what is live and the next race; the API answers
   `409 { error: "no-live-session", live, next }`.
-- **Sample mode** replays each series' last race at halfway, from files cached in `/data`.
 - **Feed quirks:** `race_date` is Eastern wall-clock time with no offset; `actual_laps` is pre-filled
   for future races; per-car status codes are undocumented (1 is running; the server logs others);
   `is_on_track: false` means on pit road. No GPS or timing-loop data is public.

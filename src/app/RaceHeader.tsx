@@ -1,4 +1,3 @@
-import { useContext } from 'react';
 import type { PaceRankingsCard } from '../cards/paceRankings.model';
 import { isNoLive, type LiveStatus } from './api';
 import { LapBar } from './LapBar';
@@ -6,7 +5,6 @@ import { RaceStatus } from './RaceStatus';
 import { TrackLogo } from './TrackLogo';
 import { TvLogo } from './TvLogo';
 import { UpcomingHeader } from './UpcomingHeader';
-import { SourceContext } from './useApi';
 
 interface Props {
   seriesId: string;
@@ -52,8 +50,6 @@ export function RaceHeader({ seriesId, card, cardError, live, stale }: Props) {
 }
 
 function StatusBadge({ live, stale, seriesId, final }: { live: LiveStatus | null; stale: boolean; seriesId: string; final?: boolean }) {
-  const { source } = useContext(SourceContext);
-  if (source === 'sample') return <span className="chip">Replay</span>;
   if (final) return <span className="chip final-chip" title="This race is over; shown until Monday 00:00 ET">Final</span>;
   if (!live?.active || live.seriesId !== seriesId) return null;
   return (

@@ -1,4 +1,4 @@
-// Per-browser preferences (series, tab, Live/Sample). Storage can be unavailable (private
+// Per-browser preferences (series, tab). Storage can be unavailable (private
 // mode, blocked site data), so reads fall back to null and writes are best effort.
 
 export function load(key: string): string | null {
