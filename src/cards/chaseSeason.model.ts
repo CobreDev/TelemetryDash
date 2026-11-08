@@ -112,63 +112,68 @@ export function buildChaseSeasonView(profile: SeriesProfile, races: ChaseRaceInp
     };
   }
 
+  // Everything is matched by driver, not car number: a suspended driver stays in the Chase with
+  // no car (an empty car number), and a substitute can race his number meanwhile.
   const seasonFile = live?.livePoints ?? latest!.livePoints!;
-  const season = new Map(seasonFile.map((d) => [d.car_number, d]));
-  // Points now and before the latest race, by car, for the Chase field.
-  const now = new Map<string, { points: number; before: number; running: number | null; name: string }>();
+  const season = new Map(seasonFile.map((d) => [d.driver_id, d]));
+  // Points now and before the latest race, for the Chase field.
+  const now = new Map<number, { points: number; before: number; running: number | null; name: string }>();
   if (live) {
-    for (const e of live.entries) now.set(e.carNumber, { points: e.pointsLive, before: e.pointsBefore, running: e.running, name: e.name });
+    for (const e of live.entries) now.set(e.driverId, { points: e.pointsLive, before: e.pointsBefore, running: e.running, name: e.name });
   } else {
     for (const d of latest!.livePoints!.filter((x) => x.is_in_chase)) {
-      now.set(d.car_number, { points: d.points, before: d.points - d.points_earned_this_race, running: null, name: `${d.first_name} ${d.last_name}` });
+      now.set(d.driver_id, { points: d.points, before: d.points - d.points_earned_this_race, running: null, name: `${d.first_name} ${d.last_name}` });
     }
   }
-  const finishOf = (r: ChaseRaceInput) => new Map((r.results ?? []).map((x) => [x.car_number, x]));
-  const finishes = races.map((r) => (done.includes(r) ? finishOf(r) : undefined));
-  const pointsAfter = races.map((r) => (done.includes(r) ? new Map(r.livePoints!.map((d) => [d.car_number, d])) : undefined));
+  const finishes = races.map((r) => (done.includes(r) ? new Map((r.results ?? []).map((x) => [x.driver_id, x])) : undefined));
+  const pointsAfter = races.map((r) => (done.includes(r) ? new Map(r.livePoints!.map((d) => [d.driver_id, d])) : undefined));
+  // The driver's car number: the latest file that has one (none while he's sitting a race out).
+  const files = [seasonFile, ...[...done].reverse().map((r) => r.livePoints!)];
+  const carOf = (id: number) => files.map((f) => f.find((d) => d.driver_id === id)?.car_number).find((c) => c) ?? '';
   // Start-of-Chase points: the first Chase race's points less what it earned (the reset seed).
   const firstFile = done[0]?.livePoints;
-  const seed = (car: string) => {
-    const d = firstFile?.find((x) => x.car_number === car);
-    return d ? d.points - d.points_earned_this_race : (now.get(car)?.before ?? null);
+  const seed = (id: number) => {
+    const d = firstFile?.find((x) => x.driver_id === id);
+    return d ? d.points - d.points_earned_this_race : (now.get(id)?.before ?? null);
   };
 
-  const cars = [...now.keys()];
+  const ids = [...now.keys()];
   // Ties on points break on the better running position (live), then car number.
   const rankBy = (key: 'points' | 'before') =>
     new Map(
-      [...cars]
+      [...ids]
         .sort(
           (a, b) =>
             now.get(b)![key] - now.get(a)![key] ||
             (key === 'points' ? (now.get(a)!.running ?? 99) - (now.get(b)!.running ?? 99) : 0) ||
-            a.localeCompare(b, undefined, { numeric: true }),
+            carOf(a).localeCompare(carOf(b), undefined, { numeric: true }),
         )
         .map((c, i) => [c, i + 1]),
     );
   const rankNow = rankBy('points');
   const rankBefore = rankBy('before');
-  const order = [...cars].sort((a, b) => rankNow.get(a)! - rankNow.get(b)!);
+  const order = [...ids].sort((a, b) => rankNow.get(a)! - rankNow.get(b)!);
   const leadPts = now.get(order[0]!)!.points;
 
-  const drivers = order.map((car, i): ChaseSeasonDriver => {
-    const n = now.get(car)!;
+  const drivers = order.map((id, i): ChaseSeasonDriver => {
+    const n = now.get(id)!;
+    const car = carOf(id);
     const name = parseDriverName(n.name);
-    const delta = rankBefore.get(car)! - rankNow.get(car)!;
-    const myFinishes = finishes.map((f) => f?.get(car)?.finishing_position).filter((x): x is number => !!x);
-    const s = season.get(car);
+    const delta = rankBefore.get(id)! - rankNow.get(id)!;
+    const myFinishes = finishes.map((f) => f?.get(id)?.finishing_position).filter((x): x is number => !!x);
+    const s = season.get(id);
     const results = races.map((_, ri) => {
       if (ri === liveIdx) return n.running ? { finish: `P${n.running}`, points: `+${n.points - n.before}`, state: 'live' as const, tone: tone(n.running) } : null;
-      const f = finishes[ri]?.get(car);
+      const f = finishes[ri]?.get(id);
       return f ? { finish: String(f.finishing_position), points: `+${f.points_earned}`, state: 'done' as const, tone: tone(f.finishing_position) } : null;
     });
-    const trail = [seed(car), ...races.map((_, ri) => (ri === liveIdx ? n.points : (pointsAfter[ri]?.get(car)?.points ?? null)))];
+    const trail = [seed(id), ...races.map((_, ri) => (ri === liveIdx ? n.points : (pointsAfter[ri]?.get(id)?.points ?? null)))];
     return {
       carNumber: car,
-      carBadge: `/api/v1/series/${profile.id}/car-badges/${car}.png`,
+      carBadge: car ? `/api/v1/series/${profile.id}/car-badges/${car}.png` : '',
       firstName: name.firstName,
       lastName: name.lastName,
-      rank: rankNow.get(car)!,
+      rank: rankNow.get(id)!,
       change: positionChange(delta),
       changeDir: direction(delta),
       points: String(n.points),

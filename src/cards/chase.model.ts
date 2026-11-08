@@ -70,7 +70,8 @@ export function buildChaseView(entries: ChaseEntry[], profile: SeriesProfile): C
         change: positionChange(delta),
         changeDir: direction(delta),
         carNumber: e.carNumber,
-        carBadge: `/api/v1/series/${profile.id}/car-badges/${e.carNumber}.png`,
+        // A driver sitting a race out (a suspension) is listed with no car number.
+        carBadge: e.carNumber ? `/api/v1/series/${profile.id}/car-badges/${e.carNumber}.png` : '',
         firstName: name.firstName,
         lastName: name.lastName,
         points: String(e.pointsLive),
@@ -123,7 +124,7 @@ export function buildChaseStandingsView(
           change: positionChange(delta),
           changeDir: direction(delta),
           carNumber: d.car_number,
-          carBadge: `/api/v1/series/${profile.id}/car-badges/${d.car_number}.png`,
+          carBadge: d.car_number ? `/api/v1/series/${profile.id}/car-badges/${d.car_number}.png` : '',
           firstName: name.firstName,
           lastName: name.lastName,
           points: String(d.points),

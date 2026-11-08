@@ -5,7 +5,7 @@ import { buildChaseSeasonView, shortTrack, type ChaseRaceInput } from './chaseSe
 
 const pts = (car: string, last: string, points: number, earned: number, extra: Partial<FeedLivePoints> = {}): FeedLivePoints =>
   ({ car_number: car, driver_id: Number(car), first_name: 'D', last_name: last, points, points_earned_this_race: earned, is_in_chase: true, stage_1_points: 0, stage_2_points: 0, stage_3_points: 0, wins: 1, top_5: 2, top_10: 3, poles: 0, ...extra }) as FeedLivePoints;
-const res = (car: string, finish: number, earned: number) => ({ car_number: car, finishing_position: finish, points_earned: earned }) as ChaseRaceInput['results'] extends (infer R)[] | undefined ? R : never;
+const res = (car: string, finish: number, earned: number) => ({ car_number: car, driver_id: Number(car), finishing_position: finish, points_earned: earned }) as ChaseRaceInput['results'] extends (infer R)[] | undefined ? R : never;
 const race = (id: number, track: string, date: string) => ({ race_id: id, race_name: `Race ${id}`, track_name: track, race_date: `${date}T15:00:00` });
 
 const races: ChaseRaceInput[] = [
@@ -63,5 +63,22 @@ describe('buildChaseSeasonView', () => {
     expect(v.status).toBe('not-started');
     expect(v.drivers).toEqual([]);
     expect(v.notes[0]).toContain('Darlington Raceway');
+  });
+
+  it('follows the driver, not the car: a suspended Chase driver with no car keeps his stats', () => {
+    // Race 3 is live. Hocevar (driver 77) is sitting it out, so NASCAR lists him with no car
+    // number, and a substitute (driver 999) is racing #77.
+    const v = buildChaseSeasonView(cup, races, {
+      raceId: 3,
+      livePoints: [pts('5', 'Larson', 2140, 60), { ...pts('', 'Hocevar', 2080, 0), driver_id: 77 }, { ...pts('77', 'Haley', 0, 0, { is_in_chase: false }), driver_id: 999 }],
+      entries: [
+        { driverId: 5, carNumber: '5', name: 'D Larson', pointsBefore: 2080, rankBefore: 1, pointsLive: 2140, rankLive: 1, running: 1 },
+        { driverId: 77, carNumber: '', name: 'D Hocevar', pointsBefore: 2080, rankBefore: 2, pointsLive: 2080, rankLive: 2, running: null },
+      ],
+    });
+    const hocevar = v.drivers.find((d) => d.lastName === 'Hocevar')!;
+    expect(hocevar.carNumber).toBe(''); // no file before this race has him either
+    expect(hocevar.running).toBe('–');
+    expect(hocevar.results[2]).toBeNull();
   });
 });

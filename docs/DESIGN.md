@@ -229,6 +229,9 @@ applied yet.)
 - **Points as they run:** live, NASCAR's live points file as is, which counts finished stages but
   not the stage in progress (so it can differ from TV). A finished race rebuilds it from the
   race's actual payout. Fastest-lap and bonus points come at the finish.
+- **Chase drivers are matched by driver, not car number.** A driver sitting a race out (a
+  suspension) stays in the Chase with no car number while a substitute races his car; the Chase
+  tab keeps his stats and shows his last car number, and the live card shows a dash.
 - **Markers:** NASCAR's name tokens `#` (rookie, shown as "(R)") and `(i)`. Its `(C)` token
   over-marks, so the Chase field comes from the `is_in_chase` flag.
 - **Estimated laps:** laps the server missed are split evenly and marked. They never count toward

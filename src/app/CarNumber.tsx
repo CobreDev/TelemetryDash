@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useImageLoaded } from './useImageLoaded';
 
-/** The team's own number artwork when available, else the number in the display face. */
+/** The team's own number artwork when available, else the number as text (a dash when there's none). */
 export function CarNumber({ number, badge }: { number: string; badge?: string }) {
   const [failed, setFailed] = useState(false);
   const img = useImageLoaded();
-  if (!badge || failed) return <span className="car-text">{number}</span>;
+  if (!badge || failed) return <span className="car-text">{number || '–'}</span>;
   return (
     <img
       ref={img.ref}
